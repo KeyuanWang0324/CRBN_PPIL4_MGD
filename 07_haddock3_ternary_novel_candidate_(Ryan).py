@@ -53,7 +53,7 @@ RESULTS_CSV = os.path.join(SCRIPT_DIR, "07_ternary_docking_scores_for_08_(Ryan).
 
 # Only the top TOP_N Vina-screened candidates get the full (~3+ min each)
 # HADDOCK3 ternary treatment; raise/lower as needed.
-TOP_N = 20
+TOP_N = 40
 
 # CNS's "@@" include syntax truncates paths at "(" -- keep this filename
 # parenthesis-free since it's fed directly to HADDOCK3 as a molecule.

@@ -42,7 +42,7 @@ from rdkit import RDLogger
 RDLogger.DisableLog("rdApp.*")  # silence RDKit SMILES parsing warnings
 
 THALIDOMIDE_SMILES = "O=C1CCC(N2C(=O)c3ccccc3C2=O)C(=O)N1"
-N_ANALOGS = 500
+N_ANALOGS = 2500
 OUTPUT_CSV = os.path.join(SCRIPT_DIR, "01_generated_analogs_(Ryan).csv")
 RANDOM_SEED = 42
 

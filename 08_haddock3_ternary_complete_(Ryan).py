@@ -7,14 +7,16 @@ run a cheap, truncated HADDOCK3 config (rigidbody sampling=20, flexref on the
 top 10, no emref, no clustering) to rank many candidates quickly. This script
 runs the COMPLETE stock HADDOCK3 protein-protein routine instead -- rigidbody
 sampling=1000, flexref + emref refinement on the top 200, then clustfcc
-clustering -- on dockq ranks RANK_START-RANK_END from 07's comparison
+clustering -- on the top TOP_FRACTION of 07's dockq-ranked comparison
 table, one after another. Set CANDIDATE_NAME to run a single specific
 candidate instead.
 
 This is far more expensive than 06/07 (rough estimate: 45 min - 1.5 hr per
-candidate on an 18-core machine, vs. ~3 min for 07's lite pass) -- keep
-the RANK_START-RANK_END range small (a handful of candidates at a time),
-not a full screen in one go.
+candidate on an 18-core machine, vs. ~3 min for 07's lite pass) -- this is
+the stage meant to do the pipeline's final narrowing (07 hands it a wider
+shortlist; this keeps only the top TOP_FRACTION of it). Use RANK_START to
+resume/batch a subset of that top fraction across multiple runs instead of
+running all of it in one sitting.
 
 Run in the haddock3 venv:
     source .venv-haddock3/bin/activate
@@ -60,19 +62,25 @@ TERNARY_SCORES_CSV = os.path.join(SCRIPT_DIR, "07_ternary_docking_scores_for_08_
 RESULTS_CSV = os.path.join(SCRIPT_DIR, "08_final_ternary_results_(Ryan).csv")
 
 # Set this to a specific candidate's name from 07's comparison table to run
-# only that one (bypasses RANK_START/RANK_END entirely). Leave blank to
-# auto-pick a range of candidates by dockq rank from TERNARY_SCORES_CSV
-# instead (falling back to 06's best combined_affinity if 07 hasn't been
-# run yet).
+# only that one (bypasses TOP_FRACTION/RANK_START entirely). Leave blank to
+# auto-pick the top TOP_FRACTION of candidates by dockq rank from
+# TERNARY_SCORES_CSV instead (falling back to 06's best combined_affinity if
+# 07 hasn't been run yet).
 CANDIDATE_NAME = ""
 
-# 1-indexed, inclusive range of 07's dockq-ranked candidates to run the
-# complete routine on, when CANDIDATE_NAME is left blank -- e.g. 6/20 runs
-# the 6th-through-20th-best candidates (skipping the top 5 already run
-# elsewhere). Each candidate costs ~45 min - 1.5 hr, so size the range with
-# total run time in mind.
-RANK_START = 6
-RANK_END = 20
+# Fraction of 07's dockq-ranked candidates to auto-select for the complete
+# routine, when CANDIDATE_NAME is left blank -- e.g. 0.5 keeps the best
+# half of whatever 07 produced. This is the pipeline's final narrowing step
+# (01 -> 04 -> 06 -> 07 each keep progressively fewer candidates; this is
+# the last cut), so it's computed as a fraction of 07's actual output count
+# rather than a fixed number.
+TOP_FRACTION = 0.5
+
+# 1-indexed rank (within that top fraction) to start from -- lets you
+# resume/batch across multiple runs (e.g. RANK_START=11 picks up after an
+# earlier run already covered ranks 1-10) instead of running the whole top
+# fraction in one sitting. Each candidate costs ~45 min - 1.5 hr.
+RANK_START = 1
 
 # CNS's "@@" include syntax truncates paths at "(" -- keep this filename
 # parenthesis-free since it's fed directly to HADDOCK3 as a molecule.
@@ -298,9 +306,11 @@ def pick_candidate_names():
             rows = [r for r in csv.DictReader(f) if r["dockq"] != "-"]
         if rows:
             rows.sort(key=lambda r: float(r["dockq"]), reverse=True)
-            names = [r["name"] for r in rows[RANK_START - 1:RANK_END]]
-            print(f"CANDIDATE_NAME not set -- auto-selecting dockq ranks {RANK_START}-{RANK_END} "
-                  f"({len(names)} candidate(s)) from {TERNARY_SCORES_CSV}: {', '.join(names)}")
+            rank_end = max(1, round(len(rows) * TOP_FRACTION))
+            names = [r["name"] for r in rows[RANK_START - 1:rank_end]]
+            print(f"CANDIDATE_NAME not set -- auto-selecting dockq ranks {RANK_START}-{rank_end} "
+                  f"(top {TOP_FRACTION:.0%} of {len(rows)}, {len(names)} candidate(s)) "
+                  f"from {TERNARY_SCORES_CSV}: {', '.join(names)}")
             return names
         print(f"{TERNARY_SCORES_CSV} has no usable dockq rows -- falling back to 06's screening scores.")
 
@@ -312,10 +322,12 @@ def pick_candidate_names():
     if not rows:
         sys.exit(f"No rows in {VINA_SCREENING_CSV} -- run 06 first, or set CANDIDATE_NAME directly.")
     rows.sort(key=lambda r: float(r["combined_affinity"]))
-    names = [r["name"] for r in rows[RANK_START - 1:RANK_END]]
-    print(f"CANDIDATE_NAME not set -- auto-selecting combined_affinity ranks {RANK_START}-{RANK_END} "
-          f"({len(names)} candidate(s)) from 06's screening scores -- run 07 for a dockq-based pick "
-          "instead. Set CANDIDATE_NAME explicitly to run a single specific candidate.")
+    rank_end = max(1, round(len(rows) * TOP_FRACTION))
+    names = [r["name"] for r in rows[RANK_START - 1:rank_end]]
+    print(f"CANDIDATE_NAME not set -- auto-selecting combined_affinity ranks {RANK_START}-{rank_end} "
+          f"(top {TOP_FRACTION:.0%} of {len(rows)}, {len(names)} candidate(s)) from 06's screening "
+          "scores -- run 07 for a dockq-based pick instead. Set CANDIDATE_NAME explicitly to run a "
+          "single specific candidate.")
     return names
 
 

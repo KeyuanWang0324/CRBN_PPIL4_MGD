@@ -106,7 +106,7 @@ ACTIVE_CANDIDATES_CSV = os.path.join(SCRIPT_DIR, "04_active_candidates_for_06_(R
 # combined_rank (best first, see build_active_candidates() in 04), so this
 # keeps the top TOP_FRACTION of it -- e.g. 0.5 keeps the best 50%. Set to
 # None (or 1.0) to run all of them.
-TOP_FRACTION = 0.5
+TOP_FRACTION = 0.16
 
 
 def load_candidates():

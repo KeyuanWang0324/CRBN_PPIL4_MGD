@@ -64,7 +64,7 @@ CANDIDATES_CSV = os.path.join(SCRIPT_DIR, "01_generated_analogs_(Ryan).csv")
 CANDIDATE_SCORES_CSV = os.path.join(SCRIPT_DIR, "04_crbn_binder_scores_(Ryan).csv")
 MGD_SCORES_CSV = os.path.join(SCRIPT_DIR, "03_mgd_scores_for_04_(Ryan).csv")  # written by 03's Step 4
 ACTIVE_CANDIDATES_CSV = os.path.join(SCRIPT_DIR, "04_active_candidates_for_06_(Ryan).csv")  # consumed by 06
-ACTIVE_FRACTION = 0.20
+ACTIVE_FRACTION = 0.25
 
 
 def fetch_all_activities(target_chembl_id, batch_size=1000):
