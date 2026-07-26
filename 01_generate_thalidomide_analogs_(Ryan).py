@@ -1,15 +1,22 @@
 """
-Generate thalidomide analogs by substituting groups on the phthalimide
-benzo ring while keeping the glutarimide ring (the piperidine-2,6-dione
-that binds CRBN's degron pocket) completely untouched.
+Generate CRBN-glue analogs by substituting groups on the benzo ring of one
+of two parent scaffolds, while keeping the glutarimide ring (the
+piperidine-2,6-dione that binds CRBN's degron pocket) completely untouched:
+
+  - thalidomide (phthalimide core)
+  - isoindolinone (lenalidomide-family core) -- added after confirming a
+    real CRBN-PPIL4 molecular glue,
+    O=C1CCC(C(N1)=O)N2CC3=C(C2=O)C=CC=C3C4=CC=C(C=C4)N5CCNCC5, uses this
+    core (not phthalimide) with a phenyl-piperazine cap. That cap is also
+    added to SUBSTITUENTS below so both scaffolds can explore it.
 
 Run with the SYSTEM python (has rdkit installed):
     /Library/Frameworks/Python.framework/Versions/3.12/bin/python3 \
         "01_generate_thalidomide_analogs_(Ryan).py"
 
-Writes 01_generated_analogs_(Ryan).csv (id, substituents, smiles) -- the raw
-analog pool scored by 03 and 04 downstream -- and prints how many valid,
-unique analog SMILES were generated.
+Writes 01_generated_analogs_(Ryan).csv (one SMILES per line, no header) --
+the raw analog pool scored by 03 and 04 downstream -- and prints how many
+valid, unique analog SMILES were generated, per scaffold.
 """
 import csv
 import os
@@ -31,7 +38,7 @@ def _has_required_packages():
 
 
 # rdkit lives in the SYSTEM python, not the .venv-haddock3 venv used by
-# 05/07. Relaunch automatically if it's missing, regardless of which
+# 05/06/08. Relaunch automatically if it's missing, regardless of which
 # interpreter launched this script.
 if not _has_required_packages() and sys.executable != SYSTEM_PYTHON:
     os.execv(SYSTEM_PYTHON, [SYSTEM_PYTHON] + sys.argv)
@@ -42,6 +49,15 @@ from rdkit import RDLogger
 RDLogger.DisableLog("rdApp.*")  # silence RDKit SMILES parsing warnings
 
 THALIDOMIDE_SMILES = "O=C1CCC(N2C(=O)c3ccccc3C2=O)C(=O)N1"
+# Unsubstituted isoindolinone-glutarimide parent (the lenalidomide/
+# pomalidomide-family core) -- confirmed via RDKit substructure match
+# against the real CRBN-PPIL4 glue referenced above (has this core, not
+# phthalimide's).
+ISOINDOLINONE_SMILES = "O=C1CCC(N2Cc3ccccc3C2=O)C(=O)N1"
+BASE_SCAFFOLDS = {
+    "thalidomide": THALIDOMIDE_SMILES,
+    "isoindolinone": ISOINDOLINONE_SMILES,
+}
 N_ANALOGS = 2500
 OUTPUT_CSV = os.path.join(SCRIPT_DIR, "01_generated_analogs_(Ryan).csv")
 RANDOM_SEED = 42
@@ -54,6 +70,9 @@ SUBSTITUENTS = {
     "OCH3": "OC", "CN": "C#N", "NO2": "[N+](=O)[O-]",
     "CF3": "C(F)(F)F", "COOH": "C(=O)O", "CONH2": "C(=O)N",
     "SO2NH2": "S(=O)(=O)N", "NHCH3": "NC", "N(CH3)2": "N(C)C",
+    # The real CRBN-PPIL4 glue's own cap (see module docstring) -- a
+    # phenyl ring bearing a piperazine, attached via single bond.
+    "PHENYLPIPERAZINE": "c1ccc(N2CCNCC2)cc1",
 }
 
 
@@ -88,23 +107,31 @@ def substitute(base_mol, site_to_fragment):
 
 def main():
     random.seed(RANDOM_SEED)
-    base = Chem.MolFromSmiles(THALIDOMIDE_SMILES)
-    if base is None:
-        raise ValueError("Invalid thalidomide SMILES")
 
-    sites = benzo_ring_substitution_sites(base)
-    print(f"Thalidomide: {Chem.MolToSmiles(base)}")
-    print(f"Substitutable benzo-ring positions (glutarimide ring untouched): {sites}")
+    scaffolds = {}
+    seen = set()
+    for name, scaffold_smiles in BASE_SCAFFOLDS.items():
+        base = Chem.MolFromSmiles(scaffold_smiles)
+        if base is None:
+            raise ValueError(f"Invalid {name} SMILES")
+        sites = benzo_ring_substitution_sites(base)
+        scaffolds[name] = (base, sites)
+        seen.add(Chem.MolToSmiles(base))
+        print(f"{name}: {Chem.MolToSmiles(base)}")
+        print(f"  substitutable benzo-ring positions (glutarimide ring untouched): {sites}")
     print(f"Substituent groups available: {len(SUBSTITUENTS)}")
+    scaffold_names = list(scaffolds.keys())
 
-    seen = {Chem.MolToSmiles(base)}
     analogs = []
+    counts_by_scaffold = {name: 0 for name in scaffold_names}
     attempts = 0
     max_attempts = N_ANALOGS * 200
     start = time.time()
 
     while len(analogs) < N_ANALOGS and attempts < max_attempts:
         attempts += 1
+        scaffold_name = random.choice(scaffold_names)
+        base, sites = scaffolds[scaffold_name]
         n_subs = random.choice([1, 1, 2])  # mostly single substitution, sometimes two
         chosen_sites = random.sample(sites, k=min(n_subs, len(sites)))
         chosen = {site: random.choice(list(SUBSTITUENTS.items())) for site in chosen_sites}
@@ -117,19 +144,23 @@ def main():
             continue
         seen.add(smiles)
         analogs.append(smiles)
+        counts_by_scaffold[scaffold_name] += 1
         if len(analogs) % 50 == 0:
             print(f"  ... {len(analogs)}/{N_ANALOGS} analogs generated "
                   f"({attempts} attempts, {time.time() - start:.0f}s elapsed)")
 
     if len(analogs) < N_ANALOGS:
         print(f"WARNING: only found {len(analogs)}/{N_ANALOGS} unique valid analogs "
-              f"after {attempts} attempts.")
+              f"after {attempts} attempts (this is the full reachable space for the "
+              "current scaffolds/substituent library, not an early stop).")
 
     with open(OUTPUT_CSV, "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerows([[s] for s in analogs])
 
     print(f"Generated {len(analogs)} valid, unique analog SMILES ({attempts} attempts)")
+    for name, count in counts_by_scaffold.items():
+        print(f"  {name}: {count}")
     print(f"Wrote {OUTPUT_CSV}")
     total = time.time() - SCRIPT_START_TIME
     print(f"Total script runtime: {total:.0f}s ({total / 60:.1f} min)")

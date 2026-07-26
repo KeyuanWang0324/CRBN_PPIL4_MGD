@@ -7,25 +7,32 @@ Random Forest. Steps 2-3 extend it: pool ChEMBL CRBN single-protein and
 CRBN/neosubstrate ternary-complex bioactivity data (CyclinK, BCL2, HDAC4),
 dedupe by compound, and train a Random Forest to predict CRBN-glue-
 competent chemotype -- a pre-filter for candidate PPIL4-targeting MGD
-warheads. Step 4 combines that classifier with PPIL4 docking into a
-composite MGD-likelihood scorer. See each step's docstring for caveats:
-this predicts CRBN-glue chemistry plausibility, not confirmed PPIL4
-degradation (no such data exists publicly yet).
+warheads. Step 4 applies that classifier to score candidate SMILES by
+P(CRBN-glue) alone. See each step's docstring for caveats: this predicts
+CRBN-glue chemistry plausibility, not confirmed PPIL4 degradation.
 
 Setup (install once):
-    pip install rdkit scikit-learn vina meeko gemmi biopython
+    pip install rdkit scikit-learn biopython
 
 Running this script top to bottom re-runs every step, including the
-ChEMBL pulls and PPIL4 docking -- which is slow and pulls fresh data.
-Steps 1-3 also overwrite the .npy/.png outputs already checked into this
-directory. If you only want to score candidate SMILES against the
-existing trained classifier + receptor, comment out the Step 1-3
-`if __name__ == "__main__":` blocks below and just run Step 4.
+ChEMBL pulls -- which is slow and pulls fresh data. Steps 1-3 also
+overwrite the .npy/.png outputs already checked into this directory. If
+you only want to score candidate SMILES against the existing trained
+classifier, comment out the Step 1-3 `if __name__ == "__main__":` blocks
+below and just run Step 4.
+
+NOTE: PPIL4 docking used to happen here too (Vina, against the CypA-
+homology pocket), combined with P(CRBN-glue) into an "mgd_composite_score".
+That's been removed -- 04_vina_dock_candidates_(Ryan).py already docks
+every candidate that reaches it against both CRBN and PPIL4 (with full
+multi-pose data, needed for its CRBN/PPIL4 pose-compatibility check), so
+docking PPIL4 again here was redundant work producing a lower-fidelity,
+single-pose number. This step now only computes the cheap classifier-based
+P(CRBN-glue) pre-filter that 04 uses (alongside its own binder classifier)
+to narrow the full candidate pool before any real docking happens.
 """
 
 import argparse
-import contextlib
-import math
 import os
 import sys
 import time
@@ -46,7 +53,7 @@ def _has_required_packages():
 
 
 # This script needs requests/matplotlib, which are missing from the
-# .venv-haddock3 venv used by 05/07. If they're missing -- e.g. the wrong
+# .venv-haddock3 venv used by 05/06/08. If they're missing -- e.g. the wrong
 # venv is active, or the IDE's Run button used a different interpreter --
 # relaunch under the system python automatically instead of failing deep
 # inside an import. The sys.executable check guards against looping if the
@@ -406,10 +413,14 @@ Why this, and not a direct "PPIL4 degrader" model
 ---------------------------------------------------
 ChEMBL has essentially no PPIL4 bioactivity data usable for ML: as of this
 pull, PPIL4 (CHEMBL5725153) has only 6 activity records, all from a single
-compound (Molibresib) in a chemoproteomic dose-response panel. There is no
-known CRBN-PPIL4 molecular glue in any public database -- that's exactly
-the novel hypothesis this project is testing, so by definition no training
-data for "degrades PPIL4" can exist yet.
+compound (Molibresib) in a chemoproteomic dose-response panel. ChEMBL
+itself still has no CRBN-PPIL4 glue data to query for -- but two confirmed
+CRBN-PPIL4 glues are now known from outside ChEMBL (PDB 9DWV's bound
+ligand, and a manually-curated compound below), so "no public CRBN-PPIL4
+data at all" is no longer literally true; there's just not enough of it
+yet to build a target-specific classifier from ChEMBL alone. KNOWN_CRBN_
+PPIL4_GLUES below forces the ones we do have into this pooled dataset as
+unambiguous positives.
 
 What *does* exist: ChEMBL curates several CRBN/neosubstrate ternary-complex
 targets (CRBN-CyclinK, CRBN-BCL2, CRBN-HDAC4, ...) in addition to the plain
@@ -457,6 +468,16 @@ TARGET_IDS = {
     "CHEMBL4296102": "CRBN / Casein kinase I alpha (glue ternary complex)",
     "CHEMBL4296127": "CRBN / HDAC4 (glue ternary complex)",
 }
+
+# Confirmed CRBN-PPIL4 molecular glue degraders -- not in ChEMBL (see
+# docstring above), so forced into the pooled dataset here as unambiguous
+# positives instead of coming from fetch_all_activities().
+KNOWN_CRBN_PPIL4_GLUES = [
+    # Isoindolinone-glutarimide core (lenalidomide-family) with a
+    # phenyl-piperazine cap -- also used as scaffold #2 in
+    # 01_generate_thalidomide_analogs_(Ryan).py.
+    "O=C1CCC(C(N1)=O)N2CC3=C(C2=O)C=CC=C3C4=CC=C(C=C4)N5CCNCC5",
+]
 
 
 def fetch_all_activities(target_chembl_id, batch_size=1000):
@@ -566,6 +587,11 @@ def build_dataset():
             label_votes[smiles].append(label)
             kept += 1
         print(f"  {kept} labelable records")
+
+    for smiles in KNOWN_CRBN_PPIL4_GLUES:
+        label_votes[smiles].append(1)
+    print(f"Added {len(KNOWN_CRBN_PPIL4_GLUES)} manually-curated confirmed "
+          "CRBN-PPIL4 glue(s) as positives")
 
     print(f"\nUnique compounds across all targets: {len(label_votes)}")
 
@@ -758,26 +784,7 @@ if __name__ == "__main__":
 
 
 # =============================================================================
-# Step 4: PPIL4 Docking + CRBN-PPIL4 MGD Composite Scorer
-#
-# Setup notes (install once):
-#     pip install vina meeko gemmi rdkit biopython
-#     brew install boost   (vina's compiled dependency)
-#
-# Local (macOS): Vina has no macOS wheel on PyPI, so it builds from source
-# and needs Boost + SWIG. Homebrew's current Boost (1.90) also needs a
-# newer C++ standard than Vina's setup.py hardcodes:
-#     brew install boost swig
-#     # patch vina's sdist: change "-std=c++11" -> "-std=c++17" in setup.py
-#     # (pip install vina alone will fail on this machine's Boost otherwise)
-#     CONDA_DEFAULT_ENV=x CONDA_PREFIX=/opt/homebrew pip3 install vina
-# The CONDA_* env vars aren't about conda -- vina's setup.py only searches
-# conda-env paths, /usr/local/include, or /usr/include for Boost, and Apple
-# Silicon Homebrew lives at /opt/homebrew, so this fakes a "conda env" to
-# point it there without needing sudo/symlinks into /usr/local.
-#
-# Colab (Linux x86_64): none of the above is needed -- Vina ships a
-# prebuilt manylinux wheel there, so a plain `pip install vina` just works.
+# Step 4: CRBN-Glue Chemotype Scorer
 #
 # Running this section with no changes prompts you to type in SMILES one at
 # a time (blank line to finish) -- see the bottom of this file. Pass
@@ -786,167 +793,34 @@ if __name__ == "__main__":
 # =============================================================================
 
 """
-CRBN-PPIL4 Molecular-Glue-Degrader (MGD) Composite Scorer
+CRBN-Glue Chemotype Scorer
 =============================================================
-Combines two independent scores into one "MGD likelihood" ranking for
-candidate small molecules:
+Applies the Random Forest trained in Step 3 above (pooled ChEMBL CRBN /
+CRBN-neosubstrate bioactivity data, ligand fingerprint only) to score
+candidate SMILES by P(CRBN-glue) -- the probability a molecule has known
+CRBN-glue-competent chemistry.
 
-  1. CRBN-glue chemotype probability -- from the Random Forest trained in
-     Step 3 above on pooled ChEMBL CRBN / CRBN-neosubstrate bioactivity
-     data (ligand fingerprint only).
-
-  2. PPIL4 catalytic-pocket docking score -- AutoDock Vina docking against
-     the PPIL4 AlphaFold model (Q8WUA2), restricted to the isomerase
-     catalytic domain. No PPIL4-bound ligand structure exists, so the
-     docking box is centered on the pocket homology-mapped from human
-     Cyclophilin A (CypA/PPIA, P62937) -- CypA's well-characterized
-     proline-binding active site (Arg55, Phe60, Met61, Gln63, Gly72,
-     Ala101, Asn102, Ala103, Gln111, Phe113, Trp121, Leu122, His126)
-     aligned onto PPIL4's PPIase domain (residues 1-180; the rest of the
-     492-residue AlphaFold model is a low-confidence disordered RS/SR-rich
-     tail per-residue pLDDT and is excluded from docking).
-
-Composite score = P(CRBN-glue) * P(PPIL4-bind), i.e. independence between
-the two events. This is a simplifying assumption, not a validated joint
-model -- no CRBN-PPIL4 ternary complex has ever been observed, so there is
-no data to fit real covariance between the two terms. Treat the composite
-score as a RANKING heuristic to prioritize candidates for synthesis /
-wet-lab testing, not as a calibrated probability.
+This used to also dock each candidate against PPIL4 (AutoDock Vina) and
+combine the two into an "mgd_composite_score" -- removed, see the module
+docstring's NOTE above for why. P(CRBN-glue) alone is what 04 now uses
+(alongside its own binder classifier) for the early candidate-pool cut,
+before 05 does real CRBN+PPIL4 docking on the survivors.
 
 Usage:
-    python3 "03_mgd_ppil4_crbn_pipeline_(Ryan).py"                        # type SMILES in interactively
-    python3 "03_mgd_ppil4_crbn_pipeline_(Ryan).py" --sanity-check          # known CRBN glues (pipeline check)
-    python3 "03_mgd_ppil4_crbn_pipeline_(Ryan).py" --smiles-file cands.txt # batch mode, one "SMILES,Name" per line
+    python3 "02_CRBN_binder_test(Ryan).py"                        # type SMILES in interactively
+    python3 "02_CRBN_binder_test(Ryan).py" --sanity-check          # known CRBN glues (pipeline check)
+    python3 "02_CRBN_binder_test(Ryan).py" --smiles-file cands.txt # batch mode, one "SMILES,Name" per line
 """
 
 warnings.filterwarnings("ignore")
 
-
-@contextlib.contextmanager
-def _suppress_native_stderr():
-    """Vina's C++ core writes some warnings (e.g. 'At low exhaustiveness...')
-    straight to the OS-level stderr (real fd 2), bypassing verbosity=0 and
-    Python's own `warnings` module -- silence them at the file-descriptor
-    level, only around the native call, so real Python exceptions still
-    surface normally.
-    """
-    try:
-        saved_fd = os.dup(2)
-        devnull_fd = os.open(os.devnull, os.O_WRONLY)
-    except OSError:
-        yield
-        return
-    try:
-        os.dup2(devnull_fd, 2)
-        yield
-    finally:
-        os.dup2(saved_fd, 2)
-        os.close(devnull_fd)
-        os.close(saved_fd)
-
-
 from rdkit.Chem import rdFingerprintGenerator
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-RECEPTOR_PDBQT = os.path.join(SCRIPT_DIR, "PPIL4_receptor_(Ryan).pdbqt")
-
-# Docking box: centroid of PPIL4 catalytic-pocket residues homology-mapped
-# from human CypA's active site (see build_ppil4_receptor() below for how
-# this was derived). Precomputed once; re-derive if the receptor is rebuilt.
-BOX_CENTER = (-2.050, 4.508, -19.059)
-BOX_SIZE = (26.3, 31.6, 28.0)
 
 # CRBN-glue RF classifier fingerprint settings (must match Steps 2/3 above)
 FINGERPRINT_BITS = 2048
 FINGERPRINT_RADIUS = 2
-
-# Affinity->probability transform: docking affinities (kcal/mol, more
-# negative = tighter binding) are mapped to a pseudo-probability with a
-# logistic centered at AFFINITY_MIDPOINT (a "borderline binder" cutoff),
-# with AFFINITY_SCALE controlling how sharply probability changes with
-# affinity. These are heuristic choices, not fit to PPIL4 data (none
-# exists) -- calibrate against real assay results once available.
-AFFINITY_MIDPOINT = -6.5   # kcal/mol; roughly a low-micromolar cutoff
-AFFINITY_SCALE = 1.0
-
-
-def build_ppil4_receptor():
-    """
-    One-time setup: fetch the PPIL4 AlphaFold model, locate the catalytic
-    PPIase domain via per-residue pLDDT, homology-map CypA's active site
-    onto it, and prepare a receptor PDBQT with a docking box centered on
-    that pocket. Already run once (outputs cached in this directory) --
-    this function documents/reproduces how PPIL4_receptor.pdbqt was made.
-    """
-    import subprocess
-    import urllib.request
-    from Bio import Align
-    from Bio.Align import substitution_matrices
-
-    pdb_path = os.path.join(SCRIPT_DIR, "PPIL4_alphafold_(Ryan).pdb")
-    if not os.path.exists(pdb_path):
-        urllib.request.urlretrieve(
-            "https://alphafold.ebi.ac.uk/files/AF-Q8WUA2-F1-model_v6.pdb", pdb_path
-        )
-
-    cypa = ("MVNPTVFFDIAVDGEPLGRVSFELFADKVPKTAENFRALSTGEKGFGYKGSCFHRIIPGF"
-            "MCQGGDFTRHNGTGGKSIYGEKFEDENFILKHTGPGILSMANAGPNTNGSQFFICTAKTE"
-            "WLDGKHVVFGKVKEGMNIVEAMERFGSRNGKTSKKITIADCGQLE")
-    ppil4_full = ("MAVLLETTLGDVVIDLYTEERPRACLNFLKLCKIKYYNYCLIHNVQRDFIIQTGDPTGTGRGGESIFGQLYGDQASFF"
-                  "EAEKVPRIKHKKKGTVSMVNNGSDQHGSQFLITTGENLDYLDGVHTVFGEVTEGMDIIKKINETFVDKDFVPYQDIRI"
-                  "NHTVILDDPFDDPPDLLIPDRSPEPTREQLDSGRIGADEEIDDFKGRSAEEVEEIKAEKEAKTQAILLEMVGDLPDAD"
-                  "IKPPENVLFVCKLNPVTTDEDLEIIFSRFGPIRSCEVIRDWKTGESLCYAFIEFEKEEDCEKAFFKMDNVLIDDRRIH"
-                  "VDFSQSVAKVKWKGKGGKYTKSDFKEYEKEQDKPPNLVLKDKVKPKQDTKYDLILDEQAEDSKSSHSHTSKKHKKKTH"
-                  "HCSEEKEDEDYMPIKNTNQDIYREMGFGHYEEEESCWEKQKSEKRDRTQNRSRSRSRERDGHYSNSHKSKYQTDLYER"
-                  "ERSKKRDRSRSPKKSKDKEKSKYR")
-    ppil4_domain = ppil4_full[:180]
-
-    aligner = Align.PairwiseAligner()
-    aligner.substitution_matrix = substitution_matrices.load("BLOSUM62")
-    aligner.open_gap_score = -11
-    aligner.extend_gap_score = -1
-    aligner.mode = "global"
-    aln = aligner.align(cypa, ppil4_domain)[0]
-
-    active_site_cypa = [55, 60, 61, 63, 72, 101, 102, 103, 111, 113, 121, 122, 126]
-    aligned_cypa, aligned_ppil4 = aln[0], aln[1]
-    cypa_pos = ppil4_pos = 0
-    mapping = {}
-    for c, p in zip(aligned_cypa, aligned_ppil4):
-        if c != "-":
-            cypa_pos += 1
-        if p != "-":
-            ppil4_pos += 1
-        if c != "-" and p != "-":
-            mapping[cypa_pos] = ppil4_pos
-
-    pocket_residues = [mapping[r] for r in active_site_cypa if r in mapping]
-
-    coords = {}
-    with open(pdb_path) as f:
-        for line in f:
-            if line.startswith("ATOM") and line[12:16].strip() == "CA":
-                resnum = int(line[22:26])
-                if resnum in pocket_residues:
-                    coords[resnum] = (float(line[30:38]), float(line[38:46]), float(line[46:54]))
-
-    xs, ys, zs = zip(*coords.values())
-    cx, cy, cz = sum(xs) / len(xs), sum(ys) / len(ys), sum(zs) / len(zs)
-    size_x = max(max(xs) - min(xs) + 14, 20)
-    size_y = max(max(ys) - min(ys) + 14, 20)
-    size_z = max(max(zs) - min(zs) + 14, 20)
-
-    print(f"Pocket residues (PPIL4 numbering): {sorted(pocket_residues)}")
-    print(f"Box center: ({cx:.3f}, {cy:.3f}, {cz:.3f}), size: ({size_x:.1f}, {size_y:.1f}, {size_z:.1f})")
-
-    receptor_base = os.path.join(SCRIPT_DIR, "PPIL4_receptor_(Ryan)")
-    subprocess.run(
-        ["mk_prepare_receptor.py", "--read_pdb", pdb_path, "-o", receptor_base, "-p", "-v",
-         "--box_center", str(cx), str(cy), str(cz),
-         "--box_size", str(size_x), str(size_y), str(size_z)],
-        check=True,
-    )
-    return (cx, cy, cz), (size_x, size_y, size_z)
 
 
 def smiles_to_fingerprint(smiles, n_bits=FINGERPRINT_BITS, radius=FINGERPRINT_RADIUS):
@@ -957,57 +831,17 @@ def smiles_to_fingerprint(smiles, n_bits=FINGERPRINT_BITS, radius=FINGERPRINT_RA
     return generator.GetFingerprintAsNumPy(mol).astype(int)
 
 
-def smiles_to_ligand_pdbqt(smiles, out_path):
-    """Embed a 3D conformer for the SMILES and write a Vina-ready ligand PDBQT."""
-    from meeko import MoleculePreparation, PDBQTWriterLegacy
-
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False
-    mol = Chem.AddHs(mol)
-    if AllChem.EmbedMolecule(mol, randomSeed=42) != 0:
-        return False
-    AllChem.MMFFOptimizeMolecule(mol)
-
-    preparator = MoleculePreparation()
-    mol_setups = preparator.prepare(mol)
-    pdbqt_string = PDBQTWriterLegacy.write_string(mol_setups[0])[0]
-    with open(out_path, "w") as f:
-        f.write(pdbqt_string)
-    return True
-
-
-def dock_ligand(ligand_pdbqt_path, exhaustiveness=8):
-    """Run AutoDock Vina and return the best (most negative) binding affinity in kcal/mol."""
-    from vina import Vina
-
-    v = Vina(sf_name="vina", verbosity=0)
-    v.set_receptor(RECEPTOR_PDBQT)
-    v.set_ligand_from_file(ligand_pdbqt_path)
-    v.compute_vina_maps(center=list(BOX_CENTER), box_size=list(BOX_SIZE))
-    with _suppress_native_stderr():
-        v.dock(exhaustiveness=exhaustiveness, n_poses=10)
-    energies = v.energies(n_poses=1)
-    return float(energies[0][0])
-
-
-def affinity_to_probability(affinity_kcal_mol):
-    """Logistic transform: more negative affinity -> higher P(PPIL4-bind)."""
-    return 1.0 / (1.0 + math.exp((affinity_kcal_mol - AFFINITY_MIDPOINT) / AFFINITY_SCALE))
-
-
-def score_candidates(candidates, crbn_glue_clf, tmp_dir):
+def score_candidates(candidates, crbn_glue_clf):
     """
     candidates: list of (name, smiles)
-    Returns list of dicts with per-candidate scores.
+    Returns list of dicts with per-candidate P(CRBN-glue) scores.
     """
-    os.makedirs(tmp_dir, exist_ok=True)
     results = []
     start = time.time()
     for i, (name, smiles) in enumerate(candidates, 1):
         elapsed = time.time() - start
         eta = (elapsed / (i - 1)) * (len(candidates) - i + 1) if i > 1 else 0
-        print(f"[{i}/{len(candidates)}] Docking {name} ... "
+        print(f"[{i}/{len(candidates)}] Scoring {name} ... "
               f"({elapsed:.0f}s in this step, ~{eta:.0f}s remaining | "
               f"{time.time() - SCRIPT_START_TIME:.0f}s total script time)")
         row = {"name": name, "smiles": smiles}
@@ -1019,23 +853,12 @@ def score_candidates(candidates, crbn_glue_clf, tmp_dir):
             continue
         row["p_crbn_glue"] = float(crbn_glue_clf.predict_proba(fp.reshape(1, -1))[:, 1][0])
 
-        ligand_path = os.path.join(tmp_dir, f"{name.replace(' ', '_')}.pdbqt")
-        try:
-            if not smiles_to_ligand_pdbqt(smiles, ligand_path):
-                raise ValueError("3D embedding / ligand prep failed")
-            affinity = dock_ligand(ligand_path)
-            row["ppil4_affinity_kcal_mol"] = affinity
-            row["p_ppil4_bind"] = affinity_to_probability(affinity)
-            row["mgd_composite_score"] = row["p_crbn_glue"] * row["p_ppil4_bind"]
-        except Exception as exc:
-            row["error"] = f"docking failed: {exc}"
-
         results.append(row)
     return results
 
 
-# Known CRBN glues (should score high on CRBN-glue; PPIL4 docking score is
-# uninformative for these -- included only as a pipeline sanity check).
+# Known CRBN glues (should score high on P(CRBN-glue) -- included only as
+# a pipeline sanity check).
 SANITY_CHECK_CANDIDATES = [
     ("Thalidomide", "O=C1CCC(N2C(=O)c3ccccc3C2=O)C(=O)N1"),
     ("Lenalidomide", "NC1=CC=CC2=C1C(=O)N(C1CCC(=O)NC1=O)C2"),
@@ -1061,21 +884,18 @@ def get_manual_candidates():
 def print_results_table(results):
     ok = [r for r in results if "error" not in r]
     failed = [r for r in results if "error" in r]
-    ok.sort(key=lambda r: r["mgd_composite_score"], reverse=True)
+    ok.sort(key=lambda r: r["p_crbn_glue"], reverse=True)
 
     name_w = max([len(r["name"]) for r in results] + [4])
-    header = (f"  {'Rank':<4} {'Name':<{name_w}} {'P(CRBN-glue)':>12} "
-              f"{'PPIL4 kcal/mol':>15} {'P(PPIL4-bind)':>13} {'Composite':>10}")
+    header = f"  {'Rank':<4} {'Name':<{name_w}} {'P(CRBN-glue)':>12}"
 
     print("\n" + "=" * len(header))
-    print("MGD Composite Scores (CRBN-glue x PPIL4-dock), best first")
+    print("P(CRBN-glue) Scores, best first")
     print("=" * len(header))
     print(header)
     print("  " + "-" * (len(header) - 2))
     for i, r in enumerate(ok, 1):
-        print(f"  {i:<4} {r['name']:<{name_w}} {r['p_crbn_glue']:>12.3f} "
-              f"{r['ppil4_affinity_kcal_mol']:>15.2f} {r['p_ppil4_bind']:>13.3f} "
-              f"{r['mgd_composite_score']:>10.3f}")
+        print(f"  {i:<4} {r['name']:<{name_w}} {r['p_crbn_glue']:>12.3f}")
 
     if failed:
         print("\n  Failed:")
@@ -1085,7 +905,7 @@ def print_results_table(results):
 
 
 DEFAULT_CANDIDATES_CSV = os.path.join(SCRIPT_DIR, "01_generated_analogs_(Ryan).csv")
-RESULTS_CSV = os.path.join(SCRIPT_DIR, "03_mgd_scores_for_04_(Ryan).csv")
+RESULTS_CSV = os.path.join(SCRIPT_DIR, "02_crbn_glue_scores_for_03_(Ryan).csv")
 
 
 def read_candidates_file(path):
@@ -1105,8 +925,7 @@ def read_candidates_file(path):
 
 def write_results_csv(results, path):
     import csv
-    fieldnames = ["name", "smiles", "p_crbn_glue", "ppil4_affinity_kcal_mol", "p_ppil4_bind",
-                  "mgd_composite_score", "error"]
+    fieldnames = ["name", "smiles", "p_crbn_glue", "error"]
     with open(path, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
@@ -1121,15 +940,9 @@ if __name__ == "__main__":
                                                f"defaults to 01_generated_analogs_(Ryan).csv if present in {SCRIPT_DIR}")
     parser.add_argument("--sanity-check", action="store_true",
                          help="Score known CRBN glues (thalidomide/lenalidomide/pomalidomide) instead of prompting")
-    parser.add_argument("--rebuild-receptor", action="store_true",
-                         help="Re-fetch PPIL4 structure and rebuild the receptor PDBQT/box")
     args = parser.parse_args()
 
-    if args.rebuild_receptor or not os.path.exists(RECEPTOR_PDBQT):
-        build_ppil4_receptor()
-
-    # Refit of RF #2 (the CRBN-glue chemotype classifier from Step 3 above) --
-    # this is the P(CRBN-glue) half of the composite score below.
+    # Refit of RF #2, the CRBN-glue chemotype classifier from Step 3 above.
     X = np.load(os.path.join(SCRIPT_DIR, "X_crbn_glue_fingerprints_(Ryan).npy"))
     Y = np.load(os.path.join(SCRIPT_DIR, "Y_crbn_glue_labels_(Ryan).npy"))
     crbn_glue_clf = RandomForestClassifier(n_estimators=200, random_state=42, n_jobs=-1, class_weight="balanced")
@@ -1154,7 +967,7 @@ if __name__ == "__main__":
         print("No SMILES entered -- nothing to score.")
     else:
         print(f"Scoring {len(candidates)} candidates...")
-        results = score_candidates(candidates, crbn_glue_clf, tmp_dir=os.path.join(SCRIPT_DIR, "docking_tmp"))
+        results = score_candidates(candidates, crbn_glue_clf)
         print_results_table(results)
         write_results_csv(results, RESULTS_CSV)
 

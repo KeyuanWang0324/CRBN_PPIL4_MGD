@@ -1,6 +1,6 @@
 """
 EXPERIMENTAL: HADDOCK3 3-body ternary docking that includes the actual drug
-molecule -- unlike 05/07/08 (which only ever dock CRBN against PPIL4, using
+molecule -- unlike 05/06 (which only ever dock CRBN against PPIL4, using
 the candidate's Vina-derived contact residues as a proxy and discarding the
 ligand's own atoms), this script docks THREE separate bodies together:
 CRBN (chain A), the candidate ligand itself (chain C), and PPIL4 (chain B).
@@ -9,12 +9,12 @@ its actual geometry/chemistry can influence whether/how the ternary complex
 comes together -- not just a residue-list hint.
 
 This closes the "drug-CRBN interaction" and "drug-PPIL4 interaction" gaps
-discussed for 07/08 (see conversation). It does NOT address the third gap
+discussed for 05/06 (see conversation). It does NOT address the third gap
 (ligand-induced conformational change) beyond whatever local flexibility
 flexref/emref already allow near the interface -- see this project's
 existing caveins on that.
 
-WHY THIS NEEDS ITS OWN SCRIPT (not just a flag on 08):
+WHY THIS NEEDS ITS OWN SCRIPT (not just a flag on 06):
 HADDOCK3's CNS engine needs a topology + force-field parameter file for any
 non-standard residue (the ligand), which Vina/meeko's PDBQT route doesn't
 produce. HADDOCK3 bundles PRODRG (haddock/prodrg/prodrg_<arch>) and can run
@@ -36,18 +36,18 @@ This imports a few non-public haddock.libs functions (PRODRG binary
 resolution, atom-name/NBONDS sanitization) rather than reimplementing them,
 so behavior stays exactly consistent with whatever HADDOCK3 version is
 installed -- but that does mean this script is more sensitive to a
-haddock3 upgrade than 05/07/08 (which only ever shell out to the stable
+haddock3 upgrade than 05/06 (which only ever shell out to the stable
 `haddock3`/`haddock3-restraints` CLIs).
 
 Validated with a 4-model smoke test (rigidbody -> caprieval -> seletop ->
 flexref -> caprieval -> emref -> caprieval -> clustfcc -> caprieval) on
 cand_5 before writing this: completed in 74s, top cluster n=3/4, dockq
-0.627. This script runs the same chain at 08's full scale (sampling=1000,
+0.627. This script runs the same chain at 06's full scale (sampling=1000,
 top 200 for flexref/emref).
 
 Run in the haddock3 venv:
     source .venv-haddock3/bin/activate
-    python3 "10_haddock3_ternary_with_ligand_(Ryan).py"
+    python3 "08_haddock3_ternary_with_ligand_(Ryan).py"
 """
 import csv
 import glob
@@ -74,11 +74,11 @@ if shutil.which("haddock3") is None:
 from haddock.libs.libutil import get_prodrg_exec
 
 VINA_OUT_DIR = os.path.join(SCRIPT_DIR, "docking_tmp", "haddock3_novel_candidate")
-TERNARY_SCORES_CSV = os.path.join(SCRIPT_DIR, "08_final_ternary_results_(Ryan).csv")
-RESULTS_CSV = os.path.join(SCRIPT_DIR, "10_final_ternary_with_ligand_results_(Ryan).csv")
+TERNARY_SCORES_CSV = os.path.join(SCRIPT_DIR, "06_final_ternary_results_(Ryan).csv")
+RESULTS_CSV = os.path.join(SCRIPT_DIR, "08_final_ternary_with_ligand_results_(Ryan).csv")
 
 # Set this to a specific candidate's name to run only that one. Leave blank
-# to auto-pick the best-dockq candidate from 08's results.
+# to auto-pick the best-dockq candidate from 06's results.
 CANDIDATE_NAME = ""
 
 CRBN_RECEPTOR_ONLY_PDB = os.path.join(SCRIPT_DIR, "CRBN_receptor_thalidomide_Ryan.pdb")
@@ -228,7 +228,7 @@ def pick_candidate_name():
     if CANDIDATE_NAME:
         return CANDIDATE_NAME
     if not os.path.exists(TERNARY_SCORES_CSV):
-        sys.exit(f"{TERNARY_SCORES_CSV} not found -- run 08 first, or set CANDIDATE_NAME directly.")
+        sys.exit(f"{TERNARY_SCORES_CSV} not found -- run 06 first, or set CANDIDATE_NAME directly.")
     with open(TERNARY_SCORES_CSV, newline="") as f:
         rows = [r for r in csv.DictReader(f) if r["dockq"] != "-"]
     if not rows:
@@ -240,11 +240,11 @@ def pick_candidate_name():
 
 
 def extract_ligand_pdb(candidate_name, out_path):
-    """Pull just the ligand (resn LIG, chain C) HETATM lines out of 06's
+    """Pull just the ligand (resn LIG, chain C) HETATM lines out of 04's
     CRBN+ligand complex into a standalone PDB."""
     complex_path = os.path.join(VINA_OUT_DIR, candidate_name, "CRBN_candidate_complex.pdb")
     if not os.path.exists(complex_path):
-        sys.exit(f"{complex_path} not found -- run 06 for this candidate first.")
+        sys.exit(f"{complex_path} not found -- run 04 for this candidate first.")
     with open(complex_path) as f:
         lig_lines = [l for l in f if l.startswith("HETATM") and l[17:20] == "LIG"]
     if not lig_lines:
@@ -342,7 +342,7 @@ def main():
     # --- PPIL4-side setup (candidate-independent) ---
     with open(PPIL4_PDB, "w") as out:
         run(["pdb_chain", "-B", PPIL4_SOURCE_PDB], stdout=out)
-    ppil4_active = [44, 49, 50, 52, 60, 97, 98, 99, 107, 109, 118, 119, 123]  # CypA-homology pocket, see 05/07/08
+    ppil4_active = [44, 49, 50, 52, 60, 97, 98, 99, 107, 109, 118, 119, 123]  # CypA-homology pocket, see 05/06
     ppil4_active_csv = ",".join(str(r) for r in ppil4_active)
     ppil4_passive_out = subprocess.run(
         ["haddock3-restraints", "passive_from_active", PPIL4_PDB, ppil4_active_csv, "-c", "B"],
@@ -352,7 +352,7 @@ def main():
     ppil4_actpass = os.path.join(candidate_run_dir, "ppil4_actpass.txt")
     write_actpass_file(ppil4_active, ppil4_passive, ppil4_actpass)
 
-    # --- CRBN-side setup (from 06's Vina contact residues) ---
+    # --- CRBN-side setup (from 04's Vina contact residues) ---
     contacts_path = os.path.join(VINA_OUT_DIR, candidate_name, "crbn_contacts.txt")
     if not os.path.exists(contacts_path):
         sys.exit(f"{contacts_path} not found -- run 06 for this candidate first.")
@@ -443,7 +443,7 @@ ligand_param_fname = "{ligand_param}"
     if os.path.exists(haddock_run_dir):
         shutil.rmtree(haddock_run_dir)
     print(f"[{candidate_name}] starting HADDOCK3 3-body (CRBN+ligand+PPIL4) run "
-          f"(rough estimate: 45 min - 1.5 hr, similar to 08)")
+          f"(rough estimate: 45 min - 1.5 hr, similar to 06)")
     run_with_heartbeat(["haddock3", cfg_path], run_dir=haddock_run_dir, step_plan=STEP_PLAN, label=candidate_name)
 
     print_capri_summary(haddock_run_dir)

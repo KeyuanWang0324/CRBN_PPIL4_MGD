@@ -684,3 +684,4 @@ COc1ccn2cc(C(=O)Nc3ccc4c(c3)CN(C3CCC(=O)NC3=O)C4=O)nc2c1
 O=C1CCC(N2Cc3cc(NC(=O)c4cn5ccc(F)cc5n4)ccc3C2=O)C(=O)N1
 COc1cccn2cc(C(=O)Nc3ccc4c(c3)CN(C3CCC(=O)NC3=O)C4=O)nc12
 O=C1CCC(N2Cc3cc(NC(=O)c4cn5cccc(C(F)(F)F)c5n4)ccc3C2=O)C(=O)N1
+O=C1CCC(C(N1)=O)N2CC3=C(C2=O)C=CC=C3C4=CC=C(C=C4)N5CCNCC5

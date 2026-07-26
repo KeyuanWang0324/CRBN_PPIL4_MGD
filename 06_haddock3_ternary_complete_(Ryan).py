@@ -2,25 +2,26 @@
 COMPLETE HADDOCK3 ternary-docking routine (full sampling + emref + clustfcc)
 for the top-ranked CRBN-glue candidates vs PPIL4.
 
-06_vina_dock_candidates_(Ryan).py and 07_haddock3_ternary_novel_candidate_(Ryan).py
+04_vina_dock_candidates_(Ryan).py and 05_haddock3_ternary_novel_candidate_(Ryan).py
 run a cheap, truncated HADDOCK3 config (rigidbody sampling=20, flexref on the
 top 10, no emref, no clustering) to rank many candidates quickly. This script
 runs the COMPLETE stock HADDOCK3 protein-protein routine instead -- rigidbody
 sampling=1000, flexref + emref refinement on the top 200, then clustfcc
-clustering -- on the top TOP_FRACTION of 07's dockq-ranked comparison
-table, one after another. Set CANDIDATE_NAME to run a single specific
-candidate instead.
+clustering -- on the top TOP_N of 05's dockq-ranked comparison table, one
+after another, then keeps only the best TOP_N_KEEP of those by 06's own
+(deeper) dockq. Set CANDIDATE_NAME to run a single specific candidate
+instead.
 
-This is far more expensive than 06/07 (rough estimate: 45 min - 1.5 hr per
-candidate on an 18-core machine, vs. ~3 min for 07's lite pass) -- this is
-the stage meant to do the pipeline's final narrowing (07 hands it a wider
-shortlist; this keeps only the top TOP_FRACTION of it). Use RANK_START to
-resume/batch a subset of that top fraction across multiple runs instead of
-running all of it in one sitting.
+This is far more expensive than 04/05 (rough estimate: 45 min - 1.5 hr per
+candidate on an 18-core machine, vs. ~3 min for 05's lite pass) -- this is
+the stage meant to do the pipeline's final narrowing (05 hands it a wider
+shortlist; this runs all TOP_N of it, then keeps only the best TOP_N_KEEP).
+Use RANK_START to resume/batch a subset of that top-TOP_N window across
+multiple runs instead of running all of it in one sitting.
 
 Run in the haddock3 venv:
     source .venv-haddock3/bin/activate
-    python3 "08_haddock3_ternary_complete_(Ryan).py"
+    python3 "06_haddock3_ternary_complete_(Ryan).py"
 """
 import csv
 import glob
@@ -53,33 +54,45 @@ from Bio.Align import substitution_matrices
 VINA_OUT_DIR = os.path.join(SCRIPT_DIR, "docking_tmp", "haddock3_novel_candidate")
 # Used only for the crbn_contacts.txt each candidate's restraints are built
 # from -- not for auto-picking candidates, see pick_candidate_names() below.
-VINA_SCREENING_CSV = os.path.join(SCRIPT_DIR, "06_vina_screening_scores_for_07_(Ryan).csv")
-# 07's ranked output (best dockq first) -- the primary source for auto-
+VINA_SCREENING_CSV = os.path.join(SCRIPT_DIR, "04_vina_screening_scores_for_05_(Ryan).csv")
+# 05's ranked output (best dockq first) -- the primary source for auto-
 # picking a finalist when CANDIDATE_NAME is left blank.
-TERNARY_SCORES_CSV = os.path.join(SCRIPT_DIR, "07_ternary_docking_scores_for_08_(Ryan).csv")
-# This script's own output -- the finalist's final CAPRI cluster results.
-# Terminal file (nothing downstream reads it), so no "_for_XX" suffix.
-RESULTS_CSV = os.path.join(SCRIPT_DIR, "08_final_ternary_results_(Ryan).csv")
+TERNARY_SCORES_CSV = os.path.join(SCRIPT_DIR, "05_ternary_docking_scores_for_06_(Ryan).csv")
+# This script's own running ledger -- every candidate attempted so far (up to
+# TOP_N), win or lose. Kept as a full history (not trimmed to TOP_N_KEEP) so
+# a resumed/batched run (see RANK_START) never re-runs a 45 min - 1.5 hr
+# candidate it already has a result for. Terminal file for resume purposes,
+# so no "_for_XX" suffix -- FINALISTS_CSV below is the actual deliverable.
+RESULTS_CSV = os.path.join(SCRIPT_DIR, "06_complete_run_progress_(Ryan).csv")
+# The pipeline's actual final output -- the best TOP_N_KEEP of RESULTS_CSV
+# by 06's own dockq, written once all TOP_N candidates have a result.
+FINALISTS_CSV = os.path.join(SCRIPT_DIR, "06_final_ternary_results_(Ryan).csv")
 
-# Set this to a specific candidate's name from 07's comparison table to run
-# only that one (bypasses TOP_FRACTION/RANK_START entirely). Leave blank to
-# auto-pick the top TOP_FRACTION of candidates by dockq rank from
-# TERNARY_SCORES_CSV instead (falling back to 06's best combined_affinity if
-# 07 hasn't been run yet).
+# Set this to a specific candidate's name from 05's comparison table to run
+# only that one (bypasses TOP_N/RANK_START entirely). Leave blank to
+# auto-pick the top TOP_N candidates by dockq rank from TERNARY_SCORES_CSV
+# instead (falling back to 04's best combined_affinity if 05 hasn't been
+# run yet).
 CANDIDATE_NAME = ""
 
-# Fraction of 07's dockq-ranked candidates to auto-select for the complete
-# routine, when CANDIDATE_NAME is left blank -- e.g. 0.5 keeps the best
-# half of whatever 07 produced. This is the pipeline's final narrowing step
-# (01 -> 04 -> 06 -> 07 each keep progressively fewer candidates; this is
-# the last cut), so it's computed as a fraction of 07's actual output count
-# rather than a fixed number.
-TOP_FRACTION = 0.5
+# How many of 05's dockq-ranked candidates to run through the complete
+# routine (TOP_N), and how many of those to keep in the final output
+# (TOP_N_KEEP), when CANDIDATE_NAME is left blank. Fixed counts rather than
+# a fraction: 05's dockq column only takes ~20 distinct values across its
+# whole output (HADDOCK docks two fixed rigid receptor structures restrained
+# only by which CRBN contact residues a candidate's Vina pose happened to
+# hit -- the ligand itself isn't in the CNS topology -- so many candidates
+# tie exactly; see chat discussion). A TOP_FRACTION cut would land mid-tie
+# and be decided by arbitrary CSV row order instead of a real signal, so
+# ties are broken by combined_affinity (Vina) instead, see pick_candidate_
+# names() below.
+TOP_N = 30
+TOP_N_KEEP = 20
 
-# 1-indexed rank (within that top fraction) to start from -- lets you
+# 1-indexed rank (within that top TOP_N) to start from -- lets you
 # resume/batch across multiple runs (e.g. RANK_START=11 picks up after an
-# earlier run already covered ranks 1-10) instead of running the whole top
-# fraction in one sitting. Each candidate costs ~45 min - 1.5 hr.
+# earlier run already covered ranks 1-10) instead of running all TOP_N in
+# one sitting. Each candidate costs ~45 min - 1.5 hr.
 RANK_START = 1
 
 # CNS's "@@" include syntax truncates paths at "(" -- keep this filename
@@ -96,7 +109,7 @@ NCORES = max(1, (os.cpu_count() or 4) - 1)
 # (step index, module name, per-model count if it writes one *_N.pdb.gz file
 # per model else None, rough share of total wall-clock time) -- mirrors the
 # [modules] laid out in main()'s cfg below. Weights are from the estimate in
-# the 06/07-vs-08 comparison (rigidbody/flexref/emref dominate; the caprieval/
+# the 04/05-vs-06 comparison (rigidbody/flexref/emref dominate; the caprieval/
 # seletop/clustfcc/topoaa stages are comparatively instant) and are only used
 # to turn "which step is running" into one rough live percentage -- not a
 # precise timing model.
@@ -298,37 +311,47 @@ def print_capri_summary(haddock_run_dir):
 
 
 def pick_candidate_names():
+    """Returns (names_to_run_this_session, full_target_names) -- the second
+    is the whole top-TOP_N window regardless of RANK_START, used to tell
+    whether a finalists file can be written yet (only once every candidate
+    in that window has a result, not just this session's slice of it)."""
     if CANDIDATE_NAME:
-        return [CANDIDATE_NAME]
+        return [CANDIDATE_NAME], [CANDIDATE_NAME]
 
     if os.path.exists(TERNARY_SCORES_CSV):
         with open(TERNARY_SCORES_CSV, newline="") as f:
             rows = [r for r in csv.DictReader(f) if r["dockq"] != "-"]
         if rows:
-            rows.sort(key=lambda r: float(r["dockq"]), reverse=True)
-            rank_end = max(1, round(len(rows) * TOP_FRACTION))
-            names = [r["name"] for r in rows[RANK_START - 1:rank_end]]
+            # Tiebreak on combined_affinity (Vina) -- dockq is heavily tied
+            # (~20 distinct values across 05's whole output, see TOP_N's
+            # comment above), so without this a TOP_N cut through a tied
+            # group would be decided by arbitrary CSV row order.
+            rows.sort(key=lambda r: (-float(r["dockq"]), float(r["combined_affinity"])))
+            rank_end = min(len(rows), TOP_N)
+            full_names = [r["name"] for r in rows[:rank_end]]
+            names = full_names[RANK_START - 1:rank_end]
             print(f"CANDIDATE_NAME not set -- auto-selecting dockq ranks {RANK_START}-{rank_end} "
-                  f"(top {TOP_FRACTION:.0%} of {len(rows)}, {len(names)} candidate(s)) "
-                  f"from {TERNARY_SCORES_CSV}: {', '.join(names)}")
-            return names
-        print(f"{TERNARY_SCORES_CSV} has no usable dockq rows -- falling back to 06's screening scores.")
+                  f"(top {TOP_N} of {len(rows)}, {len(names)} candidate(s) this run, ties broken by "
+                  f"combined_affinity) from {TERNARY_SCORES_CSV}: {', '.join(names)}")
+            return names, full_names
+        print(f"{TERNARY_SCORES_CSV} has no usable dockq rows -- falling back to 04's screening scores.")
 
     if not os.path.exists(VINA_SCREENING_CSV):
         sys.exit(f"Neither {TERNARY_SCORES_CSV} nor {VINA_SCREENING_CSV} found -- "
-                  "run 06 (then 07) first, or set CANDIDATE_NAME directly.")
+                  "run 04 (then 05) first, or set CANDIDATE_NAME directly.")
     with open(VINA_SCREENING_CSV, newline="") as f:
         rows = list(csv.DictReader(f))
     if not rows:
-        sys.exit(f"No rows in {VINA_SCREENING_CSV} -- run 06 first, or set CANDIDATE_NAME directly.")
+        sys.exit(f"No rows in {VINA_SCREENING_CSV} -- run 04 first, or set CANDIDATE_NAME directly.")
     rows.sort(key=lambda r: float(r["combined_affinity"]))
-    rank_end = max(1, round(len(rows) * TOP_FRACTION))
-    names = [r["name"] for r in rows[RANK_START - 1:rank_end]]
+    rank_end = min(len(rows), TOP_N)
+    full_names = [r["name"] for r in rows[:rank_end]]
+    names = full_names[RANK_START - 1:rank_end]
     print(f"CANDIDATE_NAME not set -- auto-selecting combined_affinity ranks {RANK_START}-{rank_end} "
-          f"(top {TOP_FRACTION:.0%} of {len(rows)}, {len(names)} candidate(s)) from 06's screening "
-          "scores -- run 07 for a dockq-based pick instead. Set CANDIDATE_NAME explicitly to run a "
+          f"(top {TOP_N} of {len(rows)}, {len(names)} candidate(s) this run) from 04's screening "
+          "scores -- run 05 for a dockq-based pick instead. Set CANDIDATE_NAME explicitly to run a "
           "single specific candidate.")
-    return names
+    return names, full_names
 
 
 def load_existing_rows():
@@ -352,12 +375,12 @@ def load_existing_rows():
     return loaded
 
 
-def write_results_csv(all_rows):
+def write_results_csv(all_rows, path=RESULTS_CSV):
     """all_rows: list of (candidate_name, top_capri_row_or_None) pairs, one
     per candidate (its rank-1, best-score cluster -- not every cluster),
     accumulated as candidates finish. Written after every candidate so a
     later candidate's failure can't lose earlier candidates' results."""
-    with open(RESULTS_CSV, "w", newline="") as f:
+    with open(path, "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["name", "cluster_rank", "cluster_id", "n", "score", "dockq", "irmsd", "fnat", "lrmsd"])
         for candidate_name, r in all_rows:
@@ -366,7 +389,7 @@ def write_results_csv(all_rows):
             else:
                 writer.writerow([candidate_name, r["caprieval_rank"], r["cluster_id"], r["n"],
                                   r["score"], r["dockq"], r["irmsd"], r["fnat"], r["lrmsd"]])
-    print(f"Wrote {RESULTS_CSV}")
+    print(f"Wrote {path}")
 
 
 def run_candidate(candidate_name, ppil4_actpass, label):
@@ -386,8 +409,9 @@ def run_candidate(candidate_name, ppil4_actpass, label):
 
     crbn_active_csv = ",".join(str(r) for r in crbn_active)
     # Use the receptor-only PDB (no ligand atoms) for passive_from_active --
-    # the docked candidate isn't part of the CNS topology (see the
-    # simplification noted in 05_haddock3_ternary_test_(Ryan).py).
+    # the docked candidate isn't part of the CNS topology (a simplification;
+    # see 08_haddock3_ternary_with_ligand_(Ryan).py for the ligand-inclusive
+    # 3-body docking approach).
     crbn_passive_out = subprocess.run(
         ["haddock3-restraints", "passive_from_active", CRBN_RECEPTOR_ONLY_PDB, crbn_active_csv, "-c", "A"],
         check=True, capture_output=True, text=True,
@@ -457,9 +481,36 @@ ambig_fname = "{ambig_tbl}"
     return rows[0] if rows else None
 
 
+def write_finalists_if_ready(all_rows, full_target_names):
+    """FINALISTS_CSV (the pipeline's actual final output) is only meaningful
+    once every candidate in the full top-TOP_N window has a result -- a
+    partial batch (mid RANK_START resume) picking "best 20 of the 10 done
+    so far" would silently under-represent the real field. Writes and
+    returns True once that's the case; otherwise prints why not and returns
+    False."""
+    by_name = {name: r for name, r in all_rows}
+    missing = [n for n in full_target_names if n not in by_name]
+    if missing:
+        print(f"{len(missing)}/{len(full_target_names)} of the top {TOP_N} still need to be run before "
+              f"{FINALISTS_CSV} can be written: {', '.join(missing)}")
+        return False
+
+    finished = [(n, by_name[n]) for n in full_target_names if by_name[n] is not None]
+    failed = len(full_target_names) - len(finished)
+    if failed:
+        print(f"{failed}/{len(full_target_names)} candidate(s) had no HADDOCK3 result (failed/skipped) -- "
+              "excluded from the finalist pool.")
+    finished.sort(key=lambda pair: -float(pair[1]["dockq"]))
+    finalists = finished[:TOP_N_KEEP]
+    write_results_csv(finalists, path=FINALISTS_CSV)
+    print(f"Finalists (best {len(finalists)} of {len(finished)} completed, by dockq): "
+          f"{', '.join(n for n, _ in finalists)}")
+    return True
+
+
 def main():
     os.makedirs(RUN_DIR_BASE, exist_ok=True)
-    candidate_names = pick_candidate_names()
+    candidate_names, full_target_names = pick_candidate_names()
 
     all_rows = load_existing_rows()
     existing_names = {name for name, _ in all_rows}
@@ -471,7 +522,8 @@ def main():
     if already_done:
         print(f"Skipping {len(already_done)} candidate(s) already in {RESULTS_CSV}: {', '.join(already_done)}")
     if not new_candidates:
-        print("Nothing new to run.")
+        print("Nothing new to run this session.")
+        write_finalists_if_ready(all_rows, full_target_names)
         return
     print(f"Running the complete HADDOCK3 routine on {len(new_candidates)} candidate(s): "
           f"{', '.join(new_candidates)}")
@@ -513,6 +565,7 @@ def main():
     # Best dockq first; candidates with no result (failed/skipped) sort last.
     all_rows.sort(key=lambda pair: (pair[1] is None, -float(pair[1]["dockq"]) if pair[1] else 0))
     write_results_csv(all_rows)
+    write_finalists_if_ready(all_rows, full_target_names)
 
     total = time.time() - SCRIPT_START_TIME
     print(f"\nTotal script runtime: {total:.0f}s ({total / 60:.1f} min)")

@@ -1,10 +1,10 @@
 """
-Score 08's existing ternary docking models against a REAL experimental
+Score 06's existing ternary docking models against a REAL experimental
 reference structure -- PDB 9DWV (DDB1 + CRBN + PPIL4, cryo-EM, 3.5 A,
 Baek/Fischer et al. 2025) -- instead of HADDOCK3's default self-consistency
 pseudo-reference (the lowest-scoring model within the same run).
 
-Why this matters: every dockq/irmsd/fnat/lrmsd number produced by 05/07/08
+Why this matters: every dockq/irmsd/fnat/lrmsd number produced by 05/06
 so far was computed against an INTERNAL reference picked from that same
 candidate's own run, which makes those numbers useless for judging real
 accuracy or for comparing across candidates/runs. 9DWV is a real, independent
@@ -22,7 +22,7 @@ consistent with a real CRBN-glue ternary complex", NOT as "this exact
 residue-level interface is correct for this candidate's specific glue."
 
 No re-docking is done here -- this only re-evaluates the rank-1 models that
-07/08 already produced (from docking_tmp/haddock3_complete_run/<candidate>/
+05/06 already produced (from docking_tmp/haddock3_complete_run/<candidate>/
 run1/9_caprieval/), so it's fast even though it calls into HADDOCK3's own
 CAPRI scoring code (haddock.libs.libcapri.CAPRI) directly, bypassing the
 full run/pipeline system since we don't need to redo topology/docking.
@@ -33,18 +33,18 @@ Steps:
   2. Extract just the CRBN (9DWV auth chain B) and PPIL4 (9DWV auth chain C)
      protein chains -- dropping DDB1, the bound glue, and the structural
      Zn -- and relabel them to chain A / chain B to match the convention
-     every one of our own docking models uses (see 09_extract_top_structures,
+     every one of our own docking models uses (see 07_extract_top_structures,
      which confirmed this via `cmd.align("...chain A", "ternary and chain A")`).
-  3. For each of 08's 20 candidates, resolve its rank-1 model (same TSV
-     lookup logic as 09) and run HADDOCK3's own CAPRI class against the
+  3. For each of 06's 20 candidates, resolve its rank-1 model (same TSV
+     lookup logic as 07) and run HADDOCK3's own CAPRI class against the
      9DWV reference -- getting real dockq/irmsd/fnat/lrmsd/ilrmsd/global_rmsd.
-  4. Write 11_reference_comparison_(Ryan).csv (one row per candidate,
+  4. Write 09_reference_comparison_(Ryan).csv (one row per candidate,
      old self-consistency dockq alongside the new real-reference metrics)
      and report the Spearman correlation between the two rankings.
 
-Run with the same environment 05/07/08 use (needs haddock3 + biopython +
+Run with the same environment 05/06 use (needs haddock3 + biopython +
 scipy installed):
-    python3 "11_score_vs_9dwv_reference_(Ryan).py"
+    python3 "09_score_vs_9dwv_reference_(Ryan).py"
 """
 import csv
 import gzip
@@ -57,15 +57,15 @@ import urllib.request
 SCRIPT_START_TIME = time.time()
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-RESULTS_CSV = os.path.join(SCRIPT_DIR, "08_final_ternary_results_(Ryan).csv")
+RESULTS_CSV = os.path.join(SCRIPT_DIR, "06_final_ternary_results_(Ryan).csv")
 RUN_DIR_BASE = os.path.join(SCRIPT_DIR, "docking_tmp", "haddock3_complete_run")
-SCRATCH_DIR = os.path.join(SCRIPT_DIR, "docking_tmp", "11_capri_vs_9dwv_scratch")
+SCRATCH_DIR = os.path.join(SCRIPT_DIR, "docking_tmp", "09_capri_vs_9dwv_scratch")
 
 REFERENCE_DIR = os.path.join(SCRIPT_DIR, "reference_structures")
 CIF_CACHE_PATH = os.path.join(REFERENCE_DIR, "9DWV.cif")
 REFERENCE_PDB_PATH = os.path.join(REFERENCE_DIR, "9DWV_reference_(Ryan).pdb")
 
-OUTPUT_CSV = os.path.join(SCRIPT_DIR, "11_reference_comparison_(Ryan).csv")
+OUTPUT_CSV = os.path.join(SCRIPT_DIR, "09_reference_comparison_(Ryan).csv")
 
 PDB_9DWV_CIF_URL = "https://files.rcsb.org/download/9DWV.cif"
 
@@ -134,8 +134,8 @@ def build_reference_pdb():
 
 
 def find_top_model_path(candidate_name):
-    """Same resolution logic as 09_extract_top_structures: the rank-1
-    model from 08's HADDOCK3 run for this candidate."""
+    """Same resolution logic as 07_extract_top_structures: the rank-1
+    model from 06's HADDOCK3 run for this candidate."""
     caprieval_dir = os.path.join(RUN_DIR_BASE, candidate_name, "run1", "9_caprieval")
     tsv_path = os.path.join(caprieval_dir, "capri_ss.tsv")
     if not os.path.exists(tsv_path):
@@ -170,7 +170,7 @@ def score_candidate(candidate_name, capri_params, index):
 
     model_path = find_top_model_path(candidate_name)
     if model_path is None:
-        print(f"[{candidate_name}] no rank-1 model on disk -- skipping (run 08 for this candidate first).")
+        print(f"[{candidate_name}] no rank-1 model on disk -- skipping (run 06 for this candidate first).")
         return None
     model_path = decompress_if_needed(model_path)
 
@@ -203,7 +203,7 @@ def main():
     os.makedirs(SCRATCH_DIR, exist_ok=True)
 
     if not os.path.exists(RESULTS_CSV):
-        sys.exit(f"{RESULTS_CSV} not found -- run 08 first.")
+        sys.exit(f"{RESULTS_CSV} not found -- run 06 first.")
     with open(RESULTS_CSV, newline="") as f:
         old_rows = list(csv.DictReader(f))
 

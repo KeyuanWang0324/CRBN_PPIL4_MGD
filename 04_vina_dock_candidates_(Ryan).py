@@ -1,21 +1,20 @@
 """
 Dock multiple candidate CRBN-glue candidates into both CRBN's thalidomide
 pocket and PPIL4's CypA-homology pocket via Vina, as a fast pre-filter for
-the HADDOCK3 ternary-docking step (see 07_haddock3_ternary_novel_candidate_(Ryan).py).
+the HADDOCK3 ternary-docking step (see 05_haddock3_ternary_novel_candidate_(Ryan).py).
 
 Run with the SYSTEM python (has vina/meeko/rdkit installed), not the
 haddock3 venv:
     /Library/Frameworks/Python.framework/Versions/3.12/bin/python3 \
-        "06_vina_dock_candidates_(Ryan).py"
+        "04_vina_dock_candidates_(Ryan).py"
 
 CRBN receptor: CRBN_receptor_thalidomide_Ryan.pdb (CRBN chain A, apo of
-ligand, built in 05_haddock3_ternary_test_(Ryan).py). Box is centered on
-where thalidomide sits in the reference crystal structure
+ligand). Box is centered on where thalidomide sits in the reference crystal structure
 (CRBN-Thalidomide-SALL4_(Ryan).pdb), same pocket, since each candidate
 shares the identical glutarimide-isoindolinone CRBN-binding degron.
 
 PPIL4 receptor: PPIL4_alphafold_(Ryan).pdb, box centered on the same
-CypA-homology active-site residues used for restraint generation in 05/07.
+CypA-homology active-site residues used for restraint generation in 05/06.
 NOTE: this is a simplification, not a mechanistic model -- in a real
 molecular-glue ternary complex the small molecule typically stays bound to
 CRBN and presents a new protein-protein interface to the neo-substrate,
@@ -33,11 +32,11 @@ search all CRBN-pose x PPIL4-pose combinations for the best-combined-
 affinity pair whose ligand-contact atoms don't substantially overlap
 (POSE_OVERLAP_THRESHOLD). If no combination clears that bar, the candidate
 is flagged rather than silently reporting an inconsistent pair. This only
-affects screening/ranking quality -- 07's actual restraints don't depend
-on 06's PPIL4 pose at all, only the fixed CypA-homology residue mapping.
+affects screening/ranking quality -- 05's actual restraints don't depend
+on this script's PPIL4 pose at all, only the fixed CypA-homology residue mapping.
 
 This is a fast screening pass (Vina only, no HADDOCK3) meant to rank many
-candidates by combined (CRBN + PPIL4) predicted affinity. 07 then runs the
+candidates by combined (CRBN + PPIL4) predicted affinity. 05 then runs the
 slow full ternary HADDOCK3 docking on only the top-ranked candidates --
 see TOP_N there.
 """
@@ -62,7 +61,7 @@ def _has_required_packages():
 
 
 # This script needs vina/meeko/rdkit, which live in the SYSTEM python, not
-# the .venv-haddock3 venv used by 05/07. If they're missing -- e.g. the
+# the .venv-haddock3 venv used by 05/06/08. If they're missing -- e.g. the
 # wrong venv is active, or the IDE's Run button used a different interpreter
 # -- relaunch under the system python automatically instead of failing deep
 # inside prepare_receptor(). The sys.executable check guards against looping
@@ -79,9 +78,9 @@ PPIL4_SOURCE_PDB = os.path.join(SCRIPT_DIR, "PPIL4_alphafold_(Ryan).pdb")
 OUT_DIR = os.path.join(SCRIPT_DIR, "docking_tmp", "haddock3_novel_candidate")
 SCREENING_SUMMARY_CSV = os.path.join(OUT_DIR, "screening_summary.csv")
 # Root-level copy, named after this script per project convention (consumed
-# by 07) -- the docking_tmp copy above stays put too, next to the raw
+# by 05) -- the docking_tmp copy above stays put too, next to the raw
 # per-candidate poses/contacts it's derived from.
-SCREENING_SUMMARY_CSV_ROOT = os.path.join(SCRIPT_DIR, "06_vina_screening_scores_for_07_(Ryan).csv")
+SCREENING_SUMMARY_CSV_ROOT = os.path.join(SCRIPT_DIR, "04_vina_screening_scores_for_05_(Ryan).csv")
 
 # Vina poses considered per protein when picking a mutually-compatible
 # CRBN/PPIL4 pair, and the max fraction of shared ligand-contact atoms
@@ -96,20 +95,41 @@ _FALLBACK_CANDIDATES = [
     ("novel_candidate_1", "O=C1CCC(N2Cc3cc(NC(=O)c4cn5cc(Cl)ccc5n4)ccc3C2=O)C(=O)N1"),
 ]
 
-# Top-ranked subset from 01's 500 thalidomide analogs, filtered by 03+04's
+# Top-ranked subset from 01's 2500 analogs, filtered by 02+03's
 # combined rank-aggregated scoring -- see build_active_candidates() in
-# 04_crbn_binder_scaffold_model_(Ryan).py for how this file gets built.
-ACTIVE_CANDIDATES_CSV = os.path.join(SCRIPT_DIR, "04_active_candidates_for_06_(Ryan).csv")
+# 03_crbn_binder_scaffold_model_(Ryan).py for how this file gets built.
+ACTIVE_CANDIDATES_CSV = os.path.join(SCRIPT_DIR, "03_active_candidates_for_04_(Ryan).csv")
 
-# Cap how many of 04_active_candidates_for_06_(Ryan).csv's rows get docked, since each
+# Cap how many of 03_active_candidates_for_04_(Ryan).csv's rows get docked, since each
 # one costs two Vina dockings (CRBN + PPIL4). The file is already sorted by
-# combined_rank (best first, see build_active_candidates() in 04), so this
+# combined_rank (best first, see build_active_candidates() in 03), so this
 # keeps the top TOP_FRACTION of it -- e.g. 0.5 keeps the best 50%. Set to
 # None (or 1.0) to run all of them.
-TOP_FRACTION = 0.16
+#
+# Set to None (dock everything): 03's combined_rank is a classifier-based
+# pre-filter, not a validated ranking (the binder-classifier half is
+# saturated -- 0.82-1.0 across the whole library, see chat discussion --
+# so it barely discriminates candidates). Vina docking is cheap (~10s per
+# candidate observed), so there's little to gain and real signal to lose
+# by pre-cutting with that score before the first real (docking-based)
+# discrimination happens here.
+TOP_FRACTION = None
+
+# Set to a single (name, smiles) pair to dock ONLY that one candidate --
+# e.g. a known positive-control compound -- instead of the active-
+# candidates funnel. Bypasses ACTIVE_CANDIDATES_CSV/TOP_FRACTION entirely.
+# Its results are NOT written to SCREENING_SUMMARY_CSV/_ROOT (those are the
+# funnel's shared ranked output that 05 reads; a one-off manual candidate
+# isn't part of that ranking) -- see the MANUAL_CANDIDATE branch in main().
+# Leave as None for normal funnel behavior.
+MANUAL_CANDIDATE = None
 
 
 def load_candidates():
+    if MANUAL_CANDIDATE is not None:
+        print(f"MANUAL_CANDIDATE set -- docking only {MANUAL_CANDIDATE[0]}, "
+              f"bypassing {ACTIVE_CANDIDATES_CSV}.")
+        return [MANUAL_CANDIDATE]
     if os.path.exists(ACTIVE_CANDIDATES_CSV):
         import csv
         with open(ACTIVE_CANDIDATES_CSV) as f:
@@ -121,7 +141,7 @@ def load_candidates():
             print(f"Capped to top {n_keep} ({TOP_FRACTION:.0%}) by combined_rank (TOP_FRACTION)")
         return candidates
     print(f"{ACTIVE_CANDIDATES_CSV} not found -- using the single fallback candidate. "
-          "Run 01, then 03 and 04, to generate a real screened candidate list.")
+          "Run 01, then 02 and 03, to generate a real screened candidate list.")
     return _FALLBACK_CANDIDATES
 
 
@@ -374,7 +394,7 @@ def check_environment():
     """Fail fast with a clear message if run under the wrong interpreter.
 
     This script needs the SYSTEM python (vina/meeko/rdkit installed there),
-    not the .venv-haddock3 venv used by 05/07 -- that venv is for the
+    not the .venv-haddock3 venv used by 05/06/08 -- that venv is for the
     haddock3 CLI only and doesn't have these packages.
     """
     missing = []
@@ -389,7 +409,7 @@ def check_environment():
             f"  {sys.executable}\n"
             "This script needs the SYSTEM python, not the .venv-haddock3 venv. Run:\n"
             '  /Library/Frameworks/Python.framework/Versions/3.12/bin/python3 '
-            '"06_vina_dock_candidates_(Ryan).py"'
+            '"04_vina_dock_candidates_(Ryan).py"'
         )
 
 
@@ -491,15 +511,21 @@ def main():
         print(f"\nWARNING: no geometrically-compatible CRBN/PPIL4 pose pair found for: {', '.join(flagged)} "
               "-- reported affinities use the best available (overlapping) pair.")
 
-    for out_path in (SCREENING_SUMMARY_CSV, SCREENING_SUMMARY_CSV_ROOT):
-        with open(out_path, "w", newline="") as f:
-            writer = csv.writer(f)
-            writer.writerow(["name", "crbn_affinity", "ppil4_affinity", "combined_affinity",
-                              "overlap", "consistent", "n_contacts", "overlap_atoms"])
-            for r in results:
-                writer.writerow([r["name"], r["crbn_affinity"], r["ppil4_affinity"], r["combined_affinity"],
-                                  r["overlap"], r["consistent"], r["n_contacts"], ",".join(r["overlap_atoms"])])
-        print(f"Wrote {out_path}")
+    if MANUAL_CANDIDATE is not None:
+        print(f"\nMANUAL_CANDIDATE set -- skipping {SCREENING_SUMMARY_CSV}/{SCREENING_SUMMARY_CSV_ROOT} "
+              "(those are the funnel's shared ranked output; a one-off manual candidate doesn't "
+              "belong in that ranking). Its docking outputs are still under "
+              f"{os.path.join(OUT_DIR, results[0]['name'])}/ for 05/06 to use directly.")
+    else:
+        for out_path in (SCREENING_SUMMARY_CSV, SCREENING_SUMMARY_CSV_ROOT):
+            with open(out_path, "w", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(["name", "crbn_affinity", "ppil4_affinity", "combined_affinity",
+                                  "overlap", "consistent", "n_contacts", "overlap_atoms"])
+                for r in results:
+                    writer.writerow([r["name"], r["crbn_affinity"], r["ppil4_affinity"], r["combined_affinity"],
+                                      r["overlap"], r["consistent"], r["n_contacts"], ",".join(r["overlap_atoms"])])
+            print(f"Wrote {out_path}")
 
     total = time.time() - SCRIPT_START_TIME
     print(f"\nTotal script runtime: {total:.0f}s ({total / 60:.1f} min)")

@@ -1,9 +1,9 @@
 """
 Extract the representative 3D structure (the rank-1, best-scoring model of
-the top-ranked cluster) for each of 08's top-ranked candidates, so they can
+the top-ranked cluster) for each of 06's top-ranked candidates, so they can
 be opened directly in PyMOL for visual inspection/comparison.
 
-For a given candidate, 08_haddock3_ternary_complete_(Ryan).py's HADDOCK3
+For a given candidate, 06_haddock3_ternary_complete_(Ryan).py's HADDOCK3
 run writes docking_tmp/haddock3_complete_run/<candidate>/run1/9_caprieval/
 capri_ss.tsv, which lists every sampled model with its caprieval_rank; the
 row with caprieval_rank == 1 names the single best-scoring model (e.g.
@@ -11,21 +11,21 @@ row with caprieval_rank == 1 names the single best-scoring model (e.g.
 finishes. This script resolves that path, decompresses it, and copies it
 to ternary_structures/ with a clear name.
 
-IMPORTANT: that extracted structure has NO drug molecule in it. 07/08's
+IMPORTANT: that extracted structure has NO drug molecule in it. 05/06's
 HADDOCK3 config only ever docks CRBN_RECEPTOR_ONLY_PDB against PPIL4_PDB --
-the candidate's own atoms are used upstream (in 06's Vina docking) only to
+the candidate's own atoms are used upstream (in 04's Vina docking) only to
 derive which CRBN residues to restrain against, then discarded. To also
 show the actual ligand, this script uses PyMOL (headless, via PYMOL_BIN) to
-align 06's CRBN+ligand complex (docking_tmp/haddock3_novel_candidate/
+align 04's CRBN+ligand complex (docking_tmp/haddock3_novel_candidate/
 <candidate>/CRBN_candidate_complex.pdb) onto the ternary structure's CRBN
 chain, then merges in just the ligand atoms -- giving a combined
-CRBN+ligand+PPIL4 file (09_best_model_with_ligand_<candidate>_(Ryan).pdb).
+CRBN+ligand+PPIL4 file (07_best_model_with_ligand_<candidate>_(Ryan).pdb).
 If PyMOL isn't found, the ligand-free file is still written; only the
 ligand-merge step is skipped.
 
-Run with any Python that can read 08_final_ternary_results_(Ryan).csv
+Run with any Python that can read 06_final_ternary_results_(Ryan).csv
 (no haddock3/rdkit/vina dependency needed):
-    python3 "09_extract_top_structures_(Ryan).py"
+    python3 "07_extract_top_structures_(Ryan).py"
 """
 import csv
 import gzip
@@ -38,17 +38,17 @@ import time
 SCRIPT_START_TIME = time.time()
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-RESULTS_CSV = os.path.join(SCRIPT_DIR, "08_final_ternary_results_(Ryan).csv")
+RESULTS_CSV = os.path.join(SCRIPT_DIR, "06_final_ternary_results_(Ryan).csv")
 RUN_DIR_BASE = os.path.join(SCRIPT_DIR, "docking_tmp", "haddock3_complete_run")
 VINA_LIGAND_COMPLEX_DIR = os.path.join(SCRIPT_DIR, "docking_tmp", "haddock3_novel_candidate")
 OUTPUT_DIR = os.path.join(SCRIPT_DIR, "ternary_structures")
 
-# How many of 08's top-ranked (by dockq) candidates to extract a structure
+# How many of 06's top-ranked (by dockq) candidates to extract a structure
 # for. RESULTS_CSV is already sorted best-dockq-first.
 TOP_N = 5
 
 # PyMOL is only used for the optional ligand-merge step (aligning the drug
-# molecule from 06's output onto the ligand-free ternary structure) -- not
+# molecule from 04's output onto the ligand-free ternary structure) -- not
 # required for the base extraction. Add other install locations here if
 # needed; the plain "pymol" entry covers Linux/most package managers.
 PYMOL_CANDIDATES = ["/Applications/PyMOL.app/Contents/bin/pymol", "pymol"]
@@ -110,7 +110,7 @@ def extract_structure(candidate_name):
         print(f"[{candidate_name}] no rank-1 model found (has 08 been run for this candidate?) -- skipping.")
         return None
 
-    out_path = os.path.join(OUTPUT_DIR, f"09_best_model_{candidate_name}_(Ryan).pdb")
+    out_path = os.path.join(OUTPUT_DIR, f"07_best_model_{candidate_name}_(Ryan).pdb")
     if src_path.endswith(".gz"):
         with gzip.open(src_path, "rb") as f_in, open(out_path, "wb") as f_out:
             shutil.copyfileobj(f_in, f_out)
@@ -121,16 +121,16 @@ def extract_structure(candidate_name):
 
 
 def merge_ligand(candidate_name, ternary_path, pymol_bin, script_path):
-    """Align 06's CRBN+ligand complex onto the ternary structure's CRBN
+    """Align 04's CRBN+ligand complex onto the ternary structure's CRBN
     chain and save a combined CRBN+ligand+PPIL4 PDB. Returns the written
-    path, or None if 06's complex file for this candidate doesn't exist."""
+    path, or None if 04's complex file for this candidate doesn't exist."""
     complex_path = os.path.join(VINA_LIGAND_COMPLEX_DIR, candidate_name, "CRBN_candidate_complex.pdb")
     if not os.path.exists(complex_path):
-        print(f"[{candidate_name}] {complex_path} not found -- run 06 for this candidate first. "
+        print(f"[{candidate_name}] {complex_path} not found -- run 04 for this candidate first. "
               "Skipping ligand merge.")
         return None
 
-    out_path = os.path.join(OUTPUT_DIR, f"09_best_model_with_ligand_{candidate_name}_(Ryan).pdb")
+    out_path = os.path.join(OUTPUT_DIR, f"07_best_model_with_ligand_{candidate_name}_(Ryan).pdb")
     result = subprocess.run(
         [pymol_bin, "-cq", script_path, "--", ternary_path, complex_path, out_path],
         capture_output=True, text=True,
@@ -149,7 +149,7 @@ def main():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     if not os.path.exists(RESULTS_CSV):
-        sys.exit(f"{RESULTS_CSV} not found -- run 08 first.")
+        sys.exit(f"{RESULTS_CSV} not found -- run 06 first.")
     with open(RESULTS_CSV, newline="") as f:
         rows = list(csv.DictReader(f))
     candidates = [r["name"] for r in rows[:TOP_N]]

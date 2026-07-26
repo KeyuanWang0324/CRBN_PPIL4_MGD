@@ -14,7 +14,7 @@ Reports AUC / precision / recall under two evaluation regimes:
 
 Run with the SYSTEM python (has requests/rdkit/sklearn installed):
     /Library/Frameworks/Python.framework/Versions/3.12/bin/python3 \
-        "04_crbn_binder_scaffold_model_(Ryan).py"
+        "03_crbn_binder_scaffold_model_(Ryan).py"
 """
 import os
 import random
@@ -36,7 +36,7 @@ def _has_required_packages():
 
 
 # This script needs requests/rdkit/sklearn, missing from the .venv-haddock3
-# venv used by 05/07. Relaunch under the system python automatically if
+# venv used by 05/06/08. Relaunch under the system python automatically if
 # they're not available, regardless of which interpreter launched this.
 if not _has_required_packages() and sys.executable != SYSTEM_PYTHON:
     os.execv(SYSTEM_PYTHON, [SYSTEM_PYTHON] + sys.argv)
@@ -61,9 +61,9 @@ TEST_SIZE = 0.20
 N_ESTIMATORS = 200
 
 CANDIDATES_CSV = os.path.join(SCRIPT_DIR, "01_generated_analogs_(Ryan).csv")
-CANDIDATE_SCORES_CSV = os.path.join(SCRIPT_DIR, "04_crbn_binder_scores_(Ryan).csv")
-MGD_SCORES_CSV = os.path.join(SCRIPT_DIR, "03_mgd_scores_for_04_(Ryan).csv")  # written by 03's Step 4
-ACTIVE_CANDIDATES_CSV = os.path.join(SCRIPT_DIR, "04_active_candidates_for_06_(Ryan).csv")  # consumed by 06
+CANDIDATE_SCORES_CSV = os.path.join(SCRIPT_DIR, "03_crbn_binder_scores_(Ryan).csv")
+CRBN_GLUE_SCORES_CSV = os.path.join(SCRIPT_DIR, "02_crbn_glue_scores_for_03_(Ryan).csv")  # written by 03's Step 4
+ACTIVE_CANDIDATES_CSV = os.path.join(SCRIPT_DIR, "03_active_candidates_for_04_(Ryan).csv")  # consumed by 05
 ACTIVE_FRACTION = 0.25
 
 
@@ -240,45 +240,43 @@ def score_candidates_file(clf, candidates_csv, out_csv):
     return rows
 
 
-def build_active_candidates(binder_rows, mgd_scores_csv, out_csv, active_fraction=ACTIVE_FRACTION):
-    """Combine this script's P(CRBN-binder) ranking with 03's mgd_composite_score
+def build_active_candidates(binder_rows, crbn_glue_scores_csv, out_csv, active_fraction=ACTIVE_FRACTION):
+    """Combine this script's P(CRBN-binder) ranking with 03's P(CRBN-glue)
     ranking (rank-sum aggregation -- lower combined rank is better) and write
-    the top `active_fraction` of candidates to out_csv for use as 06's
+    the top `active_fraction` of candidates to out_csv for use as 05's
     candidate list. Neither ranking alone decides "active"; a candidate has
     to rank well on both the plain-binder classifier (04) and the
-    CRBN-glue-chemotype x PPIL4-dock composite score (03)."""
+    CRBN-glue-chemotype classifier (03)."""
     import csv
 
-    mgd_by_smiles = {}
-    with open(mgd_scores_csv) as f:
+    glue_by_smiles = {}
+    with open(crbn_glue_scores_csv) as f:
         for row in csv.DictReader(f):
             if row.get("error"):
                 continue
-            mgd_by_smiles[row["smiles"]] = row
+            glue_by_smiles[row["smiles"]] = row
 
     combined = []
     for row in binder_rows:
         if row["p_crbn_binder"] == "":
             continue
-        mgd_row = mgd_by_smiles.get(row["smiles"])
-        if mgd_row is None:
+        glue_row = glue_by_smiles.get(row["smiles"])
+        if glue_row is None:
             continue
         combined.append({
             "name": row["name"], "smiles": row["smiles"],
             "p_crbn_binder": float(row["p_crbn_binder"]),
-            "p_crbn_glue": float(mgd_row["p_crbn_glue"]),
-            "p_ppil4_bind": float(mgd_row["p_ppil4_bind"]),
-            "mgd_composite_score": float(mgd_row["mgd_composite_score"]),
+            "p_crbn_glue": float(glue_row["p_crbn_glue"]),
         })
 
     if not combined:
-        print(f"No candidates present in both {CANDIDATE_SCORES_CSV} and {mgd_scores_csv} "
+        print(f"No candidates present in both {CANDIDATE_SCORES_CSV} and {crbn_glue_scores_csv} "
               "-- skipping active-candidate list.")
         return []
 
     for rank, r in enumerate(sorted(combined, key=lambda r: r["p_crbn_binder"], reverse=True), 1):
         r["rank_04"] = rank
-    for rank, r in enumerate(sorted(combined, key=lambda r: r["mgd_composite_score"], reverse=True), 1):
+    for rank, r in enumerate(sorted(combined, key=lambda r: r["p_crbn_glue"], reverse=True), 1):
         r["rank_03"] = rank
     for r in combined:
         r["combined_rank"] = r["rank_03"] + r["rank_04"]
@@ -288,8 +286,8 @@ def build_active_candidates(binder_rows, mgd_scores_csv, out_csv, active_fractio
     active = combined[:n_active]
 
     with open(out_csv, "w", newline="") as f:
-        fieldnames = ["name", "smiles", "p_crbn_binder", "p_crbn_glue", "p_ppil4_bind",
-                      "mgd_composite_score", "rank_03", "rank_04", "combined_rank"]
+        fieldnames = ["name", "smiles", "p_crbn_binder", "p_crbn_glue",
+                      "rank_03", "rank_04", "combined_rank"]
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(active)
@@ -369,11 +367,11 @@ def main():
         n_active = sum(1 for r in rows if r["predicted_active"] == 1)
         print(f"Predicted active (P(binder) >= 0.5): {n_active}/{len(rows)}")
 
-        if os.path.exists(MGD_SCORES_CSV):
-            build_active_candidates(rows, MGD_SCORES_CSV, ACTIVE_CANDIDATES_CSV)
+        if os.path.exists(CRBN_GLUE_SCORES_CSV):
+            build_active_candidates(rows, CRBN_GLUE_SCORES_CSV, ACTIVE_CANDIDATES_CSV)
         else:
-            print(f"\n{MGD_SCORES_CSV} not found -- run 03 first to also build "
-                  f"{ACTIVE_CANDIDATES_CSV} for 06.")
+            print(f"\n{CRBN_GLUE_SCORES_CSV} not found -- run 03 first to also build "
+                  f"{ACTIVE_CANDIDATES_CSV} for 05.")
 
     total = time.time() - SCRIPT_START_TIME
     print(f"\nTotal script runtime: {total:.0f}s ({total / 60:.1f} min)")

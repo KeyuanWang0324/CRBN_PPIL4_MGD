@@ -1,19 +1,18 @@
-"""
+s s"""
 HADDOCK3 ternary-complex docking for novel CRBN-glue candidates vs PPIL4.
 
-Follow-on to 05_haddock3_ternary_test_(Ryan).py (the Thalidomide reference-
-structure test case) and 06_vina_dock_candidates_(Ryan).py (which Vina-screens
+Follow-on to 04_vina_dock_candidates_(Ryan).py (which Vina-screens
 candidates into CRBN's pocket and ranks them by affinity, since -- unlike
 Thalidomide -- no crystal structure exists for them). This script reads that
 screening ranking, derives CRBN-side AIR restraints from each top candidate's
 docked-ligand contact residues (in place of thalidomide's crystallographic
 contacts), and runs the full (slow) HADDOCK3 ternary docking against PPIL4,
 using the same CypA-homology pocket restraints as before, for only the
-top TOP_N candidates.
+top TOP_FRACTION of candidates.
 
 Run in the haddock3 venv:
     source .venv-haddock3/bin/activate
-    python3 "07_haddock3_ternary_novel_candidate_(Ryan).py"
+    python3 "05_haddock3_ternary_novel_candidate_(Ryan).py"
 """
 import csv
 import glob
@@ -44,16 +43,29 @@ from Bio import Align
 from Bio.Align import substitution_matrices
 
 VINA_OUT_DIR = os.path.join(SCRIPT_DIR, "docking_tmp", "haddock3_novel_candidate")
-# Root-level copy written by 06 (see SCREENING_SUMMARY_CSV_ROOT there), not
+# Root-level copy written by 04 (see SCREENING_SUMMARY_CSV_ROOT there), not
 # the docking_tmp working copy -- same contents, just the human-visible one.
-SCREENING_SUMMARY_CSV = os.path.join(SCRIPT_DIR, "06_vina_screening_scores_for_07_(Ryan).csv")
+SCREENING_SUMMARY_CSV = os.path.join(SCRIPT_DIR, "04_vina_screening_scores_for_05_(Ryan).csv")
 # This script's own ranked output -- pick the finalist (best dockq) from
-# here and set it as 08's CANDIDATE_NAME.
-RESULTS_CSV = os.path.join(SCRIPT_DIR, "07_ternary_docking_scores_for_08_(Ryan).csv")
+# here and set it as 06's CANDIDATE_NAME.
+RESULTS_CSV = os.path.join(SCRIPT_DIR, "05_ternary_docking_scores_for_06_(Ryan).csv")
 
-# Only the top TOP_N Vina-screened candidates get the full (~3+ min each)
-# HADDOCK3 ternary treatment; raise/lower as needed.
-TOP_N = 40
+# Fraction of 04's Vina-screened candidates that get the full (~3+ min
+# each) HADDOCK3 ternary treatment -- e.g. 0.2 keeps the best 20% by
+# combined_affinity. Computed against however many candidates 04 actually
+# screened (04 now docks its whole input pool, see that script), not a
+# fixed count -- raise/lower as needed.
+TOP_FRACTION = 0.20
+
+# Set to a specific candidate's name to run ONLY that one, bypassing
+# SCREENING_SUMMARY_CSV/TOP_FRACTION entirely -- e.g. a known positive-control
+# compound docked via 04's MANUAL_CANDIDATE (this just needs that
+# candidate's docking_tmp/haddock3_novel_candidate/<name>/crbn_contacts.txt
+# to already exist). Its result is NOT written to RESULTS_CSV (that's the
+# funnel's shared ranked output that 06 reads; a one-off candidate isn't
+# part of that ranking) -- see the CANDIDATE_NAME branch in main().
+# Leave blank for normal funnel behavior.
+CANDIDATE_NAME = ""
 
 # CNS's "@@" include syntax truncates paths at "(" -- keep this filename
 # parenthesis-free since it's fed directly to HADDOCK3 as a molecule.
@@ -72,7 +84,7 @@ NCORES = max(1, (os.cpu_count() or 4) - 1)
 # dominates despite fewer models than rigidbody because each one does real
 # refinement work, not just a cheap rigid-body minimization. Only used to
 # turn "which step is running" into one rough live percentage, not a
-# precise timing model. See 08_haddock3_ternary_complete_(Ryan).py for the
+# precise timing model. See 06_haddock3_ternary_complete_(Ryan).py for the
 # fuller writeup of this approach.
 STEP_PLAN = [
     (0, "topoaa", None, 0.02),
@@ -266,8 +278,9 @@ def dock_one_candidate(candidate_name, crbn_affinity, ppil4_affinity, combined_a
 
     crbn_active_csv = ",".join(str(r) for r in crbn_active)
     # Use the receptor-only PDB (no ligand atoms) for passive_from_active --
-    # the docked candidate isn't part of the CNS topology (see the
-    # simplification noted in 05_haddock3_ternary_test_(Ryan).py).
+    # the docked candidate isn't part of the CNS topology (a simplification;
+    # see 08_haddock3_ternary_with_ligand_(Ryan).py for the ligand-inclusive
+    # 3-body docking approach).
     crbn_passive_out = subprocess.run(
         ["haddock3-restraints", "passive_from_active", CRBN_RECEPTOR_ONLY_PDB, crbn_active_csv, "-c", "A"],
         check=True, capture_output=True, text=True,
@@ -337,27 +350,34 @@ ambig_fname = "{ambig_tbl}"
 def main():
     os.makedirs(RUN_DIR_BASE, exist_ok=True)
 
-    print("== Reading Vina screening results from 06 ==")
-    with open(SCREENING_SUMMARY_CSV, newline="") as f:
-        screened = [
-            {"name": row["name"], "crbn_affinity": float(row["crbn_affinity"]),
-             "ppil4_affinity": float(row["ppil4_affinity"]), "combined_affinity": float(row["combined_affinity"]),
-             "overlap": float(row["overlap"]), "consistent": row["consistent"] == "True"}
-            for row in csv.DictReader(f)
-        ]
-    screened.sort(key=lambda r: r["combined_affinity"])
+    if CANDIDATE_NAME:
+        print(f"CANDIDATE_NAME set -- running only {CANDIDATE_NAME}, bypassing {SCREENING_SUMMARY_CSV}/TOP_FRACTION.")
+        selected = [{"name": CANDIDATE_NAME, "crbn_affinity": float("nan"), "ppil4_affinity": float("nan"),
+                     "combined_affinity": float("nan"), "overlap": float("nan"), "consistent": True}]
+        skipped = []
+    else:
+        print("== Reading Vina screening results from 04 ==")
+        with open(SCREENING_SUMMARY_CSV, newline="") as f:
+            screened = [
+                {"name": row["name"], "crbn_affinity": float(row["crbn_affinity"]),
+                 "ppil4_affinity": float(row["ppil4_affinity"]), "combined_affinity": float(row["combined_affinity"]),
+                 "overlap": float(row["overlap"]), "consistent": row["consistent"] == "True"}
+                for row in csv.DictReader(f)
+            ]
+        screened.sort(key=lambda r: r["combined_affinity"])
 
-    selected = screened[:TOP_N]
-    skipped = screened[TOP_N:]
-    print(f"Running full HADDOCK3 ternary docking on top {len(selected)} of {len(screened)} screened candidates: "
-          f"{', '.join(r['name'] for r in selected)}")
-    if skipped:
-        print(f"Skipping {len(skipped)} lower-ranked candidates: {', '.join(r['name'] for r in skipped)}")
-    flagged = [r["name"] for r in selected if not r["consistent"]]
-    if flagged:
-        print(f"NOTE: {', '.join(flagged)} had no geometrically-compatible CRBN/PPIL4 Vina pose pair in 06 "
-              "(see that run's output) -- proceeding anyway since 07's restraints don't depend on the PPIL4 "
-              "Vina pose, only the CRBN contact residues.")
+        n_keep = max(1, round(len(screened) * TOP_FRACTION))
+        selected = screened[:n_keep]
+        skipped = screened[n_keep:]
+        print(f"Running full HADDOCK3 ternary docking on top {len(selected)} of {len(screened)} screened candidates "
+              f"(top {TOP_FRACTION:.0%}): {', '.join(r['name'] for r in selected)}")
+        if skipped:
+            print(f"Skipping {len(skipped)} lower-ranked candidates: {', '.join(r['name'] for r in skipped)}")
+        flagged = [r["name"] for r in selected if not r["consistent"]]
+        if flagged:
+            print(f"NOTE: {', '.join(flagged)} had no geometrically-compatible CRBN/PPIL4 Vina pose pair in 04 "
+                  "(see that run's output) -- proceeding anyway since these restraints don't depend on the PPIL4 "
+                  "Vina pose, only the CRBN contact residues.")
 
     print("== Renaming PPIL4 chain A -> B (HADDOCK3 requires unique chain/segids per partner) ==")
     with open(PPIL4_PDB, "w") as out:
@@ -406,7 +426,8 @@ def main():
                 "score": "-", "dockq": "-", "irmsd": "-", "fnat": "-", "lrmsd": "-",
             }
         results.append(result)
-        write_results_csv(results)  # write after every candidate so a later failure can't lose earlier results
+        if not CANDIDATE_NAME:
+            write_results_csv(results)  # write after every candidate so a later failure can't lose earlier results
 
     results.sort(key=lambda r: (r["dockq"] == "-", -float(r["dockq"]) if r["dockq"] != "-" else 0))
     print_table(
@@ -419,8 +440,14 @@ def main():
         title="Candidate comparison (best dockq first)",
     )
 
-    write_results_csv(results)
-    print(f"Wrote {RESULTS_CSV}")
+    if CANDIDATE_NAME:
+        print(f"\nCANDIDATE_NAME set -- skipping {RESULTS_CSV} (that's the funnel's shared ranked "
+              "output that 06 reads; a one-off candidate doesn't belong in that ranking). Its docking "
+              f"output is still under {RUN_DIR_BASE}/{CANDIDATE_NAME}/ for 06 to use directly via its "
+              "own CANDIDATE_NAME.")
+    else:
+        write_results_csv(results)
+        print(f"Wrote {RESULTS_CSV}")
 
     total = time.time() - SCRIPT_START_TIME
     print(f"Total script runtime: {total:.0f}s ({total / 60:.1f} min)")
