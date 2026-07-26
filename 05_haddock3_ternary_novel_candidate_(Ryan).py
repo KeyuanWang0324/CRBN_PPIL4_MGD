@@ -1,4 +1,4 @@
-s s"""
+"""
 HADDOCK3 ternary-complex docking for novel CRBN-glue candidates vs PPIL4.
 
 Follow-on to 04_vina_dock_candidates_(Ryan).py (which Vina-screens
@@ -7,8 +7,8 @@ Thalidomide -- no crystal structure exists for them). This script reads that
 screening ranking, derives CRBN-side AIR restraints from each top candidate's
 docked-ligand contact residues (in place of thalidomide's crystallographic
 contacts), and runs the full (slow) HADDOCK3 ternary docking against PPIL4,
-using the same CypA-homology pocket restraints as before, for only the
-top TOP_FRACTION of candidates.
+using the same real RRM-domain interface restraints as before (see
+ppil4_pocket_residues() below), for only the top TOP_FRACTION of candidates.
 
 Run in the haddock3 venv:
     source .venv-haddock3/bin/activate
@@ -38,9 +38,6 @@ if shutil.which("haddock3") is None:
     env["PATH"] = haddock_venv_bin + os.pathsep + env.get("PATH", "")
     env["VIRTUAL_ENV"] = os.path.join(SCRIPT_DIR, ".venv-haddock3")
     os.execve(haddock_python, [haddock_python] + sys.argv, env)
-
-from Bio import Align
-from Bio.Align import substitution_matrices
 
 VINA_OUT_DIR = os.path.join(SCRIPT_DIR, "docking_tmp", "haddock3_novel_candidate")
 # Root-level copy written by 04 (see SCREENING_SUMMARY_CSV_ROOT there), not
@@ -127,39 +124,18 @@ def estimate_progress(run_dir, step_plan):
 
 
 def ppil4_pocket_residues():
-    """Same CypA-homology active-site mapping used throughout this project."""
-    cypa = ("MVNPTVFFDIAVDGEPLGRVSFELFADKVPKTAENFRALSTGEKGFGYKGSCFHRIIPGF"
-            "MCQGGDFTRHNGTGGKSIYGEKFEDENFILKHTGPGILSMANAGPNTNGSQFFICTAKTE"
-            "WLDGKHVVFGKVKEGMNIVEAMERFGSRNGKTSKKITIADCGQLE")
-    ppil4_full = ("MAVLLETTLGDVVIDLYTEERPRACLNFLKLCKIKYYNYCLIHNVQRDFIIQTGDPTGTGRGGESIFGQLYGDQASFF"
-                  "EAEKVPRIKHKKKGTVSMVNNGSDQHGSQFLITTGENLDYLDGVHTVFGEVTEGMDIIKKINETFVDKDFVPYQDIRI"
-                  "NHTVILDDPFDDPPDLLIPDRSPEPTREQLDSGRIGADEEIDDFKGRSAEEVEEIKAEKEAKTQAILLEMVGDLPDAD"
-                  "IKPPENVLFVCKLNPVTTDEDLEIIFSRFGPIRSCEVIRDWKTGESLCYAFIEFEKEEDCEKAFFKMDNVLIDDRRIH"
-                  "VDFSQSVAKVKWKGKGGKYTKSDFKEYEKEQDKPPNLVLKDKVKPKQDTKYDLILDEQAEDSKSSHSHTSKKHKKKTH"
-                  "HCSEEKEDEDYMPIKNTNQDIYREMGFGHYEEEESCWEKQKSEKRDRTQNRSRSRSRERDGHYSNSHKSKYQTDLYER"
-                  "ERSKKRDRSRSPKKSKDKEKSKYR")
-    ppil4_domain = ppil4_full[:180]
-
-    aligner = Align.PairwiseAligner()
-    aligner.substitution_matrix = substitution_matrices.load("BLOSUM62")
-    aligner.open_gap_score = -11
-    aligner.extend_gap_score = -1
-    aligner.mode = "global"
-    aln = aligner.align(cypa, ppil4_domain)[0]
-
-    active_site_cypa = [55, 60, 61, 63, 72, 101, 102, 103, 111, 113, 121, 122, 126]
-    aligned_cypa, aligned_ppil4 = aln[0], aln[1]
-    cypa_pos = ppil4_pos = 0
-    mapping = {}
-    for c, p in zip(aligned_cypa, aligned_ppil4):
-        if c != "-":
-            cypa_pos += 1
-        if p != "-":
-            ppil4_pos += 1
-        if c != "-" and p != "-":
-            mapping[cypa_pos] = ppil4_pos
-
-    return sorted(mapping[r] for r in active_site_cypa if r in mapping)
+    """PPIL4's real CRBN-facing interface, taken directly from the actual
+    experimental ternary complex (PDB 9DWV chain C) instead of a homology
+    guess. This replaces the old CypA-active-site-homology mapping (which
+    landed in PPIL4's N-terminal cyclophilin-like domain, ~residues
+    44-180) -- 00_validate_docking_interface_(Ryan).py showed that mapping
+    gets 0/8 overlap with 9DWV's real contact residues, because the real
+    glue-mediated interface is entirely in PPIL4's RRM domain (~240-318)
+    instead. These 8 residues (249-279) are 9DWV's real CRBN-contact set
+    (see session4_handson.md's REAL_PPIL4), used verbatim -- not widened
+    or re-derived -- since we now have the actual structure instead of
+    needing to infer the pocket by homology."""
+    return sorted({249, 250, 273, 275, 276, 277, 278, 279})
 
 
 def write_actpass_file(active, passive, out_path):
@@ -383,7 +359,7 @@ def main():
     with open(PPIL4_PDB, "w") as out:
         run(["pdb_chain", "-B", PPIL4_SOURCE_PDB], stdout=out)
 
-    print("== Computing PPIL4 pocket residues (CypA-homology mapping) ==")
+    print("== Computing PPIL4 pocket residues (real RRM-domain interface, from 9DWV) ==")
     ppil4_active = ppil4_pocket_residues()
     print("PPIL4 active (pocket) residues:", ppil4_active)
 

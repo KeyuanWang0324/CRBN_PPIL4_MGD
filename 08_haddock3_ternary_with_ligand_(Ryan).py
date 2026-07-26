@@ -342,7 +342,9 @@ def main():
     # --- PPIL4-side setup (candidate-independent) ---
     with open(PPIL4_PDB, "w") as out:
         run(["pdb_chain", "-B", PPIL4_SOURCE_PDB], stdout=out)
-    ppil4_active = [44, 49, 50, 52, 60, 97, 98, 99, 107, 109, 118, 119, 123]  # CypA-homology pocket, see 05/06
+    # Real RRM-domain interface residues from PDB 9DWV (see 05/06's
+    # ppil4_pocket_residues()) -- not the old CypA-homology pocket.
+    ppil4_active = [249, 250, 273, 275, 276, 277, 278, 279]
     ppil4_active_csv = ",".join(str(r) for r in ppil4_active)
     ppil4_passive_out = subprocess.run(
         ["haddock3-restraints", "passive_from_active", PPIL4_PDB, ppil4_active_csv, "-c", "B"],

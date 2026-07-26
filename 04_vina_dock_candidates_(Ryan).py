@@ -1,7 +1,8 @@
 """
 Dock multiple candidate CRBN-glue candidates into both CRBN's thalidomide
-pocket and PPIL4's CypA-homology pocket via Vina, as a fast pre-filter for
-the HADDOCK3 ternary-docking step (see 05_haddock3_ternary_novel_candidate_(Ryan).py).
+pocket and PPIL4's real RRM-domain interface via Vina, as a fast
+pre-filter for the HADDOCK3 ternary-docking step (see
+05_haddock3_ternary_novel_candidate_(Ryan).py).
 
 Run with the SYSTEM python (has vina/meeko/rdkit installed), not the
 haddock3 venv:
@@ -14,7 +15,8 @@ ligand). Box is centered on where thalidomide sits in the reference crystal stru
 shares the identical glutarimide-isoindolinone CRBN-binding degron.
 
 PPIL4 receptor: PPIL4_alphafold_(Ryan).pdb, box centered on the same
-CypA-homology active-site residues used for restraint generation in 05/06.
+real RRM-domain interface residues (249-279, from PDB 9DWV) used for
+restraint generation in 05/06 -- see ppil4_pocket_residues() below.
 NOTE: this is a simplification, not a mechanistic model -- in a real
 molecular-glue ternary complex the small molecule typically stays bound to
 CRBN and presents a new protein-protein interface to the neo-substrate,
@@ -33,7 +35,7 @@ affinity pair whose ligand-contact atoms don't substantially overlap
 (POSE_OVERLAP_THRESHOLD). If no combination clears that bar, the candidate
 is flagged rather than silently reporting an inconsistent pair. This only
 affects screening/ranking quality -- 05's actual restraints don't depend
-on this script's PPIL4 pose at all, only the fixed CypA-homology residue mapping.
+on this script's PPIL4 pose at all, only the fixed RRM-domain residue set.
 
 This is a fast screening pass (Vina only, no HADDOCK3) meant to rank many
 candidates by combined (CRBN + PPIL4) predicted affinity. 05 then runs the
@@ -68,9 +70,6 @@ def _has_required_packages():
 # if the system python itself is ever missing these packages.
 if not _has_required_packages() and sys.executable != SYSTEM_PYTHON:
     os.execv(SYSTEM_PYTHON, [SYSTEM_PYTHON] + sys.argv)
-
-from Bio import Align
-from Bio.Align import substitution_matrices
 
 REFERENCE_PDB = os.path.join(SCRIPT_DIR, "CRBN-Thalidomide-SALL4_(Ryan).pdb")
 CRBN_RECEPTOR_PDB = os.path.join(SCRIPT_DIR, "CRBN_receptor_thalidomide_Ryan.pdb")
@@ -163,39 +162,18 @@ def thalidomide_box(reference_pdb, padding=14, min_size=20):
 
 
 def ppil4_pocket_residues():
-    """Same CypA-homology active-site mapping used throughout this project."""
-    cypa = ("MVNPTVFFDIAVDGEPLGRVSFELFADKVPKTAENFRALSTGEKGFGYKGSCFHRIIPGF"
-            "MCQGGDFTRHNGTGGKSIYGEKFEDENFILKHTGPGILSMANAGPNTNGSQFFICTAKTE"
-            "WLDGKHVVFGKVKEGMNIVEAMERFGSRNGKTSKKITIADCGQLE")
-    ppil4_full = ("MAVLLETTLGDVVIDLYTEERPRACLNFLKLCKIKYYNYCLIHNVQRDFIIQTGDPTGTGRGGESIFGQLYGDQASFF"
-                  "EAEKVPRIKHKKKGTVSMVNNGSDQHGSQFLITTGENLDYLDGVHTVFGEVTEGMDIIKKINETFVDKDFVPYQDIRI"
-                  "NHTVILDDPFDDPPDLLIPDRSPEPTREQLDSGRIGADEEIDDFKGRSAEEVEEIKAEKEAKTQAILLEMVGDLPDAD"
-                  "IKPPENVLFVCKLNPVTTDEDLEIIFSRFGPIRSCEVIRDWKTGESLCYAFIEFEKEEDCEKAFFKMDNVLIDDRRIH"
-                  "VDFSQSVAKVKWKGKGGKYTKSDFKEYEKEQDKPPNLVLKDKVKPKQDTKYDLILDEQAEDSKSSHSHTSKKHKKKTH"
-                  "HCSEEKEDEDYMPIKNTNQDIYREMGFGHYEEEESCWEKQKSEKRDRTQNRSRSRSRERDGHYSNSHKSKYQTDLYER"
-                  "ERSKKRDRSRSPKKSKDKEKSKYR")
-    ppil4_domain = ppil4_full[:180]
-
-    aligner = Align.PairwiseAligner()
-    aligner.substitution_matrix = substitution_matrices.load("BLOSUM62")
-    aligner.open_gap_score = -11
-    aligner.extend_gap_score = -1
-    aligner.mode = "global"
-    aln = aligner.align(cypa, ppil4_domain)[0]
-
-    active_site_cypa = [55, 60, 61, 63, 72, 101, 102, 103, 111, 113, 121, 122, 126]
-    aligned_cypa, aligned_ppil4 = aln[0], aln[1]
-    cypa_pos = ppil4_pos = 0
-    mapping = {}
-    for c, p in zip(aligned_cypa, aligned_ppil4):
-        if c != "-":
-            cypa_pos += 1
-        if p != "-":
-            ppil4_pos += 1
-        if c != "-" and p != "-":
-            mapping[cypa_pos] = ppil4_pos
-
-    return sorted(mapping[r] for r in active_site_cypa if r in mapping)
+    """PPIL4's real CRBN-facing interface, taken directly from the actual
+    experimental ternary complex (PDB 9DWV chain C) instead of a homology
+    guess. This replaces the old CypA-active-site-homology mapping (which
+    landed in PPIL4's N-terminal cyclophilin-like domain, ~residues
+    44-180) -- 00_validate_docking_interface_(Ryan).py showed that mapping
+    gets 0/8 overlap with 9DWV's real contact residues, because the real
+    glue-mediated interface is entirely in PPIL4's RRM domain (~240-318)
+    instead. These 8 residues (249-279) are 9DWV's real CRBN-contact set
+    (see session4_handson.md's REAL_PPIL4), used verbatim -- not widened
+    or re-derived -- since we now have the actual structure instead of
+    needing to infer the pocket by homology."""
+    return sorted({249, 250, 273, 275, 276, 277, 278, 279})
 
 
 def residue_box(pdb_path, chain, residues, padding=10, min_size=20):
@@ -426,7 +404,7 @@ def main():
     prepare_receptor(CRBN_RECEPTOR_PDB, crbn_receptor_base, crbn_center, crbn_size)
     crbn_receptor_pdbqt = crbn_receptor_base + ".pdbqt"
 
-    print("\n== Computing PPIL4 docking box from CypA-homology pocket residues ==")
+    print("\n== Computing PPIL4 docking box from real RRM-domain interface residues (9DWV) ==")
     ppil4_active = ppil4_pocket_residues()
     print("PPIL4 pocket residues:", ppil4_active)
     ppil4_center, ppil4_size = residue_box(PPIL4_SOURCE_PDB, "A", ppil4_active)
