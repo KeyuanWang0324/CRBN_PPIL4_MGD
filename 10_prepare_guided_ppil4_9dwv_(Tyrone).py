@@ -82,7 +82,13 @@ def pdbqt_atoms(path: Path):
         if not line.startswith(("ATOM  ", "HETATM")):
             continue
         atom_type = line[77:].strip().split()[-1] if line[77:].strip() else "C"
-        element = {"A": "C", "NA": "N", "OA": "O", "SA": "S", "HD": "H"}.get(atom_type.upper(), atom_type[0].upper())
+        # Vina uses two-character atom types for halogens.  Falling back to
+        # atom_type[0] changed Br into B (boron), which made HADDOCK/PRODRG
+        # reject every brominated candidate at topology preparation.
+        element = {
+            "A": "C", "NA": "N", "OA": "O", "SA": "S", "HD": "H",
+            "CL": "Cl", "BR": "Br", "I": "I", "F": "F",
+        }.get(atom_type.upper(), atom_type[0].upper())
         coordinate = np.array([float(line[30:38]), float(line[38:46]), float(line[46:54])])
         yield element, coordinate
 
@@ -99,7 +105,9 @@ def write_transformed_candidate(pose: Path, destination: Path, rotation, transla
     lines, heavy_points = [], []
     for serial, (element, coordinate) in enumerate(pdbqt_atoms(pose), start=1):
         x, y, z = np.dot(coordinate, rotation) + translation
-        atom_name = f"{element}{serial:03d}"[-4:]
+        # Keep both characters of two-letter elements in the PDB atom name.
+        # The ligands here contain fewer than 100 atoms.
+        atom_name = f"{element.upper()}{serial:02d}"[-4:]
         lines.append(
             f"HETATM{serial:5d} {atom_name:>4} LIG E 502    "
             f"{x:8.3f}{y:8.3f}{z:8.3f}{1.0:6.2f}{0.0:6.2f}          {element:>2}\n"
@@ -183,4 +191,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
