@@ -415,8 +415,8 @@ ChEMBL has essentially no PPIL4 bioactivity data usable for ML: as of this
 pull, PPIL4 (CHEMBL5725153) has only 6 activity records, all from a single
 compound (Molibresib) in a chemoproteomic dose-response panel. ChEMBL
 itself still has no CRBN-PPIL4 glue data to query for -- but two confirmed
-CRBN-PPIL4 glues are now known from outside ChEMBL (PDB 9DWV's bound
-ligand, and a manually-curated compound below), so "no public CRBN-PPIL4
+CRBN-PPIL4 glues are now known from outside ChEMBL (FPFT-2216, the bound
+ligand in PDB 9DWV, and a manually-curated compound below), so "no public CRBN-PPIL4
 data at all" is no longer literally true; there's just not enough of it
 yet to build a target-specific classifier from ChEMBL alone. KNOWN_CRBN_
 PPIL4_GLUES below forces the ones we do have into this pooled dataset as

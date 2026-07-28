@@ -1,6 +1,6 @@
 """
 Compare cand_5's own top HADDOCK3 docking model's CRBN/PPIL4 contact
-residues against the real interface from PDB 9DWV -- same idea as
+residues against the real interface from FPFT-2216 (PDB 9DWV) -- same idea as
 00_validate_reference_smiles_(Ryan).py (compare to a known answer instead
 of trusting the software's own self-grade), but for the POSE instead of
 the molecule.
@@ -11,7 +11,7 @@ point of agree() is to compare against a known answer, so this script
 must not get to invent that answer.
 
   REAL_CRBN / REAL_PPIL4: where CRBN and PPIL4 actually touch in the real
-      cryo-EM structure (PDB 9DWV).
+      cryo-EM structure of FPFT-2216 bound to CRBN-DDB1-PPIL4 (PDB 9DWV).
   YOUR_CRBN / YOUR_PPIL4: where cand_5's own top docking model made them
       touch (07_best_model_cand_5_(Ryan).pdb).
 
@@ -20,7 +20,7 @@ Run with the SYSTEM python:
         "00_validate_docking_interface_(Ryan).py"
 """
 
-# Where the two proteins actually touch in the real structure (PDB 9DWV):
+# Where the two proteins actually touch in the real structure (FPFT-2216, PDB 9DWV):
 REAL_CRBN = {351, 353, 355, 357, 372, 373, 386, 388, 397, 400}
 REAL_PPIL4 = {249, 250, 273, 275, 276, 277, 278, 279}
 

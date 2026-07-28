@@ -15,7 +15,7 @@ ligand). Box is centered on where thalidomide sits in the reference crystal stru
 shares the identical glutarimide-isoindolinone CRBN-binding degron.
 
 PPIL4 receptor: PPIL4_alphafold_(Ryan).pdb, box centered on the same
-real RRM-domain interface residues (249-279, from PDB 9DWV) used for
+real RRM-domain interface residues (249-279, from FPFT-2216, PDB 9DWV) used for
 restraint generation in 05/06 -- see ppil4_pocket_residues() below.
 NOTE: this is a simplification, not a mechanistic model -- in a real
 molecular-glue ternary complex the small molecule typically stays bound to
@@ -163,16 +163,16 @@ def thalidomide_box(reference_pdb, padding=14, min_size=20):
 
 def ppil4_pocket_residues():
     """PPIL4's real CRBN-facing interface, taken directly from the actual
-    experimental ternary complex (PDB 9DWV chain C) instead of a homology
-    guess. This replaces the old CypA-active-site-homology mapping (which
-    landed in PPIL4's N-terminal cyclophilin-like domain, ~residues
+    experimental FPFT-2216 ternary complex (PDB 9DWV chain C) instead of a
+    homology guess. This replaces the old CypA-active-site-homology mapping
+    (which landed in PPIL4's N-terminal cyclophilin-like domain, ~residues
     44-180) -- 00_validate_docking_interface_(Ryan).py showed that mapping
-    gets 0/8 overlap with 9DWV's real contact residues, because the real
-    glue-mediated interface is entirely in PPIL4's RRM domain (~240-318)
-    instead. These 8 residues (249-279) are 9DWV's real CRBN-contact set
-    (see session4_handson.md's REAL_PPIL4), used verbatim -- not widened
-    or re-derived -- since we now have the actual structure instead of
-    needing to infer the pocket by homology."""
+    gets 0/8 overlap with FPFT-2216/9DWV's real contact residues, because
+    the real glue-mediated interface is entirely in PPIL4's RRM domain
+    (~240-318) instead. These 8 residues (249-279) are FPFT-2216/9DWV's
+    real CRBN-contact set (see session4_handson.md's REAL_PPIL4), used
+    verbatim -- not widened or re-derived -- since we now have the actual
+    structure instead of needing to infer the pocket by homology."""
     return sorted({249, 250, 273, 275, 276, 277, 278, 279})
 
 
@@ -404,7 +404,7 @@ def main():
     prepare_receptor(CRBN_RECEPTOR_PDB, crbn_receptor_base, crbn_center, crbn_size)
     crbn_receptor_pdbqt = crbn_receptor_base + ".pdbqt"
 
-    print("\n== Computing PPIL4 docking box from real RRM-domain interface residues (9DWV) ==")
+    print("\n== Computing PPIL4 docking box from real RRM-domain interface residues (FPFT-2216) ==")
     ppil4_active = ppil4_pocket_residues()
     print("PPIL4 pocket residues:", ppil4_active)
     ppil4_center, ppil4_size = residue_box(PPIL4_SOURCE_PDB, "A", ppil4_active)

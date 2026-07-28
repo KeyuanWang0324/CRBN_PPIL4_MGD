@@ -162,16 +162,16 @@ def estimate_progress(run_dir, step_plan):
 
 def ppil4_pocket_residues():
     """PPIL4's real CRBN-facing interface, taken directly from the actual
-    experimental ternary complex (PDB 9DWV chain C) instead of a homology
-    guess. This replaces the old CypA-active-site-homology mapping (which
-    landed in PPIL4's N-terminal cyclophilin-like domain, ~residues
+    experimental FPFT-2216 ternary complex (PDB 9DWV chain C) instead of a
+    homology guess. This replaces the old CypA-active-site-homology mapping
+    (which landed in PPIL4's N-terminal cyclophilin-like domain, ~residues
     44-180) -- 00_validate_docking_interface_(Ryan).py showed that mapping
-    gets 0/8 overlap with 9DWV's real contact residues, because the real
-    glue-mediated interface is entirely in PPIL4's RRM domain (~240-318)
-    instead. These 8 residues (249-279) are 9DWV's real CRBN-contact set
-    (see session4_handson.md's REAL_PPIL4), used verbatim -- not widened
-    or re-derived -- since we now have the actual structure instead of
-    needing to infer the pocket by homology."""
+    gets 0/8 overlap with FPFT-2216/9DWV's real contact residues, because
+    the real glue-mediated interface is entirely in PPIL4's RRM domain
+    (~240-318) instead. These 8 residues (249-279) are FPFT-2216/9DWV's
+    real CRBN-contact set (see session4_handson.md's REAL_PPIL4), used
+    verbatim -- not widened or re-derived -- since we now have the actual
+    structure instead of needing to infer the pocket by homology."""
     return sorted({249, 250, 273, 275, 276, 277, 278, 279})
 
 

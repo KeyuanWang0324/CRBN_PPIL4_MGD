@@ -1,18 +1,36 @@
 """
-EXPERIMENTAL: HADDOCK3 3-body ternary docking that includes the actual drug
-molecule -- unlike 05/06 (which only ever dock CRBN against PPIL4, using
-the candidate's Vina-derived contact residues as a proxy and discarding the
+HADDOCK3 3-body ternary docking that includes the actual drug molecule --
+unlike 05/06 (which only ever dock CRBN against PPIL4, using the
+candidate's Vina-derived contact residues as a proxy and discarding the
 ligand's own atoms), this script docks THREE separate bodies together:
-CRBN (chain A), the candidate ligand itself (chain C), and PPIL4 (chain B).
-The ligand bridges the other two via real AIR restraints on both sides, so
-its actual geometry/chemistry can influence whether/how the ternary complex
-comes together -- not just a residue-list hint.
+CRBN (chain A), the candidate ligand itself (chain C), and PPIL4 (chain
+B). The ligand bridges the other two via real AIR restraints on both
+sides, so its actual geometry/chemistry can influence whether/how the
+ternary complex comes together -- not just a residue-list hint.
 
-This closes the "drug-CRBN interaction" and "drug-PPIL4 interaction" gaps
-discussed for 05/06 (see conversation). It does NOT address the third gap
-(ligand-induced conformational change) beyond whatever local flexibility
-flexref/emref already allow near the interface -- see this project's
-existing caveins on that.
+THIS IS NOW THE PIPELINE'S FINAL RANKING STAGE (see chat discussion):
+06's own dockq turned out to be a bad ranking signal, not just something
+needing a tiebreak -- since 05/06 never put the ligand in the CNS
+topology, the ONLY thing that varies between candidates is which CRBN
+residues happen to be "active" (from 04's Vina pose), and since every
+candidate shares the same glutarimide-isoindolinone core, many candidates'
+CRBN contact sets overlap heavily or are literally identical -- so 06 is
+frequently solving the exact same rigid-body docking problem for
+different candidates and (correctly) returns identical scores. That's not
+noise to tiebreak around, it's 06's score being structurally insensitive
+to candidate chemistry. This script actually puts the ligand in the CNS
+force field, so its real chemistry can differentiate candidates -- so
+FINAL ranking uses THIS script's own HADDOCK score (see TOP_N_KEEP below),
+not dockq (self-referential, no real reference structure) and not 06's.
+
+06 is kept upstream purely as a coarse, cheap-relative-to-this pre-filter:
+a candidate completing 06's (ligand-free) run without HADDOCK3 erroring
+out is weak evidence the CRBN-side restraint/setup is basically viable
+before spending 45 min - 1.5 hr per candidate here. This script's
+candidate pool is whatever's currently in 06's progress ledger with a
+real result (06_complete_run_progress_(Ryan).csv) -- not 06's TOP_N_KEEP
+finalists, since that cut is itself decided by the same insensitive dockq
+this script exists to replace.
 
 WHY THIS NEEDS ITS OWN SCRIPT (not just a flag on 06):
 HADDOCK3's CNS engine needs a topology + force-field parameter file for any
@@ -42,8 +60,16 @@ haddock3 upgrade than 05/06 (which only ever shell out to the stable
 Validated with a 4-model smoke test (rigidbody -> caprieval -> seletop ->
 flexref -> caprieval -> emref -> caprieval -> clustfcc -> caprieval) on
 cand_5 before writing this: completed in 74s, top cluster n=3/4, dockq
-0.627. This script runs the same chain at 06's full scale (sampling=1000,
-top 200 for flexref/emref).
+0.627. At the funnel's full scale (sampling=1000, top 200 for
+flexref/emref) each candidate costs ~45 min - 1.5 hr, same order as 06.
+
+For validating this whole protocol's ability to reproduce a KNOWN real
+ternary complex (as opposed to ranking library candidates), see
+09_score_vs_fpft2216_reference_(Ryan).py -- it runs the real drug
+(FPFT-2216) through this same script via CANDIDATE_NAME and checks the
+result against the real PDB 9DWV structure. Don't use this script's own
+dockq column (self-referential, no real reference) as evidence a
+candidate is "good" -- only 09's positive control speaks to that.
 
 Run in the haddock3 venv:
     source .venv-haddock3/bin/activate
@@ -74,12 +100,39 @@ if shutil.which("haddock3") is None:
 from haddock.libs.libutil import get_prodrg_exec
 
 VINA_OUT_DIR = os.path.join(SCRIPT_DIR, "docking_tmp", "haddock3_novel_candidate")
-TERNARY_SCORES_CSV = os.path.join(SCRIPT_DIR, "06_final_ternary_results_(Ryan).csv")
-RESULTS_CSV = os.path.join(SCRIPT_DIR, "08_final_ternary_with_ligand_results_(Ryan).csv")
+# 06's progress ledger -- the candidate pool source. Deliberately NOT
+# 06_final_ternary_results_(Ryan).csv (06's own TOP_N_KEEP finalists):
+# that cut is decided by 06's dockq, the exact signal this script exists
+# to replace. Any candidate with a real (non "-") result here -- i.e. it
+# completed 06's ligand-free run without HADDOCK3 erroring -- is eligible.
+SIX_PROGRESS_CSV = os.path.join(SCRIPT_DIR, "06_complete_run_progress_(Ryan).csv")
+# This script's own running ledger -- every candidate attempted so far,
+# win or lose. Read back in on every run so a later session only adds new
+# candidates (06's progress ledger can grow over time as 06 keeps running;
+# nothing here requires 06 to be "finished" first).
+RESULTS_CSV = os.path.join(SCRIPT_DIR, "08_ternary_with_ligand_progress_(Ryan).csv")
+# The pipeline's actual final output -- the best TOP_N_KEEP of RESULTS_CSV
+# by THIS script's own HADDOCK score (lower/more negative = better),
+# rewritten after every candidate so it's always current, not gated on
+# every 06 candidate finishing first (08 is far more expensive than 06;
+# waiting for a full batch before showing any ranking isn't useful here).
+FINALISTS_CSV = os.path.join(SCRIPT_DIR, "08_final_ternary_with_ligand_results_(Ryan).csv")
 
-# Set this to a specific candidate's name to run only that one. Leave blank
-# to auto-pick the best-dockq candidate from 06's results.
+# Set this to a specific name to run only that one, bypassing the
+# 06-sourced pool entirely -- e.g. a real known compound as a positive
+# control (see 09_score_vs_fpft2216_reference_(Ryan).py) rather than a
+# library candidate. Requires <name>/crbn_contacts.txt and
+# CRBN_candidate_complex.pdb already present under VINA_OUT_DIR (run 04
+# with MANUAL_CANDIDATE set to that name/SMILES first). Its result is
+# NOT written to RESULTS_CSV/FINALISTS_CSV -- those are the funnel's
+# shared ranked output; a one-off candidate isn't part of that ranking.
 CANDIDATE_NAME = ""
+
+# How many of RESULTS_CSV's candidates to keep in FINALISTS_CSV, ranked by
+# HADDOCK score. Matches the scale 06/the rest of this pipeline has been
+# using for a "final" list -- adjust freely, this isn't derived from
+# anything upstream.
+TOP_N_KEEP = 20
 
 CRBN_RECEPTOR_ONLY_PDB = os.path.join(SCRIPT_DIR, "CRBN_receptor_thalidomide_Ryan.pdb")
 PPIL4_SOURCE_PDB = os.path.join(SCRIPT_DIR, "PPIL4_alphafold_(Ryan).pdb")
@@ -224,19 +277,56 @@ def print_capri_summary(haddock_run_dir):
     print_table(rows, CAPRI_COLUMNS, title=f"Final CAPRI cluster results ({os.path.basename(final_dir)})")
 
 
-def pick_candidate_name():
+def pick_candidate_names():
+    """Returns the pool of candidates eligible for this script: whatever's
+    currently in 06's progress ledger with a real (non "-") result. Not
+    filtered/ranked by 06's dockq -- see module docstring for why."""
     if CANDIDATE_NAME:
-        return CANDIDATE_NAME
-    if not os.path.exists(TERNARY_SCORES_CSV):
-        sys.exit(f"{TERNARY_SCORES_CSV} not found -- run 06 first, or set CANDIDATE_NAME directly.")
-    with open(TERNARY_SCORES_CSV, newline="") as f:
-        rows = [r for r in csv.DictReader(f) if r["dockq"] != "-"]
-    if not rows:
-        sys.exit(f"No usable dockq rows in {TERNARY_SCORES_CSV} -- set CANDIDATE_NAME directly.")
-    best = max(rows, key=lambda r: float(r["dockq"]))
-    print(f"CANDIDATE_NAME not set -- auto-selecting '{best['name']}' (best dockq "
-          f"{float(best['dockq']):.3f}) from {TERNARY_SCORES_CSV}.")
-    return best["name"]
+        return [CANDIDATE_NAME]
+    if not os.path.exists(SIX_PROGRESS_CSV):
+        sys.exit(f"{SIX_PROGRESS_CSV} not found -- run 06 first, or set CANDIDATE_NAME directly.")
+    with open(SIX_PROGRESS_CSV, newline="") as f:
+        names = [r["name"] for r in csv.DictReader(f) if r["dockq"] != "-"]
+    if not names:
+        sys.exit(f"No candidates with a real result in {SIX_PROGRESS_CSV} yet -- "
+                  "run 06 first, or set CANDIDATE_NAME directly.")
+    print(f"CANDIDATE_NAME not set -- {len(names)} candidate(s) eligible from {SIX_PROGRESS_CSV} "
+          f"(completed 06 without failing): {', '.join(names)}")
+    return names
+
+
+def load_existing_rows():
+    """Load whatever's already in RESULTS_CSV so this run only adds new
+    candidates -- never re-does a 45 min - 1.5 hr candidate it already has
+    a result for."""
+    if not os.path.exists(RESULTS_CSV):
+        return []
+    with open(RESULTS_CSV, newline="") as f:
+        rows = list(csv.DictReader(f))
+    loaded = []
+    for r in rows:
+        if r["dockq"] == "-":
+            loaded.append((r["name"], None))
+        else:
+            loaded.append((r["name"], {
+                "caprieval_rank": r["cluster_rank"], "cluster_id": r["cluster_id"], "n": r["n"],
+                "score": r["score"], "dockq": r["dockq"], "irmsd": r["irmsd"],
+                "fnat": r["fnat"], "lrmsd": r["lrmsd"],
+            }))
+    return loaded
+
+
+def write_results_csv(all_rows, path=RESULTS_CSV):
+    with open(path, "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["name", "cluster_rank", "cluster_id", "n", "score", "dockq", "irmsd", "fnat", "lrmsd"])
+        for candidate_name, r in all_rows:
+            if r is None:
+                writer.writerow([candidate_name, "-", "-", "-", "-", "-", "-", "-", "-"])
+            else:
+                writer.writerow([candidate_name, r["caprieval_rank"], r["cluster_id"], r["n"],
+                                  r["score"], r["dockq"], r["irmsd"], r["fnat"], r["lrmsd"]])
+    print(f"Wrote {path}")
 
 
 def extract_ligand_pdb(candidate_name, out_path):
@@ -244,7 +334,8 @@ def extract_ligand_pdb(candidate_name, out_path):
     CRBN+ligand complex into a standalone PDB."""
     complex_path = os.path.join(VINA_OUT_DIR, candidate_name, "CRBN_candidate_complex.pdb")
     if not os.path.exists(complex_path):
-        sys.exit(f"{complex_path} not found -- run 04 for this candidate first.")
+        sys.exit(f"{complex_path} not found -- run 04 for this candidate first "
+                  "(MANUAL_CANDIDATE for a one-off compound like a positive control).")
     with open(complex_path) as f:
         lig_lines = [l for l in f if l.startswith("HETATM") and l[17:20] == "LIG"]
     if not lig_lines:
@@ -332,32 +423,19 @@ def run_prodrg_for_ligand(ligand_pdb, out_dir):
     return top_path, par_path, fixed_pdb_path
 
 
-def main():
-    os.makedirs(RUN_DIR_BASE, exist_ok=True)
-    candidate_name = pick_candidate_name()
+def run_candidate(candidate_name, ppil4_actpass, label):
+    """Run the ligand-inclusive 3-body HADDOCK3 routine for one candidate.
+    Returns the top (rank-1, best-score) cluster row, or None if setup/
+    HADDOCK3 fails or no cluster was found."""
     candidate_run_dir = os.path.join(RUN_DIR_BASE, candidate_name)
     os.makedirs(candidate_run_dir, exist_ok=True)
-    print(f"[{candidate_name}] step 0/{len(STEP_PLAN)}: preparing ligand topology/restraints")
-
-    # --- PPIL4-side setup (candidate-independent) ---
-    with open(PPIL4_PDB, "w") as out:
-        run(["pdb_chain", "-B", PPIL4_SOURCE_PDB], stdout=out)
-    # Real RRM-domain interface residues from PDB 9DWV (see 05/06's
-    # ppil4_pocket_residues()) -- not the old CypA-homology pocket.
-    ppil4_active = [249, 250, 273, 275, 276, 277, 278, 279]
-    ppil4_active_csv = ",".join(str(r) for r in ppil4_active)
-    ppil4_passive_out = subprocess.run(
-        ["haddock3-restraints", "passive_from_active", PPIL4_PDB, ppil4_active_csv, "-c", "B"],
-        check=True, capture_output=True, text=True,
-    ).stdout.strip()
-    ppil4_passive = [int(x) for x in ppil4_passive_out.split()] if ppil4_passive_out else []
-    ppil4_actpass = os.path.join(candidate_run_dir, "ppil4_actpass.txt")
-    write_actpass_file(ppil4_active, ppil4_passive, ppil4_actpass)
+    print(f"[{label}] step 0/{len(STEP_PLAN)}: preparing ligand topology/restraints")
 
     # --- CRBN-side setup (from 04's Vina contact residues) ---
     contacts_path = os.path.join(VINA_OUT_DIR, candidate_name, "crbn_contacts.txt")
     if not os.path.exists(contacts_path):
-        sys.exit(f"{contacts_path} not found -- run 06 for this candidate first.")
+        print(f"[{label}] {contacts_path} not found -- run 04 for this candidate first. Skipping.")
+        return None
     with open(contacts_path) as f:
         crbn_active = [int(x) for x in f.readline().split()]
     crbn_active_csv = ",".join(str(r) for r in crbn_active)
@@ -444,24 +522,98 @@ ligand_param_fname = "{ligand_param}"
 
     if os.path.exists(haddock_run_dir):
         shutil.rmtree(haddock_run_dir)
-    print(f"[{candidate_name}] starting HADDOCK3 3-body (CRBN+ligand+PPIL4) run "
+    print(f"[{label}] starting HADDOCK3 3-body (CRBN+ligand+PPIL4) run "
           f"(rough estimate: 45 min - 1.5 hr, similar to 06)")
-    run_with_heartbeat(["haddock3", cfg_path], run_dir=haddock_run_dir, step_plan=STEP_PLAN, label=candidate_name)
+    run_with_heartbeat(["haddock3", cfg_path], run_dir=haddock_run_dir, step_plan=STEP_PLAN, label=label)
 
     print_capri_summary(haddock_run_dir)
     _, rows = read_final_capri_rows(haddock_run_dir)
-    if rows:
-        top_row = rows[0]
-        with open(RESULTS_CSV, "w", newline="") as f:
-            writer = csv.writer(f)
-            writer.writerow(["name", "cluster_rank", "cluster_id", "n", "score", "dockq", "irmsd", "fnat", "lrmsd"])
-            writer.writerow([candidate_name, top_row["caprieval_rank"], top_row["cluster_id"], top_row["n"],
-                              top_row["score"], top_row["dockq"], top_row["irmsd"], top_row["fnat"],
-                              top_row["lrmsd"]])
-        print(f"Wrote {RESULTS_CSV}")
+    return rows[0] if rows else None
+
+
+def write_finalists(all_rows):
+    """Best TOP_N_KEEP of all_rows by HADDOCK score (lower/more negative =
+    better) -- not dockq (self-referential, see module docstring). Written
+    every time, not gated on the whole pool finishing -- 08 is expensive
+    enough that seeing an up-to-date ranking as candidates trickle in is
+    more useful than waiting for a batch to fully complete."""
+    finished = [(n, r) for n, r in all_rows if r is not None]
+    failed = len(all_rows) - len(finished)
+    if failed:
+        print(f"{failed}/{len(all_rows)} candidate(s) had no HADDOCK3 result (failed/skipped) -- "
+              "excluded from the finalist pool.")
+    finished.sort(key=lambda pair: float(pair[1]["score"]))
+    finalists = finished[:TOP_N_KEEP]
+    write_results_csv(finalists, path=FINALISTS_CSV)
+    print(f"Finalists (best {len(finalists)} of {len(finished)} completed, by HADDOCK score): "
+          f"{', '.join(n for n, _ in finalists)}")
+
+
+def main():
+    os.makedirs(RUN_DIR_BASE, exist_ok=True)
+    candidate_names = pick_candidate_names()
+
+    all_rows = load_existing_rows()
+    existing_names = {name for name, _ in all_rows}
+    if existing_names:
+        print(f"{RESULTS_CSV} already has {len(existing_names)} candidate(s) -- keeping them, only adding new ones.")
+
+    new_candidates = [n for n in candidate_names if n not in existing_names]
+    already_done = [n for n in candidate_names if n in existing_names]
+    if already_done:
+        print(f"Skipping {len(already_done)} candidate(s) already in {RESULTS_CSV}: {', '.join(already_done)}")
+    if not new_candidates:
+        print("Nothing new to run this session.")
+        if not CANDIDATE_NAME:
+            write_finalists(all_rows)
+        return
+    print(f"Running the ligand-inclusive HADDOCK3 routine on {len(new_candidates)} candidate(s): "
+          f"{', '.join(new_candidates)}")
+
+    # PPIL4-side restraints don't depend on the candidate -- compute once,
+    # not once per candidate. Real RRM-domain interface residues from
+    # FPFT-2216 (PDB 9DWV) -- same as 05/06's ppil4_pocket_residues().
+    with open(PPIL4_PDB, "w") as out:
+        run(["pdb_chain", "-B", PPIL4_SOURCE_PDB], stdout=out)
+    ppil4_active = [249, 250, 273, 275, 276, 277, 278, 279]
+    ppil4_active_csv = ",".join(str(r) for r in ppil4_active)
+    ppil4_passive_out = subprocess.run(
+        ["haddock3-restraints", "passive_from_active", PPIL4_PDB, ppil4_active_csv, "-c", "B"],
+        check=True, capture_output=True, text=True,
+    ).stdout.strip()
+    ppil4_passive = [int(x) for x in ppil4_passive_out.split()] if ppil4_passive_out else []
+    ppil4_actpass = os.path.join(RUN_DIR_BASE, "ppil4_actpass.txt")
+    write_actpass_file(ppil4_active, ppil4_passive, ppil4_actpass)
+
+    candidates_loop_start = time.time()
+    for i, candidate_name in enumerate(new_candidates, 1):
+        remaining = len(new_candidates) - i
+        elapsed_so_far = time.time() - candidates_loop_start
+        avg_per_candidate = elapsed_so_far / (i - 1) if i > 1 else None
+        eta_str = (f"~{avg_per_candidate * remaining / 60:.0f} min remaining for the run"
+                   if avg_per_candidate else "remaining time unknown until candidate 1 finishes")
+        label = f"{candidate_name}, {i}/{len(new_candidates)}, {remaining} left"
+        print(f"\n[{label}] ({elapsed_so_far / 60:.1f} min elapsed this run, {eta_str} | "
+              f"{(time.time() - SCRIPT_START_TIME) / 60:.1f} min total script time)")
+
+        try:
+            top_row = run_candidate(candidate_name, ppil4_actpass, label)
+        except subprocess.CalledProcessError:
+            print(f"[{label}] HADDOCK3 failed for this candidate -- skipping it and continuing with the rest.")
+            top_row = None
+
+        all_rows.append((candidate_name, top_row))
+        if not CANDIDATE_NAME:
+            write_results_csv(all_rows)  # unsorted, for resilience
+            write_finalists(all_rows)
+
+    if CANDIDATE_NAME:
+        print(f"\nCANDIDATE_NAME set -- skipping {RESULTS_CSV}/{FINALISTS_CSV} (those are the funnel's "
+              f"shared ranked output; a one-off candidate isn't part of that ranking). Its docking output "
+              f"is still under {RUN_DIR_BASE}/{CANDIDATE_NAME}/.")
 
     total = time.time() - SCRIPT_START_TIME
-    print(f"Total script runtime: {total:.0f}s ({total / 60:.1f} min)")
+    print(f"\nTotal script runtime: {total:.0f}s ({total / 60:.1f} min)")
 
 
 if __name__ == "__main__":
