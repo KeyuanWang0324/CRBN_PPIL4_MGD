@@ -55,12 +55,15 @@ VINA_SCREENING_CSV = os.path.join(SCRIPT_DIR, "04_vina_screening_scores_for_05_(
 # 05's ranked output (best dockq first) -- the primary source for auto-
 # picking a finalist when CANDIDATE_NAME is left blank.
 TERNARY_SCORES_CSV = os.path.join(SCRIPT_DIR, "05_ternary_docking_scores_for_06_(Ryan).csv")
+RUN_DIR_BASE = os.path.join(SCRIPT_DIR, "docking_tmp", "haddock3_complete_run")
 # This script's own running ledger -- every candidate attempted so far (up to
 # TOP_N), win or lose. Kept as a full history (not trimmed to TOP_N_KEEP) so
 # a resumed/batched run (see RANK_START) never re-runs a 45 min - 1.5 hr
-# candidate it already has a result for. Terminal file for resume purposes,
-# so no "_for_XX" suffix -- FINALISTS_CSV below is the actual deliverable.
-RESULTS_CSV = os.path.join(SCRIPT_DIR, "06_complete_run_progress_(Ryan).csv")
+# candidate it already has a result for. Lives under docking_tmp/
+# (gitignored, out of the way) rather than the project root -- it's
+# internal bookkeeping for resume/dedup, not something to browse;
+# FINALISTS_CSV below is the actual deliverable.
+RESULTS_CSV = os.path.join(RUN_DIR_BASE, "06_complete_run_progress_(Ryan).csv")
 # The pipeline's actual final output -- the best TOP_N_KEEP of RESULTS_CSV
 # by 06's own dockq, written once all TOP_N candidates have a result.
 FINALISTS_CSV = os.path.join(SCRIPT_DIR, "06_final_ternary_results_(Ryan).csv")
@@ -96,7 +99,6 @@ RANK_START = 1
 # parenthesis-free since it's fed directly to HADDOCK3 as a molecule.
 CRBN_RECEPTOR_ONLY_PDB = os.path.join(SCRIPT_DIR, "CRBN_receptor_thalidomide_Ryan.pdb")
 PPIL4_SOURCE_PDB = os.path.join(SCRIPT_DIR, "PPIL4_alphafold_(Ryan).pdb")
-RUN_DIR_BASE = os.path.join(SCRIPT_DIR, "docking_tmp", "haddock3_complete_run")
 PPIL4_PDB = os.path.join(RUN_DIR_BASE, "PPIL4_chainB.pdb")
 
 # HADDOCK3's own `ncores` default is 4 regardless of machine size -- bump it

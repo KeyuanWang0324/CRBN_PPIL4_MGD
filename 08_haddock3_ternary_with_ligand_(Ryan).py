@@ -105,7 +105,8 @@ VINA_OUT_DIR = os.path.join(SCRIPT_DIR, "docking_tmp", "haddock3_novel_candidate
 # that cut is decided by 06's dockq, the exact signal this script exists
 # to replace. Any candidate with a real (non "-") result here -- i.e. it
 # completed 06's ligand-free run without HADDOCK3 erroring -- is eligible.
-SIX_PROGRESS_CSV = os.path.join(SCRIPT_DIR, "06_complete_run_progress_(Ryan).csv")
+SIX_PROGRESS_CSV = os.path.join(SCRIPT_DIR, "docking_tmp", "haddock3_complete_run",
+                                 "06_complete_run_progress_(Ryan).csv")
 RUN_DIR_BASE = os.path.join(SCRIPT_DIR, "docking_tmp", "haddock3_ternary_with_ligand_run")
 # This script's own running ledger -- every candidate attempted so far,
 # win or lose. Read back in on every run so a later session only adds new
