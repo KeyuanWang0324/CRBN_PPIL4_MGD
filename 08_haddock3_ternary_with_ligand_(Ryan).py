@@ -106,11 +106,15 @@ VINA_OUT_DIR = os.path.join(SCRIPT_DIR, "docking_tmp", "haddock3_novel_candidate
 # to replace. Any candidate with a real (non "-") result here -- i.e. it
 # completed 06's ligand-free run without HADDOCK3 erroring -- is eligible.
 SIX_PROGRESS_CSV = os.path.join(SCRIPT_DIR, "06_complete_run_progress_(Ryan).csv")
+RUN_DIR_BASE = os.path.join(SCRIPT_DIR, "docking_tmp", "haddock3_ternary_with_ligand_run")
 # This script's own running ledger -- every candidate attempted so far,
 # win or lose. Read back in on every run so a later session only adds new
 # candidates (06's progress ledger can grow over time as 06 keeps running;
-# nothing here requires 06 to be "finished" first).
-RESULTS_CSV = os.path.join(SCRIPT_DIR, "08_ternary_with_ligand_progress_(Ryan).csv")
+# nothing here requires 06 to be "finished" first). Lives under
+# docking_tmp/ (gitignored, out of the way) rather than the project root --
+# it's internal bookkeeping for resume/dedup, not something to browse;
+# FINALISTS_CSV below is the actual deliverable.
+RESULTS_CSV = os.path.join(RUN_DIR_BASE, "08_ternary_with_ligand_progress_(Ryan).csv")
 # The pipeline's actual final output -- the best TOP_N_KEEP of RESULTS_CSV
 # by THIS script's own HADDOCK score (lower/more negative = better),
 # rewritten after every candidate so it's always current, not gated on
@@ -136,7 +140,6 @@ TOP_N_KEEP = 20
 
 CRBN_RECEPTOR_ONLY_PDB = os.path.join(SCRIPT_DIR, "CRBN_receptor_thalidomide_Ryan.pdb")
 PPIL4_SOURCE_PDB = os.path.join(SCRIPT_DIR, "PPIL4_alphafold_(Ryan).pdb")
-RUN_DIR_BASE = os.path.join(SCRIPT_DIR, "docking_tmp", "haddock3_ternary_with_ligand_run")
 PPIL4_PDB = os.path.join(RUN_DIR_BASE, "PPIL4_chainB.pdb")
 
 NCORES = max(1, (os.cpu_count() or 4) - 1)

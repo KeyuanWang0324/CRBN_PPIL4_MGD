@@ -1,13 +1,13 @@
 """
 00_validate_docking_interface, run against 08's actual FINAL ranked
-output (08_final_ternary_with_ligand_results_(Ryan).csv) -- the top 5
-candidates by 08's own HADDOCK score, the pipeline's real final ranking
-(see chat discussion for why 06's dockq was replaced by 08's
-ligand-inclusive score). Unlike 00_validate_docking_interface_04/05
-(which report aggregate stats over the whole screening pool), this
-reports each of the top 5 individually, matching the original single-
-candidate 00_validate_docking_interface_(Ryan).py's per-candidate agree()
-output -- 5 candidates is small enough to just look at directly.
+output (08_final_ternary_with_ligand_results_(Ryan).csv) -- all TOP_N
+candidates (None = every finalist) by 08's own HADDOCK score, the
+pipeline's real final ranking (see chat discussion for why 06's dockq
+was replaced by 08's ligand-inclusive score). Reports each candidate
+individually, matching the original single-candidate
+00_validate_docking_interface_(Ryan).py's per-candidate agree() output,
+plus an aggregate summary (found-the-spot counts, mean overlap) matching
+00_validate_docking_interface_04/05's population-level style.
 
 REAL_CRBN/REAL_PPIL4 are the same ground-truth residue sets from
 session4_handson.md (Part 2a) -- pasted verbatim, not recomputed, not
@@ -33,7 +33,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 RESULTS_CSV = os.path.join(SCRIPT_DIR, "08_final_ternary_with_ligand_results_(Ryan).csv")
 RUN_DIR_BASE = os.path.join(SCRIPT_DIR, "docking_tmp", "haddock3_ternary_with_ligand_run")
 
-TOP_N = 5
+TOP_N = None  # None = every finalist in RESULTS_CSV; set an int to check only the top N
 
 # Real interface residues from the FPFT-2216 / PDB 9DWV structure (see
 # session4_handson.md's REAL_CRBN/REAL_PPIL4).
@@ -111,9 +111,13 @@ def chain_contacts(atoms_a, atoms_b, cutoff=CUTOFF):
 def main():
     with open(RESULTS_CSV, newline="") as f:
         rows = list(csv.DictReader(f))
-    top_rows = rows[:TOP_N]
+    top_rows = rows[:TOP_N] if TOP_N else rows
     print(f"Checking 08's top {len(top_rows)} (of {len(rows)}) finalists by HADDOCK score "
           f"against the real FPFT-2216/9DWV interface:\n")
+
+    crbn_found_counts, ppil4_found_counts = [], []
+    crbn_spot, ppil4_spot = 0, 0
+    missing = 0
 
     for rank, row in enumerate(top_rows, 1):
         name = row["name"]
@@ -121,6 +125,7 @@ def main():
         model_path = find_top_model_path(name)
         if model_path is None:
             print("  no rank-1 model found -- skipping\n")
+            missing += 1
             continue
 
         lines = read_pdb_lines(model_path)
@@ -130,9 +135,26 @@ def main():
         your_crbn = chain_contacts(crbn_atoms, ppil4_atoms)
         your_ppil4 = chain_contacts(ppil4_atoms, crbn_atoms)
 
+        crbn_hit = your_crbn & REAL_CRBN
+        ppil4_hit = your_ppil4 & REAL_PPIL4
+        crbn_found_counts.append(len(crbn_hit))
+        ppil4_found_counts.append(len(ppil4_hit))
+        if len(crbn_hit) >= len(REAL_CRBN) / 2:
+            crbn_spot += 1
+        if len(ppil4_hit) >= len(REAL_PPIL4) / 2:
+            ppil4_spot += 1
+
         agree(your_crbn, REAL_CRBN, "  CRBN ")
         agree(your_ppil4, REAL_PPIL4, "  PPIL4")
         print()
+
+    checked = len(crbn_found_counts)
+    print(f"=== Summary ({checked} checked, {missing} missing model) ===")
+    if checked:
+        print(f"CRBN : FOUND THE SPOT {crbn_spot}/{checked} ({crbn_spot / checked:.0%}), "
+              f"mean overlap {sum(crbn_found_counts) / checked:.2f}/{len(REAL_CRBN)}")
+        print(f"PPIL4: FOUND THE SPOT {ppil4_spot}/{checked} ({ppil4_spot / checked:.0%}), "
+              f"mean overlap {sum(ppil4_found_counts) / checked:.2f}/{len(REAL_PPIL4)}")
 
 
 if __name__ == "__main__":
