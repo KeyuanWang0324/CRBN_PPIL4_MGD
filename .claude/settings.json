@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /Users/ryanwang/Desktop/ISEF/.claude/hooks/auto-push.sh",
+            "timeout": 60,
+            "statusMessage": "Auto-committing and pushing to GitHub..."
+          }
+        ]
+      }
+    ]
+  }
+}
