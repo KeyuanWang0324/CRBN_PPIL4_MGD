@@ -16,14 +16,23 @@ haddock3_ternary_with_ligand_run/<candidate>/run1/9_caprieval/capri_ss.tsv,
 same TSV lookup logic as 08/09) and copies it to ternary_structures/ with
 a clear name.
 
+Also writes a chain-colored PyMOL session (.pse) next to each plain .pdb --
+chain A (CRBN) skyblue cartoon, chain B (PPIL4) salmon cartoon, chain C
+(the ligand) yellow sticks -- so opening the .pse shows the coloring
+immediately instead of needing to color it by hand each time. Requires
+PyMOL (checked at PYMOL_CANDIDATES below); if not found, the plain .pdb
+is still written and only the colored-session step is skipped.
+
 Run with any Python that can read 08_final_ternary_with_ligand_results_(Ryan).csv
-(no haddock3/rdkit/vina/pymol dependency needed):
+(no haddock3/rdkit/vina dependency needed; PyMOL only for the colored
+session, see above):
     python3 "07_extract_top_structures_(Ryan).py"
 """
 import csv
 import gzip
 import os
 import shutil
+import subprocess
 import sys
 import time
 
@@ -38,6 +47,37 @@ OUTPUT_DIR = os.path.join(SCRIPT_DIR, "ternary_structures")
 # structure for. None = every candidate in RESULTS_CSV. RESULTS_CSV is
 # already sorted best-score-first.
 TOP_N = None
+
+# Same PyMOL search locations the old (06-based) version of this script used.
+PYMOL_CANDIDATES = ["/Applications/PyMOL.app/Contents/bin/pymol", "pymol"]
+
+_COLOR_CHAINS_SCRIPT = """
+import sys
+from pymol import cmd
+
+pdb_path, out_path = sys.argv[-2:]
+cmd.load(pdb_path, "struct")  # "model" is a reserved PyMOL selector keyword -- avoid it as an object name
+cmd.hide("everything")
+cmd.bg_color("white")
+cmd.show("cartoon", "chain A or chain B")
+cmd.show("sticks", "chain C")
+cmd.color("skyblue", "chain A")
+cmd.color("salmon", "chain B")
+cmd.color("yellow", "chain C")
+cmd.util.cnc("chain C")  # color ligand carbons yellow, heteroatoms by element
+cmd.orient("struct")
+cmd.save(out_path, "struct")
+"""
+
+
+def find_pymol_bin():
+    for candidate in PYMOL_CANDIDATES:
+        if os.path.isabs(candidate):
+            if os.path.exists(candidate):
+                return candidate
+        elif shutil.which(candidate):
+            return candidate
+    return None
 
 
 def find_top_model_path(candidate_name):
@@ -81,6 +121,21 @@ def extract_structure(candidate_name):
     return out_path
 
 
+def color_chains(candidate_name, pdb_path, pymol_bin, script_path):
+    """Write a chain-colored PyMOL session (.pse) next to pdb_path.
+    Returns the written path, or None if PyMOL failed."""
+    out_path = pdb_path[:-len(".pdb")] + "_colored.pse"
+    result = subprocess.run(
+        [pymol_bin, "-cq", script_path, "--", pdb_path, out_path],
+        capture_output=True, text=True,
+    )
+    if result.returncode != 0 or not os.path.exists(out_path):
+        print(f"[{candidate_name}] PyMOL coloring failed:\n{result.stdout}\n{result.stderr}")
+        return None
+    print(f"[{candidate_name}] wrote {out_path} (chain A=skyblue, B=salmon, C=yellow)")
+    return out_path
+
+
 def main():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
@@ -92,12 +147,29 @@ def main():
     print(f"Extracting structures for {len(candidates)} candidate(s) from {RESULTS_CSV}: "
           f"{', '.join(candidates)}")
 
+    pymol_bin = find_pymol_bin()
+    script_path = None
+    if pymol_bin:
+        script_path = os.path.join(OUTPUT_DIR, "_pymol_color_chains_script.py")
+        with open(script_path, "w") as f:
+            f.write(_COLOR_CHAINS_SCRIPT)
+    else:
+        print("PyMOL not found (checked: " + ", ".join(PYMOL_CANDIDATES) + ") -- "
+              "will still write the plain structures, but skipping the colored-session step.")
+
     written = []
     for i, candidate_name in enumerate(candidates, 1):
         print(f"[{i}/{len(candidates)}] {candidate_name}")
         out_path = extract_structure(candidate_name)
         if out_path:
             written.append(out_path)
+            if pymol_bin:
+                colored_path = color_chains(candidate_name, out_path, pymol_bin, script_path)
+                if colored_path:
+                    written.append(colored_path)
+
+    if script_path and os.path.exists(script_path):
+        os.remove(script_path)
 
     print(f"\nWrote {len(written)} file(s) to {OUTPUT_DIR}")
 
