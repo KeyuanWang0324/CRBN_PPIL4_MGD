@@ -3,3 +3,5 @@
 .venv-haddock3/
 docking_tmp/
 __pycache__/
+locked_campaign_runs/
+PPIL4_CRBN_locked_ternary_model_v3_(Tyrone)/run_ppil4_ternary*/

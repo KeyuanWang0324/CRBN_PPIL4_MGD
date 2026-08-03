@@ -1,0 +1,10 @@
+Source path: haddock3_ternary/validation_9DWV/reference_9DWV_ternary.pdb
+Source SHA-256: f8934639140674d6ca464462fb43e03f0af9ec7e60cca7830c79db5128427d92
+Locked reference: reference_9DWV_CRBN_A_PPIL4_B_FPFT_C.pdb
+Locked reference SHA-256: 29d753b21021053e132042cccd8068ad2ef350bccbd8213d53d0e0c382d0a134
+Source chain A (DDB1): omitted
+Source chain B (CRBN): remapped to locked chain A
+Source chain C (PPIL4 RRM): remapped to locked chain B
+Source chain E (FPFT-2216): remapped to locked chain C, residue LIG 900
+DockQ interface: receptor_chain A (CRBN), ligand_chains B (PPIL4)
+Candidate ligand chain C is deliberately excluded from DockQ so different ligand chemistries are not atom-matched to FPFT-2216.

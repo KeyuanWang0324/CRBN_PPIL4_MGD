@@ -1,0 +1,11 @@
+Original source path: /Users/tyronezong/Downloads/final_corrected_31_ranked.csv
+Pinned source: sources/final_corrected_31_ranked.csv
+Pinned source SHA-256: f565300453960a16049251a1eac312a227581eede619676e0663f13c76c387c3
+Selection: all rows except the row whose molecule is FPFT-2216
+Positive control handling: FPFT-2216 remains the separate locked acceptance control
+Locked output: candidates_30_final_corrected_ranked.csv
+Locked output SHA-256: 690ff3e15d9ba84d67432f8f75d71f8b8cf8e4c251989d4b9ad0afced37f27b5
+Locked output rows: 30
+Locked output unique molecule IDs: 30
+Locked output unique SMILES: 30
+Rank definition: locked_candidate_rank 1 through 30 follows source order after removing FPFT-2216

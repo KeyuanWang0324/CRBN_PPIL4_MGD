@@ -1,0 +1,8 @@
+{
+  "protocol_version": "ppil4-lock-v3-45ee93aea3ab",
+  "haddock3_version": "2026.7.0",
+  "setup_only_validation": "passed",
+  "fpft_golden_reference": "pending",
+  "candidate_runs_allowed": false,
+  "reason": "Run FPFT-2216.cfg with ncores=1, aggregate all successful minimized models using RANKING_RULES.md, and independently reproduce REFERENCE_FPFT.json before running the locked 30-candidate queue."
+}

@@ -1,0 +1,13 @@
+{
+  "status": "PENDING_LOCKED_PROTOCOL_RUN",
+  "molecule": "FPFT-2216",
+  "mean_best_10": null,
+  "best_haddock": null,
+  "sd_best_10": null,
+  "cluster_id": null,
+  "dockq_vs_9dwv": null,
+  "ncores": 1,
+  "seed": 42,
+  "haddock3_version": "2026.7.0",
+  "protocol_version": "ppil4-lock-v3-45ee93aea3ab"
+}

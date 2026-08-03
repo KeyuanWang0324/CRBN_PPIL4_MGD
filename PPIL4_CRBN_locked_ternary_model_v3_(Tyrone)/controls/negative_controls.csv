@@ -1,0 +1,4 @@
+control_id,name,smiles,canonical_smiles,molecular_formula,molecular_weight_g_mol
+negative_control_1,negative_control_1,"CN1Cc2c(cccc2-c2ccc(N3CCNCC3)cc2)C1=O","CN1Cc2c(cccc2-c2ccc(N3CCNCC3)cc2)C1=O",C19H21N3O,307.397
+negative_control_2,FPFT-2216_no_glutarimide,"COc1cscc1-c1c[nH]nn1","COc1cscc1-c1c[nH]nn1",C7H7N3OS,181.220
+negative_control_3,negative_control_3,"O=C1CCC(N2Cc3ccccc3C2=O)C(=O)N1","O=C1CCC(N2Cc3ccccc3C2=O)C(=O)N1",C13H12N2O3,244.250

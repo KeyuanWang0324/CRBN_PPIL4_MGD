@@ -1,0 +1,31 @@
+locked_candidate_rank,final_corrected_haddock_rank,source,molecule,label,canonical_smiles
+1,1,corrected halogen retry,1323,candidate_1323,N#Cc1c(Br)cc2c(c1C#N)C(=O)N(C1CCC(=O)NC1=O)C2=O
+2,2,corrected halogen retry,44,candidate_44,O=C1CCC(N2C(=O)c3ccc(I)c(Br)c3C2=O)C(=O)N1
+3,3,corrected rerun,118,candidate_118,COc1ccc2c(c1C#N)C(=O)N(C1CCC(=O)NC1=O)C2=O
+4,4,corrected halogen retry,33,candidate_33,O=C1CCC(N2C(=O)c3ccc(Br)c(Cl)c3C2=O)C(=O)N1
+5,5,corrected halogen retry,150,candidate_150,N#Cc1cc(Br)c2c(c1)C(=O)N(C1CCC(=O)NC1=O)C2=O
+6,6,corrected rerun,34,candidate_34,O=C1CCC(N2C(=O)c3ccc(I)c(Cl)c3C2=O)C(=O)N1
+7,7,corrected rerun,67,candidate_67,Cc1c(O)ccc2c1C(=O)N(C1CCC(=O)NC1=O)C2=O
+8,8,corrected rerun,37,candidate_37,O=C1CCC(N2C(=O)c3ccc(O)c(Cl)c3C2=O)C(=O)N1
+9,9,corrected rerun,58,candidate_58,COc1ccc2c(c1I)C(=O)N(C1CCC(=O)NC1=O)C2=O
+10,10,corrected rerun,171,candidate_171,CCc1cc(F)cc2c1C(=O)N(C1CCC(=O)NC1=O)C2=O
+11,11,corrected halogen retry,773,candidate_773,Cc1c(Br)cc2c(c1C)C(=O)N(C1CCC(=O)NC1=O)C2=O
+12,12,corrected rerun,64,candidate_64,Cc1c(I)ccc2c1C(=O)N(C1CCC(=O)NC1=O)C2=O
+13,14,corrected halogen retry,163,candidate_163,Cc1cc(Br)cc2c1C(=O)N(C1CCC(=O)NC1=O)C2=O
+14,15,corrected halogen retry,47,candidate_47,O=C1CCC(N2C(=O)c3ccc(O)c(Br)c3C2=O)C(=O)N1
+15,16,corrected halogen retry,45,candidate_45,Cc1ccc2c(c1Br)C(=O)N(C1CCC(=O)NC1=O)C2=O
+16,17,corrected halogen retry,3,candidate_3,O=C1CCC(N2C(=O)c3cccc(Br)c3C2=O)C(=O)N1
+17,18,corrected rerun,17,candidate_17,O=C1CCC(N2C(=O)c3ccc(O)cc3C2=O)C(=O)N1
+18,19,corrected rerun,181,candidate_181,O=C1CCC(N2C(=O)c3cc(F)cc(O)c3C2=O)C(=O)N1
+19,20,corrected rerun,337,candidate_337,O=C1CCC(N2C(=O)c3cc(O)c(F)c(F)c3C2=O)C(=O)N1
+20,21,corrected halogen retry,537,candidate_537,O=C1CCC(N2C(=O)c3cc(O)c(F)c(Br)c3C2=O)C(=O)N1
+21,22,corrected rerun,6,candidate_6,CCc1cccc2c1C(=O)N(C1CCC(=O)NC1=O)C2=O
+22,23,corrected rerun,57,candidate_57,O=C1CCC(N2C(=O)c3ccc(O)c(I)c3C2=O)C(=O)N1
+23,24,corrected rerun,14,candidate_14,O=C1CCC(N2C(=O)c3ccc(I)cc3C2=O)C(=O)N1
+24,25,corrected rerun,119,candidate_119,N#Cc1c(N)ccc2c1C(=O)N(C1CCC(=O)NC1=O)C2=O
+25,26,corrected rerun,27,candidate_27,O=C1CCC(N2C(=O)c3ccc(O)c(F)c3C2=O)C(=O)N1
+26,27,corrected halogen retry,107,candidate_107,Nc1c(O)ccc2c1C(=O)N(C1CCC(=O)NC1=O)C2=O
+27,28,corrected rerun,186,candidate_186,CCc1cc(O)c2c(c1)C(=O)N(C1CCC(=O)NC1=O)C2=O
+28,29,corrected rerun,7,candidate_7,O=C1CCC(N2C(=O)c3cccc(O)c3C2=O)C(=O)N1
+29,30,corrected halogen retry,63,candidate_63,Cc1c(Br)ccc2c1C(=O)N(C1CCC(=O)NC1=O)C2=O
+30,31,corrected rerun,71,candidate_71,CCc1c(F)ccc2c1C(=O)N(C1CCC(=O)NC1=O)C2=O

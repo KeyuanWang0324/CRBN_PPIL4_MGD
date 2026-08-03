@@ -1,0 +1,6 @@
+Molecule: FPFT-2216 positive control
+Starting pose source: haddock3_ternary/guided_ppil4_9DWV_corrected_full_calibration/baseline_fpft2216_from_vina/fpft2216_vina_pose_corrected_aligned_to_9DWV.pdb
+Pose recipe: FPFT-2216 Vina pose in the 4CI1 frame, transformed by the corrected shared 4CI1-to-9DWV recipe.
+Prepared with: HADDOCK3 2026.7.0 bundled PRODRG arm64-darwin
+Prepared outputs: FPFT-2216_prodrg_fixed.pdb, FPFT-2216_prodrg.top, FPFT-2216_prodrg.param
+Residue convention after PRODRG: chain C, residue 900

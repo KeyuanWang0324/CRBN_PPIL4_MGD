@@ -1,0 +1,8 @@
+HADDOCK3 version: 2026.7.0
+HADDOCK3 executable used to generate fixed artifacts: /opt/anaconda3/envs/my-rdkit-env/bin/haddock3
+Restraint executable: /opt/anaconda3/envs/my-rdkit-env/bin/haddock3-restraints
+PRODRG architecture: arm64-darwin
+PRODRG binary SHA-256: 5310cfe5b99fdac912c76138f6cab712cd1270a3f4fe3f3f649278d966b987fd
+PRODRG parameter SHA-256: e523f1b99b2888a3fc0cce91ef26905e0e1cf1771d2664be263219ee7b94ef82
+Seed: 42
+Locked-protocol rule: FPFT-2216 must reproduce REFERENCE_FPFT.json before candidate runs are accepted.
