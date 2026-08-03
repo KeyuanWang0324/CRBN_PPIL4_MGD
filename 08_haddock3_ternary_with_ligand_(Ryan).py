@@ -80,6 +80,7 @@ import glob
 import os
 import re
 import shutil
+import statistics
 import subprocess
 import sys
 import tempfile
@@ -141,7 +142,15 @@ TOP_N_KEEP = 20
 
 CRBN_RECEPTOR_ONLY_PDB = os.path.join(SCRIPT_DIR, "CRBN_receptor_thalidomide_Ryan.pdb")
 PPIL4_SOURCE_PDB = os.path.join(SCRIPT_DIR, "PPIL4_alphafold_(Ryan).pdb")
-PPIL4_PDB = os.path.join(RUN_DIR_BASE, "PPIL4_chainB.pdb")
+PPIL4_PDB = os.path.join(SCRIPT_DIR, "PPIL4_chainB.pdb")   # LOCK: committed input (chain B), not regenerated per run
+
+# --- Locked protocol (see PROTOCOL_LOCK.md) --------------------------------
+# These are what make this comparable to Tyrone's runs. The restraints are one
+# committed file identical for every candidate/control (so only the ligand varies),
+# and the sampling seed is pinned.
+AMBIG_FIXED = os.path.join(SCRIPT_DIR, "ambig_FIXED.tbl")   # LOCK #2: ONE restraint file for all candidates/controls
+INISEED = 42               # LOCK #1: haddock3 'iniseed' (NOT a top-level 'seed'); ncores=1 -> byte-exact reproduction
+PROTOCOL_VERSION = "ppil4_lock_v1"                          # stamped on every output row so old-protocol rows can't mix in
 
 NCORES = max(1, (os.cpu_count() or 4) - 1)
 
@@ -281,6 +290,41 @@ def print_capri_summary(haddock_run_dir):
     print_table(rows, CAPRI_COLUMNS, title=f"Final CAPRI cluster results ({os.path.basename(final_dir)})")
 
 
+# Locked output schema (PROTOCOL_LOCK.md section 6): the one CSV both Ryan and Tyrone emit.
+LOCKED_COLUMNS = ["molecule", "mean_best_10", "best_haddock", "sd_best_10",
+                  "dockq_vs_9dwv", "cluster_id", "n_models", "protocol_version"]
+
+
+def locked_stats(haddock_run_dir):
+    """Locked-schema per-run stats from the final caprieval's single-model table
+    (capri_ss.tsv): mean/best/sd over the 10 best-scoring models, plus the best
+    model's cluster id and the number of models scored. dockq_vs_9dwv is left
+    blank here (self-referential in 08 -- 09 fills the real value against 9DWV).
+    Returns a dict, or None if no models were scored."""
+    final_dir, _ = read_final_capri_rows(haddock_run_dir)
+    if final_dir is None:
+        return None
+    ss_path = os.path.join(final_dir, "capri_ss.tsv")
+    if not os.path.exists(ss_path):
+        return None
+    with open(ss_path) as f:
+        lines = [l for l in f if l.strip() and not l.startswith("#")]
+    if len(lines) < 2:
+        return None
+    header = lines[0].strip().split("\t")
+    recs = [dict(zip(header, l.strip().split("\t"))) for l in lines[1:]]
+    recs.sort(key=lambda r: float(r["score"]))
+    best10 = [float(r["score"]) for r in recs[:10]]
+    return {
+        "mean_best_10": round(statistics.fmean(best10), 3),
+        "best_haddock": round(best10[0], 3),
+        "sd_best_10": round(statistics.stdev(best10), 3) if len(best10) > 1 else 0.0,
+        "dockq_vs_9dwv": "",
+        "cluster_id": recs[0].get("cluster_id", "-"),
+        "n_models": len(recs),
+    }
+
+
 def pick_candidate_names():
     """Returns the pool of candidates eligible for this script: whatever's
     currently in 06's progress ledger with a real (non "-") result. Not
@@ -307,15 +351,17 @@ def load_existing_rows():
         return []
     with open(RESULTS_CSV, newline="") as f:
         rows = list(csv.DictReader(f))
+    if not rows or "mean_best_10" not in rows[0]:
+        return []  # pre-lock (old-schema) ledger -- ignore it so the locked run starts clean
     loaded = []
     for r in rows:
-        if r["dockq"] == "-":
-            loaded.append((r["name"], None))
+        if r["mean_best_10"] == "-":
+            loaded.append((r["molecule"], None))
         else:
-            loaded.append((r["name"], {
-                "caprieval_rank": r["cluster_rank"], "cluster_id": r["cluster_id"], "n": r["n"],
-                "score": r["score"], "dockq": r["dockq"], "irmsd": r["irmsd"],
-                "fnat": r["fnat"], "lrmsd": r["lrmsd"],
+            loaded.append((r["molecule"], {
+                "mean_best_10": r["mean_best_10"], "best_haddock": r["best_haddock"],
+                "sd_best_10": r["sd_best_10"], "dockq_vs_9dwv": r.get("dockq_vs_9dwv", ""),
+                "cluster_id": r["cluster_id"], "n_models": r["n_models"],
             }))
     return loaded
 
@@ -323,13 +369,13 @@ def load_existing_rows():
 def write_results_csv(all_rows, path=RESULTS_CSV):
     with open(path, "w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["name", "cluster_rank", "cluster_id", "n", "score", "dockq", "irmsd", "fnat", "lrmsd"])
+        writer.writerow(LOCKED_COLUMNS)
         for candidate_name, r in all_rows:
             if r is None:
-                writer.writerow([candidate_name, "-", "-", "-", "-", "-", "-", "-", "-"])
+                writer.writerow([candidate_name, "-", "-", "-", "-", "-", "-", PROTOCOL_VERSION])
             else:
-                writer.writerow([candidate_name, r["caprieval_rank"], r["cluster_id"], r["n"],
-                                  r["score"], r["dockq"], r["irmsd"], r["fnat"], r["lrmsd"]])
+                writer.writerow([candidate_name, r["mean_best_10"], r["best_haddock"], r["sd_best_10"],
+                                  r.get("dockq_vs_9dwv", ""), r["cluster_id"], r["n_models"], PROTOCOL_VERSION])
     print(f"Wrote {path}")
 
 
@@ -427,52 +473,25 @@ def run_prodrg_for_ligand(ligand_pdb, out_dir):
     return top_path, par_path, fixed_pdb_path
 
 
-def run_candidate(candidate_name, ppil4_actpass, label):
-    """Run the ligand-inclusive 3-body HADDOCK3 routine for one candidate.
-    Returns the top (rank-1, best-score) cluster row, or None if setup/
-    HADDOCK3 fails or no cluster was found."""
+def run_candidate(candidate_name, label):
+    """Run the ligand-inclusive 3-body HADDOCK3 routine for one candidate under
+    the LOCKED protocol (see PROTOCOL_LOCK.md): fixed restraints (ambig_FIXED.tbl,
+    identical for every candidate) and a pinned iniseed. Returns the top
+    (rank-1, best-score) cluster row, or None if setup/HADDOCK3 fails or no
+    cluster was found."""
     candidate_run_dir = os.path.join(RUN_DIR_BASE, candidate_name)
     os.makedirs(candidate_run_dir, exist_ok=True)
-    print(f"[{label}] step 0/{len(STEP_PLAN)}: preparing ligand topology/restraints")
+    print(f"[{label}] step 0/{len(STEP_PLAN)}: preparing ligand topology (restraints are locked)")
 
-    # --- CRBN-side setup (from 04's Vina contact residues) ---
-    contacts_path = os.path.join(VINA_OUT_DIR, candidate_name, "crbn_contacts.txt")
-    if not os.path.exists(contacts_path):
-        print(f"[{label}] {contacts_path} not found -- run 04 for this candidate first. Skipping.")
-        return None
-    with open(contacts_path) as f:
-        crbn_active = [int(x) for x in f.readline().split()]
-    crbn_active_csv = ",".join(str(r) for r in crbn_active)
-    crbn_passive_out = subprocess.run(
-        ["haddock3-restraints", "passive_from_active", CRBN_RECEPTOR_ONLY_PDB, crbn_active_csv, "-c", "A"],
-        check=True, capture_output=True, text=True,
-    ).stdout.strip()
-    crbn_passive = [int(x) for x in crbn_passive_out.split()] if crbn_passive_out else []
-    crbn_actpass = os.path.join(candidate_run_dir, "crbn_actpass.txt")
-    write_actpass_file(crbn_active, crbn_passive, crbn_actpass)
-
-    # --- Ligand: extract, parametrize via PRODRG, and mark the whole thing "active" ---
+    # --- Ligand: extract 04's Vina pose (the LOCKED starting-pose recipe), parametrize via PRODRG ---
+    # Only the ligand varies between candidates now; the CRBN/PPIL4 restraints are the
+    # same committed file (ambig_FIXED.tbl, LOCK #2) for all of them, so there is no
+    # per-candidate restraint derivation here anymore -- that is what removes the Vina noise.
     ligand_raw_pdb = os.path.join(candidate_run_dir, "ligand.pdb")
     extract_ligand_pdb(candidate_name, ligand_raw_pdb)
     ligand_top, ligand_param, ligand_pdb = run_prodrg_for_ligand(ligand_raw_pdb, candidate_run_dir)
-    ligand_actpass = os.path.join(candidate_run_dir, "ligand_actpass.txt")
-    write_actpass_file([900], [], ligand_actpass)  # the whole ligand is one CNS residue (resnum 900)
 
-    # --- Restraints: ligand<->CRBN and ligand<->PPIL4, concatenated into one ambig.tbl ---
-    crbn_ligand_tbl = subprocess.run(
-        ["haddock3-restraints", "active_passive_to_ambig", crbn_actpass, ligand_actpass,
-         "--segid-one", "A", "--segid-two", "C"],
-        check=True, capture_output=True, text=True,
-    ).stdout
-    ppil4_ligand_tbl = subprocess.run(
-        ["haddock3-restraints", "active_passive_to_ambig", ppil4_actpass, ligand_actpass,
-         "--segid-one", "B", "--segid-two", "C"],
-        check=True, capture_output=True, text=True,
-    ).stdout
-    ambig_tbl = os.path.join(candidate_run_dir, "ambig.tbl")
-    with open(ambig_tbl, "w") as f:
-        f.write(crbn_ligand_tbl)
-        f.write(ppil4_ligand_tbl)
+    ambig_tbl = AMBIG_FIXED  # LOCK #2: one committed restraint file for every candidate/control
 
     # --- HADDOCK3 config: 3 molecules, ligand_top_fname/ligand_param_fname repeated on
     # every module that runs its own CNS minimization (topoaa, rigidbody, flexref, emref) ---
@@ -497,6 +516,7 @@ ambig_fname = "{ambig_tbl}"
 ligand_top_fname = "{ligand_top}"
 ligand_param_fname = "{ligand_param}"
 sampling = 1000
+iniseed = {INISEED}
 
 [caprieval]
 
@@ -531,8 +551,7 @@ ligand_param_fname = "{ligand_param}"
     run_with_heartbeat(["haddock3", cfg_path], run_dir=haddock_run_dir, step_plan=STEP_PLAN, label=label)
 
     print_capri_summary(haddock_run_dir)
-    _, rows = read_final_capri_rows(haddock_run_dir)
-    return rows[0] if rows else None
+    return locked_stats(haddock_run_dir)
 
 
 def write_finalists(all_rows):
@@ -546,10 +565,10 @@ def write_finalists(all_rows):
     if failed:
         print(f"{failed}/{len(all_rows)} candidate(s) had no HADDOCK3 result (failed/skipped) -- "
               "excluded from the finalist pool.")
-    finished.sort(key=lambda pair: float(pair[1]["score"]))
+    finished.sort(key=lambda pair: float(pair[1]["mean_best_10"]))
     finalists = finished[:TOP_N_KEEP]
     write_results_csv(finalists, path=FINALISTS_CSV)
-    print(f"Finalists (best {len(finalists)} of {len(finished)} completed, by HADDOCK score): "
+    print(f"Finalists (best {len(finalists)} of {len(finished)} completed, by mean_best_10): "
           f"{', '.join(n for n, _ in finalists)}")
 
 
@@ -574,20 +593,12 @@ def main():
     print(f"Running the ligand-inclusive HADDOCK3 routine on {len(new_candidates)} candidate(s): "
           f"{', '.join(new_candidates)}")
 
-    # PPIL4-side restraints don't depend on the candidate -- compute once,
-    # not once per candidate. Real RRM-domain interface residues from
-    # FPFT-2216 (PDB 9DWV) -- same as 05/06's ppil4_pocket_residues().
-    with open(PPIL4_PDB, "w") as out:
-        run(["pdb_chain", "-B", PPIL4_SOURCE_PDB], stdout=out)
-    ppil4_active = [249, 250, 273, 275, 276, 277, 278, 279]
-    ppil4_active_csv = ",".join(str(r) for r in ppil4_active)
-    ppil4_passive_out = subprocess.run(
-        ["haddock3-restraints", "passive_from_active", PPIL4_PDB, ppil4_active_csv, "-c", "B"],
-        check=True, capture_output=True, text=True,
-    ).stdout.strip()
-    ppil4_passive = [int(x) for x in ppil4_passive_out.split()] if ppil4_passive_out else []
-    ppil4_actpass = os.path.join(RUN_DIR_BASE, "ppil4_actpass.txt")
-    write_actpass_file(ppil4_active, ppil4_passive, ppil4_actpass)
+    # Locked protocol: restraints come from the committed ambig_FIXED.tbl (identical for
+    # every candidate/control), and PPIL4_chainB.pdb is a committed input. Nothing
+    # per-candidate to compute here anymore -- see PROTOCOL_LOCK.md.
+    for artifact in (AMBIG_FIXED, PPIL4_PDB, CRBN_RECEPTOR_ONLY_PDB):
+        if not os.path.exists(artifact):
+            sys.exit(f"Locked artifact missing: {artifact} -- rebuild the locked bundle (see PROTOCOL_LOCK.md).")
 
     candidates_loop_start = time.time()
     for i, candidate_name in enumerate(new_candidates, 1):
@@ -601,7 +612,7 @@ def main():
               f"{(time.time() - SCRIPT_START_TIME) / 60:.1f} min total script time)")
 
         try:
-            top_row = run_candidate(candidate_name, ppil4_actpass, label)
+            top_row = run_candidate(candidate_name, label)
         except subprocess.CalledProcessError:
             print(f"[{label}] HADDOCK3 failed for this candidate -- skipping it and continuing with the rest.")
             top_row = None
