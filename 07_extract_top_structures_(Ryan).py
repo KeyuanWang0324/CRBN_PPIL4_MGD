@@ -143,7 +143,8 @@ def main():
         sys.exit(f"{RESULTS_CSV} not found -- run 08 first.")
     with open(RESULTS_CSV, newline="") as f:
         rows = list(csv.DictReader(f))
-    candidates = [r["name"] for r in (rows[:TOP_N] if TOP_N else rows)]
+    # locked-08 writes 'molecule'; pre-lock finalists used 'name' -- accept either
+    candidates = [(r.get("molecule") or r["name"]) for r in (rows[:TOP_N] if TOP_N else rows)]
     print(f"Extracting structures for {len(candidates)} candidate(s) from {RESULTS_CSV}: "
           f"{', '.join(candidates)}")
 

@@ -120,8 +120,9 @@ def main():
     missing = 0
 
     for rank, row in enumerate(top_rows, 1):
-        name = row["name"]
-        print(f"=== #{rank}: {name} (score={row['score']}) ===")
+        name = row.get("molecule") or row["name"]  # locked-08 schema uses 'molecule'
+        score = row.get("mean_best_10", row.get("score", "?"))  # locked-08 uses 'mean_best_10'
+        print(f"=== #{rank}: {name} (score={score}) ===")
         model_path = find_top_model_path(name)
         if model_path is None:
             print("  no rank-1 model found -- skipping\n")
