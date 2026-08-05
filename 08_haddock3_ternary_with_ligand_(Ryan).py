@@ -152,6 +152,26 @@ AMBIG_FIXED = os.path.join(SCRIPT_DIR, "ambig_FIXED.tbl")   # LOCK #2: ONE restr
 INISEED = 42               # LOCK #1: haddock3 'iniseed' (NOT a top-level 'seed'); ncores=1 -> byte-exact reproduction
 PROTOCOL_VERSION = "ppil4_lock_v1"                          # stamped on every output row so old-protocol rows can't mix in
 
+# --- Control molecules (calibration set) -----------------------------------
+# Docked through the SAME locked protocol as candidates, but kept OUT of the
+# candidate finalists -- written to their own CSV so you can see where candidates
+# land relative to real glues (positive) and degron-dead / arm-less molecules
+# (negative). Each needs its 04 Vina pose to already exist; 08 runs in the
+# haddock venv (no Vina), so a control without a pose is SKIPPED with a message
+# telling you to run 04 for it first. Negative-control SMILES for that 04 step:
+#   negctrl_no_glutarimide     : CN1Cc2c(cccc2-c2ccc(N3CCNCC3)cc2)C1=O
+#   negctrl_no_crbn_ppil4_arm  : COc1cscc1-c1c[nH]nn1
+#   negctrl_no_ppil4_arm       : O=C1CCC(N2Cc3ccccc3C2=O)C(=O)N1
+RUN_CONTROLS = True   # funnel mode also docks CONTROLS below (into CONTROLS_CSV), before candidates
+CONTROLS = [
+    "FPFT_2216_positive_control",          # positive (also the golden reference); 04 pose exists
+    "isoindolinone_pip_positive_control",  # positive; 04 pose exists
+    "negctrl_no_glutarimide",              # negative; run 04 for it first
+    "negctrl_no_crbn_ppil4_arm",           # negative; run 04 for it first
+    "negctrl_no_ppil4_arm",                # negative; run 04 for it first
+]
+CONTROLS_CSV = os.path.join(SCRIPT_DIR, "08_controls_results_(Ryan).csv")
+
 NCORES = max(1, (os.cpu_count() or 4) - 1)
 
 STEP_PLAN = [
@@ -343,13 +363,13 @@ def pick_candidate_names():
     return names
 
 
-def load_existing_rows():
-    """Load whatever's already in RESULTS_CSV so this run only adds new
-    candidates -- never re-does a 45 min - 1.5 hr candidate it already has
+def load_existing_rows(path=RESULTS_CSV):
+    """Load whatever's already in `path` (default RESULTS_CSV) so a run only
+    adds new molecules -- never re-does a 45 min - 1.5 hr run it already has
     a result for."""
-    if not os.path.exists(RESULTS_CSV):
+    if not os.path.exists(path):
         return []
-    with open(RESULTS_CSV, newline="") as f:
+    with open(path, newline="") as f:
         rows = list(csv.DictReader(f))
     if not rows or "mean_best_10" not in rows[0]:
         return []  # pre-lock (old-schema) ledger -- ignore it so the locked run starts clean
@@ -572,8 +592,50 @@ def write_finalists(all_rows):
           f"{', '.join(n for n, _ in finalists)}")
 
 
+def run_controls():
+    """Dock the CONTROLS through the SAME locked protocol and write them to
+    CONTROLS_CSV -- separate from the candidate finalists. A control whose 04
+    Vina pose doesn't exist yet is skipped with a message (08 can't make the
+    pose -- no Vina in the haddock venv -- so run 04 with MANUAL_CANDIDATE for
+    it first). Resumes: a control that already has a real result is not re-run."""
+    result = {name: row for name, row in load_existing_rows(CONTROLS_CSV)}
+    to_run = [n for n in CONTROLS if result.get(n) is None]  # includes prior skips/failures -> retried
+    if not to_run:
+        print(f"All {len(CONTROLS)} controls already have results in {CONTROLS_CSV} -- skipping controls.")
+        return
+    print(f"\n== Docking {len(to_run)} control(s) into {CONTROLS_CSV}: {', '.join(to_run)} ==")
+    for name in to_run:
+        complex_pdb = os.path.join(VINA_OUT_DIR, name, "CRBN_candidate_complex.pdb")
+        if not os.path.exists(complex_pdb):
+            print(f"[control {name}] no 04 Vina pose ({os.path.relpath(complex_pdb, SCRIPT_DIR)} missing) -- "
+                  "run 04 with MANUAL_CANDIDATE for it first (SMILES in the CONTROLS comment). Skipping.")
+            result[name] = None
+        else:
+            try:
+                result[name] = run_candidate(name, f"control {name}")
+            except subprocess.CalledProcessError:
+                print(f"[control {name}] HADDOCK3 failed -- skipping.")
+                result[name] = None
+        write_results_csv([(n, result.get(n)) for n in CONTROLS], path=CONTROLS_CSV)
+    ok = [n for n in CONTROLS if result.get(n) is not None]
+    print(f"Controls: {len(ok)}/{len(CONTROLS)} docked -> {CONTROLS_CSV} ({', '.join(ok) or 'none yet'})")
+
+
 def main():
     os.makedirs(RUN_DIR_BASE, exist_ok=True)
+
+    # Locked protocol: restraints come from the committed ambig_FIXED.tbl (identical for
+    # every candidate/control) and PPIL4_chainB.pdb is a committed input -- see
+    # PROTOCOL_LOCK.md. Verify the locked bundle is present before docking anything.
+    for artifact in (AMBIG_FIXED, PPIL4_PDB, CRBN_RECEPTOR_ONLY_PDB):
+        if not os.path.exists(artifact):
+            sys.exit(f"Locked artifact missing: {artifact} -- rebuild the locked bundle (see PROTOCOL_LOCK.md).")
+
+    # Controls first (funnel mode only): dock the calibration set through the same
+    # locked protocol into their OWN CSV (kept out of the candidate finalists).
+    if RUN_CONTROLS and not CANDIDATE_NAME:
+        run_controls()
+
     candidate_names = pick_candidate_names()
 
     all_rows = load_existing_rows()
@@ -592,13 +654,6 @@ def main():
         return
     print(f"Running the ligand-inclusive HADDOCK3 routine on {len(new_candidates)} candidate(s): "
           f"{', '.join(new_candidates)}")
-
-    # Locked protocol: restraints come from the committed ambig_FIXED.tbl (identical for
-    # every candidate/control), and PPIL4_chainB.pdb is a committed input. Nothing
-    # per-candidate to compute here anymore -- see PROTOCOL_LOCK.md.
-    for artifact in (AMBIG_FIXED, PPIL4_PDB, CRBN_RECEPTOR_ONLY_PDB):
-        if not os.path.exists(artifact):
-            sys.exit(f"Locked artifact missing: {artifact} -- rebuild the locked bundle (see PROTOCOL_LOCK.md).")
 
     candidates_loop_start = time.time()
     for i, candidate_name in enumerate(new_candidates, 1):
