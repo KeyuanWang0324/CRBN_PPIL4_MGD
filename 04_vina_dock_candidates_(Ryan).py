@@ -123,6 +123,21 @@ TOP_FRACTION = None
 # Leave as None for normal funnel behavior.
 MANUAL_CANDIDATE = None
 
+# Skip any molecule already docked (its crbn_contacts.txt exists), so re-running
+# 04 only docks what's MISSING instead of re-churning the whole 625-candidate pool.
+RESUME = True
+
+# Control molecules docked alongside the candidates (kept OUT of the funnel
+# summary CSV). FPFT + isoindolinone already have poses (RESUME skips them); the 3
+# negatives get their poses here so 08 can dock them. Same set/SMILES as 08's CONTROLS.
+CONTROLS = [
+    ("FPFT_2216_positive_control", "COc1cscc1c2cn(nn2)[C@H]3CCC(=O)NC3=O"),
+    ("isoindolinone_pip_positive_control", "O=C1CCC(C(N1)=O)N2CC3=C(C2=O)C=CC=C3C4=CC=C(C=C4)N5CCNCC5"),
+    ("negctrl_no_glutarimide", "CN1Cc2c(cccc2-c2ccc(N3CCNCC3)cc2)C1=O"),
+    ("negctrl_no_crbn_ppil4_arm", "COc1cscc1-c1c[nH]nn1"),
+    ("negctrl_no_ppil4_arm", "O=C1CCC(N2Cc3ccccc3C2=O)C(=O)N1"),
+]
+
 
 def load_candidates():
     if MANUAL_CANDIDATE is not None:
@@ -415,15 +430,39 @@ def main():
     prepare_receptor(PPIL4_SOURCE_PDB, ppil4_receptor_base, ppil4_center, ppil4_size)
     ppil4_receptor_pdbqt = ppil4_receptor_base + ".pdbqt"
 
+    # Run list: candidates + controls (controls excluded from the funnel summary).
+    # RESUME skips anything already docked, so this only docks what's missing.
+    control_names = set()
+    run_list = list(CANDIDATES)
+    if MANUAL_CANDIDATE is None:
+        control_names = {n for n, _ in CONTROLS}
+        have = {n for n, _ in run_list}
+        run_list += [(n, s) for n, s in CONTROLS if n not in have]
+
+    prior_summary = {}
+    if MANUAL_CANDIDATE is None and os.path.exists(SCREENING_SUMMARY_CSV_ROOT):
+        with open(SCREENING_SUMMARY_CSV_ROOT) as f:
+            prior_summary = {row["name"]: row for row in csv.DictReader(f)}
+
     results = []
+    skipped = 0
     loop_start = time.time()
-    for i, (candidate_name, candidate_smiles) in enumerate(CANDIDATES, 1):
+    for i, (candidate_name, candidate_smiles) in enumerate(run_list, 1):
+        candidate_dir = os.path.join(OUT_DIR, candidate_name)
+        contacts_path = os.path.join(candidate_dir, "crbn_contacts.txt")
+        if RESUME and os.path.exists(contacts_path):
+            skipped += 1
+            if skipped <= 5 or skipped % 100 == 0:
+                print(f"[{i}/{len(run_list)}] {candidate_name} already docked -- skipping "
+                      f"({skipped} skipped so far).")
+            continue
+        done = i - 1 - skipped
         elapsed = time.time() - loop_start
-        eta = (elapsed / (i - 1)) * (len(CANDIDATES) - i + 1) if i > 1 else 0
-        print(f"\n== [{i}/{len(CANDIDATES)}] Candidate: {candidate_name} "
+        eta = (elapsed / done) * (len(run_list) - i + 1) if done > 0 else 0
+        tag = "control" if candidate_name in control_names else "candidate"
+        print(f"\n== [{i}/{len(run_list)}] {tag}: {candidate_name} "
               f"({elapsed:.0f}s in this step, ~{eta:.0f}s remaining | "
               f"{time.time() - SCRIPT_START_TIME:.0f}s total script time) ==")
-        candidate_dir = os.path.join(OUT_DIR, candidate_name)
         os.makedirs(candidate_dir, exist_ok=True)
 
         print(f"== Preparing ligand: {candidate_name} ==")
@@ -471,39 +510,50 @@ def main():
             "n_contacts": len(contacts),
         })
 
-    results.sort(key=lambda r: r["combined_affinity"])
-    print_table(
-        results,
-        [("name", "name"),
-         ("crbn (kcal/mol)", lambda r: f"{r['crbn_affinity']:.2f}"),
-         ("ppil4 (kcal/mol)", lambda r: f"{r['ppil4_affinity']:.2f}"),
-         ("combined", lambda r: f"{r['combined_affinity']:.2f}"),
-         ("overlap", lambda r: f"{r['overlap']:.0%}"),
-         ("consistent", lambda r: "yes" if r["consistent"] else "NO"),
-         ("n_contacts", lambda r: str(r["n_contacts"])),
-         ("overlap_atoms", lambda r: ",".join(r["overlap_atoms"]) if r["overlap_atoms"] else "-")],
-        title="Vina screening results (best combined affinity first)",
-    )
-    if any(not r["consistent"] for r in results):
+    print(f"\n== Docked {len(results)} molecule(s) this run; skipped {skipped} already-docked ==")
+    if results:
+        results.sort(key=lambda r: r["combined_affinity"])
+        print_table(
+            results,
+            [("name", "name"),
+             ("crbn (kcal/mol)", lambda r: f"{r['crbn_affinity']:.2f}"),
+             ("ppil4 (kcal/mol)", lambda r: f"{r['ppil4_affinity']:.2f}"),
+             ("combined", lambda r: f"{r['combined_affinity']:.2f}"),
+             ("overlap", lambda r: f"{r['overlap']:.0%}"),
+             ("consistent", lambda r: "yes" if r["consistent"] else "NO"),
+             ("n_contacts", lambda r: str(r["n_contacts"])),
+             ("overlap_atoms", lambda r: ",".join(r["overlap_atoms"]) if r["overlap_atoms"] else "-")],
+            title="Vina results docked this run (best combined affinity first)",
+        )
         flagged = [r["name"] for r in results if not r["consistent"]]
-        print(f"\nWARNING: no geometrically-compatible CRBN/PPIL4 pose pair found for: {', '.join(flagged)} "
-              "-- reported affinities use the best available (overlapping) pair.")
+        if flagged:
+            print(f"\nWARNING: no geometrically-compatible CRBN/PPIL4 pose pair found for: {', '.join(flagged)} "
+                  "-- reported affinities use the best available (overlapping) pair.")
 
     if MANUAL_CANDIDATE is not None:
-        print(f"\nMANUAL_CANDIDATE set -- skipping {SCREENING_SUMMARY_CSV}/{SCREENING_SUMMARY_CSV_ROOT} "
-              "(those are the funnel's shared ranked output; a one-off manual candidate doesn't "
-              "belong in that ranking). Its docking outputs are still under "
-              f"{os.path.join(OUT_DIR, results[0]['name'])}/ for 05/06 to use directly.")
+        print(f"\nMANUAL_CANDIDATE set -- not writing the funnel summary (one-offs aren't part of that "
+              f"ranking). Docking output under {os.path.join(OUT_DIR, MANUAL_CANDIDATE[0])}/.")
     else:
+        # Merge newly-docked candidate rows into the preserved prior summary, dropping
+        # controls -- so a RESUME run never clobbers the candidates it skipped.
+        fields = ["name", "crbn_affinity", "ppil4_affinity", "combined_affinity",
+                  "overlap", "consistent", "n_contacts", "overlap_atoms"]
+        merged = {n: row for n, row in prior_summary.items() if n not in control_names}
+        for r in results:
+            if r["name"] in control_names:
+                continue
+            merged[r["name"]] = {"name": r["name"], "crbn_affinity": r["crbn_affinity"],
+                                 "ppil4_affinity": r["ppil4_affinity"], "combined_affinity": r["combined_affinity"],
+                                 "overlap": r["overlap"], "consistent": r["consistent"],
+                                 "n_contacts": r["n_contacts"], "overlap_atoms": ",".join(r["overlap_atoms"])}
+        rows_out = sorted(merged.values(), key=lambda x: float(x["combined_affinity"]))
         for out_path in (SCREENING_SUMMARY_CSV, SCREENING_SUMMARY_CSV_ROOT):
             with open(out_path, "w", newline="") as f:
-                writer = csv.writer(f)
-                writer.writerow(["name", "crbn_affinity", "ppil4_affinity", "combined_affinity",
-                                  "overlap", "consistent", "n_contacts", "overlap_atoms"])
-                for r in results:
-                    writer.writerow([r["name"], r["crbn_affinity"], r["ppil4_affinity"], r["combined_affinity"],
-                                      r["overlap"], r["consistent"], r["n_contacts"], ",".join(r["overlap_atoms"])])
-            print(f"Wrote {out_path}")
+                writer = csv.DictWriter(f, fieldnames=fields)
+                writer.writeheader()
+                for row in rows_out:
+                    writer.writerow(row)
+            print(f"Wrote {out_path} ({len(rows_out)} candidates)")
 
     total = time.time() - SCRIPT_START_TIME
     print(f"\nTotal script runtime: {total:.0f}s ({total / 60:.1f} min)")
