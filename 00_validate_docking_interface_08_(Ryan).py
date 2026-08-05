@@ -31,7 +31,11 @@ import os
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 RESULTS_CSV = os.path.join(SCRIPT_DIR, "08_final_ternary_with_ligand_results_(Ryan).csv")
-RUN_DIR_BASE = os.path.join(SCRIPT_DIR, "docking_tmp", "haddock3_ternary_with_ligand_run")
+# Must match 08's RUN_DIR_BASE: 08 runs HADDOCK3 OUTSIDE the iCloud-synced
+# Desktop (iCloud races the io.json handoff and crashes caprieval), so the
+# per-candidate models live under ~/haddock_runs, not docking_tmp.
+LOCAL_RUN_ROOT = os.environ.get("HADDOCK_RUN_ROOT") or os.path.expanduser("~/haddock_runs")
+RUN_DIR_BASE = os.path.join(LOCAL_RUN_ROOT, "haddock3_ternary_with_ligand_run")
 
 TOP_N = None  # None = every finalist in RESULTS_CSV; set an int to check only the top N
 

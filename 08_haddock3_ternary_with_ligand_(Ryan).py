@@ -108,7 +108,19 @@ VINA_OUT_DIR = os.path.join(SCRIPT_DIR, "docking_tmp", "haddock3_novel_candidate
 # completed 06's ligand-free run without HADDOCK3 erroring -- is eligible.
 SIX_PROGRESS_CSV = os.path.join(SCRIPT_DIR, "docking_tmp", "haddock3_complete_run",
                                  "06_complete_run_progress_(Ryan).csv")
-RUN_DIR_BASE = os.path.join(SCRIPT_DIR, "docking_tmp", "haddock3_ternary_with_ligand_run")
+# HADDOCK3 writes THOUSANDS of tiny files per candidate and hands off between
+# steps through a large io.json. If that happens inside an iCloud-synced folder
+# (this project lives under ~/Desktop, which iCloud syncs on this machine), the
+# iCloud file provider races HADDOCK3: it momentarily swaps the freshly-written
+# io.json while caprieval is reading it, so caprieval sees an EMPTY topology and
+# dies with `find_ff -> models[0].topology[0]` IndexError. That killed all 18
+# candidates in the overnight run while the earlier controls (run when iCloud was
+# idle) survived. Fix: run the actual docking OUTSIDE the synced Desktop. The
+# home dir (~) is not synced here -- only Desktop/Documents were. The deliverables
+# (FINALISTS_CSV, CONTROLS_CSV) still live in the project; only the disposable,
+# regenerable run tree moves out. Override with $HADDOCK_RUN_ROOT if desired.
+LOCAL_RUN_ROOT = os.environ.get("HADDOCK_RUN_ROOT") or os.path.expanduser("~/haddock_runs")
+RUN_DIR_BASE = os.path.join(LOCAL_RUN_ROOT, "haddock3_ternary_with_ligand_run")
 # This script's own running ledger -- every candidate attempted so far,
 # win or lose. Read back in on every run so a later session only adds new
 # candidates (06's progress ledger can grow over time as 06 keeps running;

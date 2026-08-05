@@ -40,7 +40,11 @@ SCRIPT_START_TIME = time.time()
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 RESULTS_CSV = os.path.join(SCRIPT_DIR, "08_final_ternary_with_ligand_results_(Ryan).csv")
-RUN_DIR_BASE = os.path.join(SCRIPT_DIR, "docking_tmp", "haddock3_ternary_with_ligand_run")
+# Must match 08's RUN_DIR_BASE: 08 runs HADDOCK3 OUTSIDE the iCloud-synced
+# Desktop (see 08 for why -- iCloud races the io.json handoff and crashes
+# caprieval). The models therefore live under ~/haddock_runs, not docking_tmp.
+LOCAL_RUN_ROOT = os.environ.get("HADDOCK_RUN_ROOT") or os.path.expanduser("~/haddock_runs")
+RUN_DIR_BASE = os.path.join(LOCAL_RUN_ROOT, "haddock3_ternary_with_ligand_run")
 OUTPUT_DIR = os.path.join(SCRIPT_DIR, "ternary_structures")
 
 # How many of 08's top-ranked (by HADDOCK score) candidates to extract a
