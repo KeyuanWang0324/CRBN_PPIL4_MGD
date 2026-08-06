@@ -132,8 +132,8 @@ RESUME = True
 # negatives get their poses here so 08 can dock them. Same set/SMILES as 08's CONTROLS.
 CONTROLS = [
     ("FPFT_2216_positive_control", "COc1cscc1c2cn(nn2)[C@H]3CCC(=O)NC3=O"),
-    ("Z6466608628", "O=C1CCC(C(N1)=O)N2CC3=C(C2=O)C=CC=C3C4=CC=C(C=C4)N5CCNCC5"),  # positive (isoindolinone-piperazine, Enamine Z6466608628); pose already exists -> RESUME skips
-    ("TM-04-064-02", "O=C(NCCCCCCCCNC1=CC=CC2=C1C(N(C2=O)C3CCC(NC3=O)=O)=O)CCN4C=NC5=C(N=CN=C54)N"),  # positive (adenine-linked thalidomide); NEW -> 04 docks its pose so 08 can use it
+    ("Z6466608628_positive_control", "O=C1CCC(C(N1)=O)N2CC3=C(C2=O)C=CC=C3C4=CC=C(C=C4)N5CCNCC5"),  # positive (isoindolinone-piperazine, Enamine Z6466608628); pose already exists -> RESUME skips
+    ("TM-04-064-02_positive_control", "O=C(NCCCCCCCCNC1=CC=CC2=C1C(N(C2=O)C3CCC(NC3=O)=O)=O)CCN4C=NC5=C(N=CN=C54)N"),  # positive (adenine-linked thalidomide); NEW -> 04 docks its pose so 08 can use it
     ("negctrl_no_glutarimide", "CN1Cc2c(cccc2-c2ccc(N3CCNCC3)cc2)C1=O"),
     ("negctrl_no_crbn_ppil4_arm", "COc1cscc1-c1c[nH]nn1"),
     ("negctrl_no_ppil4_arm", "O=C1CCC(N2Cc3ccccc3C2=O)C(=O)N1"),
