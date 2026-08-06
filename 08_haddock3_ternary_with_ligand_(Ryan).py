@@ -357,6 +357,31 @@ def locked_stats(haddock_run_dir):
     }
 
 
+def candidate_already_completed(candidate_name):
+    """Detect whether candidate_name has already been FULLY docked in the
+    current run tree (RUN_DIR_BASE) -- the whole locked workflow finished and
+    the final caprieval (9_caprieval, the same step 07/00_validate_08 read)
+    wrote a capri_ss.tsv with at least one scored model.
+
+    This is the real meaning of "already run", and why it beats a ledger-name
+    check: a candidate that crashed partway (e.g. the old iCloud-race caprieval
+    failure) or was interrupted by hand leaves an earlier caprieval and/or a
+    "-" ledger row but NO valid final result. Those must re-run, not be skipped
+    forever. So main() skips a candidate iff this returns True and re-runs
+    everything else (never-run, failed, or interrupted).
+    """
+    ss_path = os.path.join(RUN_DIR_BASE, candidate_name, "run1",
+                           "9_caprieval", "capri_ss.tsv")  # 9 = final STEP_PLAN step; matches 07/00
+    if not os.path.exists(ss_path):
+        return False
+    try:
+        with open(ss_path) as f:
+            data_lines = [l for l in f if l.strip() and not l.startswith("#")]
+    except OSError:
+        return False
+    return len(data_lines) >= 2  # header + at least one scored model
+
+
 def pick_candidate_names():
     """Returns the pool of candidates eligible for this script: whatever's
     currently in 06's progress ledger with a real (non "-") result. Not
@@ -650,22 +675,41 @@ def main():
 
     candidate_names = pick_candidate_names()
 
-    all_rows = load_existing_rows()
-    existing_names = {name for name, _ in all_rows}
-    if existing_names:
-        print(f"{RESULTS_CSV} already has {len(existing_names)} candidate(s) -- keeping them, only adding new ones.")
+    # --- Resume by DETECTING finished docks, not by trusting ledger names ---
+    # results_by_name maps candidate -> its result dict (real) or None (failed/
+    # placeholder). A candidate is "already run" only if it has a real result,
+    # i.e. its final caprieval actually completed. Interrupted/failed runs (a
+    # "-" ledger row and maybe a partial run dir) fall through and re-run.
+    results_by_name = {name: r for name, r in load_existing_rows()}
 
-    new_candidates = [n for n in candidate_names if n not in existing_names]
-    already_done = [n for n in candidate_names if n in existing_names]
-    if already_done:
-        print(f"Skipping {len(already_done)} candidate(s) already in {RESULTS_CSV}: {', '.join(already_done)}")
+    # Self-heal: a candidate can be fully docked on disk yet missing from the
+    # ledger (e.g. the ledger was reset, or the run tree was moved -- as it just
+    # was, off the iCloud Desktop). Recompute its result from its run dir so it
+    # still ranks and isn't needlessly re-docked.
+    for name in candidate_names:
+        if results_by_name.get(name) is None and candidate_already_completed(name):
+            stats = locked_stats(os.path.join(RUN_DIR_BASE, name, "run1"))
+            if stats is not None:
+                results_by_name[name] = stats
+                print(f"Recovered {name}'s completed result from its run dir (ledger was missing it).")
+
+    def ledger_rows():
+        # Every ledger entry (stable order), then any pool candidate not yet present.
+        names = list(results_by_name) + [n for n in candidate_names if n not in results_by_name]
+        return [(n, results_by_name.get(n)) for n in names]
+
+    done_names = [n for n in candidate_names if results_by_name.get(n) is not None]
+    new_candidates = [n for n in candidate_names if results_by_name.get(n) is None]
+    if done_names:
+        print(f"Skipping {len(done_names)} candidate(s) already fully docked in {RUN_DIR_BASE}: "
+              f"{', '.join(done_names)}")
     if not new_candidates:
-        print("Nothing new to run this session.")
+        print("Nothing new to run this session -- every candidate already has a completed dock.")
         if not CANDIDATE_NAME:
-            write_finalists(all_rows)
+            write_finalists(ledger_rows())
         return
-    print(f"Running the ligand-inclusive HADDOCK3 routine on {len(new_candidates)} candidate(s): "
-          f"{', '.join(new_candidates)}")
+    print(f"Running the ligand-inclusive HADDOCK3 routine on {len(new_candidates)} not-yet-completed "
+          f"candidate(s): {', '.join(new_candidates)}")
 
     candidates_loop_start = time.time()
     for i, candidate_name in enumerate(new_candidates, 1):
@@ -684,10 +728,10 @@ def main():
             print(f"[{label}] HADDOCK3 failed for this candidate -- skipping it and continuing with the rest.")
             top_row = None
 
-        all_rows.append((candidate_name, top_row))
+        results_by_name[candidate_name] = top_row  # update in place -- re-running a failed candidate never duplicates its row
         if not CANDIDATE_NAME:
-            write_results_csv(all_rows)  # unsorted, for resilience
-            write_finalists(all_rows)
+            write_results_csv(ledger_rows())  # unsorted, for resilience
+            write_finalists(ledger_rows())
 
     if CANDIDATE_NAME:
         print(f"\nCANDIDATE_NAME set -- skipping {RESULTS_CSV}/{FINALISTS_CSV} (those are the funnel's "
