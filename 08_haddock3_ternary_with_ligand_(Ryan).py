@@ -174,13 +174,15 @@ PROTOCOL_VERSION = "ppil4_lock_v1"                          # stamped on every o
 #   negctrl_no_glutarimide     : CN1Cc2c(cccc2-c2ccc(N3CCNCC3)cc2)C1=O
 #   negctrl_no_crbn_ppil4_arm  : COc1cscc1-c1c[nH]nn1
 #   negctrl_no_ppil4_arm       : O=C1CCC(N2Cc3ccccc3C2=O)C(=O)N1
+#   TM-04-064-02 (positive)    : O=C(NCCCCCCCCNC1=CC=CC2=C1C(N(C2=O)C3CCC(NC3=O)=O)=O)CCN4C=NC5=C(N=CN=C54)N
 RUN_CONTROLS = True   # funnel mode also docks CONTROLS below (into CONTROLS_CSV), before candidates
 CONTROLS = [
-    "FPFT_2216_positive_control",          # positive (also the golden reference); 04 pose exists
-    "isoindolinone_pip_positive_control",  # positive; 04 pose exists
-    "negctrl_no_glutarimide",              # negative; run 04 for it first
-    "negctrl_no_crbn_ppil4_arm",           # negative; run 04 for it first
-    "negctrl_no_ppil4_arm",                # negative; run 04 for it first
+    "FPFT_2216_positive_control",  # positive (also the golden reference); 04 pose exists
+    "Z6466608628",                 # positive (isoindolinone-piperazine, Enamine Z6466608628); already docked -> skipped
+    "TM-04-064-02",                # positive (adenine-linked thalidomide); NEW -> run 04 for its pose first
+    "negctrl_no_glutarimide",      # negative; run 04 for it first
+    "negctrl_no_crbn_ppil4_arm",   # negative; run 04 for it first
+    "negctrl_no_ppil4_arm",        # negative; run 04 for it first
 ]
 CONTROLS_CSV = os.path.join(SCRIPT_DIR, "08_controls_results_(Ryan).csv")
 
