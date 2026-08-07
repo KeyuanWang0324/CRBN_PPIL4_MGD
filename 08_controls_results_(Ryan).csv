@@ -1,5 +1,5 @@
 molecule,mean_best_10,best_haddock,sd_best_10,dockq_vs_9dwv,cluster_id,n_models,protocol_version
-FPFT_2216_positive_control,-111.382,-130.503,7.296,,9,161,ppil4_lock_v1
+FPFT_2216_positive_control,-111.382,-130.503,7.296,0.376,9,161,ppil4_lock_v1
 Z6466608628_positive_control,-125.61,-133.292,4.776,,3,166,ppil4_lock_v1
 TM-04-064-02_positive_control,-109.961,-126.259,6.629,,1,160,ppil4_lock_v1
 negctrl_no_glutarimide,-112.202,-121.855,6.857,,2,151,ppil4_lock_v1

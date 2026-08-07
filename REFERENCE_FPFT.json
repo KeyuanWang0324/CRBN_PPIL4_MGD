@@ -1,0 +1,17 @@
+{
+  "molecule": "FPFT_2216_positive_control",
+  "smiles": "COc1cscc1c2cn(nn2)[C@H]3CCC(=O)NC3=O",
+  "protocol_version": "ppil4_lock_v1",
+  "reference_pdb_id": "9DWV",
+  "mean_best_10": -111.382,
+  "best_haddock": -130.503,
+  "sd_best_10": 7.296,
+  "cluster_id": "9",
+  "n_models": 161,
+  "dockq_vs_9dwv": 0.376,
+  "irmsd": 2.073,
+  "fnat": 0.647,
+  "lrmsd": 21.31,
+  "ilrmsd": 4.245,
+  "rmsd": 15.865
+}

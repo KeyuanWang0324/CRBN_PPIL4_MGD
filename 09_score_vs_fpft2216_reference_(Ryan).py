@@ -51,13 +51,22 @@ reference (and dockq/irmsd/fnat/lrmsd) are about the CRBN-PPIL4
 protein-protein interface specifically -- matching how the reference
 itself was built (DDB1/ligand/Zn dropped, see build_reference_pdb()).
 
+Outputs (this script used to only print, which is why 08's dockq_vs_9dwv
+column stayed empty even after 09 had been run):
+  - fills dockq_vs_9dwv on the FPFT_2216_positive_control row of
+    08_controls_results_(Ryan).csv -- the one molecule 09 scores. The 18
+    candidates' dockq_vs_9dwv stays blank on purpose (see above: circular).
+  - writes REFERENCE_FPFT.json, PROTOCOL_LOCK.md §5's golden reference.
+
 Run with the same environment 08 uses (needs haddock3 + biopython installed):
     python3 "09_score_vs_fpft2216_reference_(Ryan).py"
 """
 import csv
 import gzip
+import json
 import os
 import shutil
+import statistics
 import sys
 import time
 import urllib.request
@@ -77,6 +86,20 @@ SCRATCH_DIR = os.path.join(SCRIPT_DIR, "docking_tmp", "09_capri_vs_fpft2216_scra
 REFERENCE_DIR = os.path.join(SCRIPT_DIR, "reference_structures")
 CIF_CACHE_PATH = os.path.join(REFERENCE_DIR, "FPFT-2216_9DWV.cif")
 REFERENCE_PDB_PATH = os.path.join(REFERENCE_DIR, "FPFT-2216_9DWV_reference_(Ryan).pdb")
+
+# Where this script's result goes. 08 writes the positive control's row with
+# dockq_vs_9dwv deliberately blank (its own caprieval dockq is self-referential
+# -- reference = the run's own best model), and its locked_stats() docstring
+# says "09 fills the real value against 9DWV". This is that fill: the ONLY
+# molecule 09 scores is POSITIVE_CONTROL_NAME, which lives in the controls CSV.
+# The 18 candidates' dockq_vs_9dwv stays blank on purpose -- see this module's
+# docstring on why a per-candidate dockq vs 9DWV is circular (their PPIL4
+# restraints are derived from 9DWV's own contact residues).
+CONTROLS_CSV = os.path.join(SCRIPT_DIR, "08_controls_results_(Ryan).csv")
+# PROTOCOL_LOCK.md §5: the golden reference both wrappers must reproduce before
+# candidate runs are trusted. Committed alongside the locked protocol bundle.
+REFERENCE_JSON_PATH = os.path.join(SCRIPT_DIR, "REFERENCE_FPFT.json")
+PROTOCOL_VERSION = "ppil4_lock_v1"
 
 # FPFT-2216's structure is deposited under PDB accession 9DWV -- that's
 # what RCSB's download URL and the mmCIF's own internal ID use, even
@@ -163,6 +186,95 @@ def find_top_model_path():
     return None
 
 
+def locked_stats():
+    """The positive control's own locked-schema stats, recomputed here from the
+    same capri_ss.tsv 08 reads (mean/best/sd over the 10 best-scoring models,
+    plus the best model's cluster and the number of models scored). Duplicated
+    rather than imported because 08's module name isn't a valid identifier and
+    importing it would fire its whole docking main(). Returns None if no models
+    were scored -- callers just skip the JSON in that case."""
+    caprieval_dir = os.path.join(RUN_DIR_BASE, POSITIVE_CONTROL_NAME, "run1", "9_caprieval")
+    ss_path = os.path.join(caprieval_dir, "capri_ss.tsv")
+    if not os.path.exists(ss_path):
+        return None
+    with open(ss_path) as f:
+        lines = [l for l in f if l.strip() and not l.startswith("#")]
+    if len(lines) < 2:
+        return None
+    header = lines[0].strip().split("\t")
+    recs = [dict(zip(header, l.strip().split("\t"))) for l in lines[1:]]
+    recs.sort(key=lambda r: float(r["score"]))
+    best10 = [float(r["score"]) for r in recs[:10]]
+    return {
+        "mean_best_10": round(statistics.fmean(best10), 3),
+        "best_haddock": round(best10[0], 3),
+        "sd_best_10": round(statistics.stdev(best10), 3) if len(best10) > 1 else 0.0,
+        "cluster_id": recs[0].get("cluster_id", "-"),
+        "n_models": len(recs),
+    }
+
+
+def write_dockq_to_controls_csv(dockq):
+    """Fill dockq_vs_9dwv on the positive control's row in 08's controls CSV,
+    leaving every other row and column byte-identical. 08 preserves whatever it
+    finds in this column on re-runs (it only ever writes ""), so this value
+    survives a later 08 invocation."""
+    if not os.path.exists(CONTROLS_CSV):
+        print(f"NOTE: {os.path.basename(CONTROLS_CSV)} not found -- skipping CSV update. "
+              f"Run 08 with RUN_CONTROLS = True first.")
+        return
+    with open(CONTROLS_CSV, newline="") as f:
+        reader = csv.DictReader(f)
+        fieldnames = reader.fieldnames
+        rows = list(reader)
+    if "dockq_vs_9dwv" not in (fieldnames or []):
+        print(f"NOTE: {os.path.basename(CONTROLS_CSV)} has no dockq_vs_9dwv column "
+              f"(pre-lock schema?) -- skipping CSV update.")
+        return
+    target = next((r for r in rows if r["molecule"] == POSITIVE_CONTROL_NAME), None)
+    if target is None:
+        print(f"NOTE: no {POSITIVE_CONTROL_NAME} row in {os.path.basename(CONTROLS_CSV)} "
+              f"-- skipping CSV update.")
+        return
+    previous = target["dockq_vs_9dwv"]
+    target["dockq_vs_9dwv"] = f"{dockq:.3f}"
+    with open(CONTROLS_CSV, "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+    changed = f" (was {previous!r})" if previous else ""
+    print(f"Wrote dockq_vs_9dwv={dockq:.3f} to {POSITIVE_CONTROL_NAME} in "
+          f"{os.path.basename(CONTROLS_CSV)}{changed}")
+
+
+def write_reference_json(result):
+    """PROTOCOL_LOCK.md §5's golden reference: the numbers a second wrapper must
+    reproduce (same cluster, DockQ within ~0.05) before its candidate runs are
+    trusted. Commit this file."""
+    stats = locked_stats()
+    if stats is None:
+        print("NOTE: no capri_ss.tsv for the positive control -- skipping "
+              f"{os.path.basename(REFERENCE_JSON_PATH)}.")
+        return
+    payload = {
+        "molecule": POSITIVE_CONTROL_NAME,
+        "smiles": POSITIVE_CONTROL_SMILES,
+        "protocol_version": PROTOCOL_VERSION,
+        "reference_pdb_id": FPFT2216_PDB_ID,
+        **stats,
+        "dockq_vs_9dwv": round(result.dockq, 3),
+        "irmsd": round(result.irmsd, 3),
+        "fnat": round(result.fnat, 3),
+        "lrmsd": round(result.lrmsd, 3),
+        "ilrmsd": round(result.ilrmsd, 3),
+        "rmsd": round(result.rmsd, 3),
+    }
+    with open(REFERENCE_JSON_PATH, "w") as f:
+        json.dump(payload, f, indent=2)
+        f.write("\n")
+    print(f"Wrote golden reference (PROTOCOL_LOCK §5): {os.path.basename(REFERENCE_JSON_PATH)}")
+
+
 def strip_ligand_chain(model_path):
     """08's model has 3 chains (A=CRBN, C=ligand, B=PPIL4) -- drop chain C
     so this is a straight 2-chain protein-protein comparison against the
@@ -217,6 +329,13 @@ def main():
 
     print(f"\ndockq={result.dockq:.3f}  irmsd={result.irmsd:.2f}  fnat={result.fnat:.3f}  "
           f"lrmsd={result.lrmsd:.2f}  ilrmsd={result.ilrmsd:.2f}  rmsd={result.rmsd:.2f}")
+
+    # Persist it -- until now this number only ever reached stdout, which is why
+    # 08's dockq_vs_9dwv column stayed empty even after 09 had been run.
+    print()
+    write_dockq_to_controls_csv(result.dockq)
+    write_reference_json(result)
+
     if result.dockq >= 0.23:
         print("\nPASS-ish: dockq >= 0.23 (CAPRI 'acceptable' threshold) -- the pipeline's own "
               "docking protocol can get at least roughly the right ternary architecture when "
