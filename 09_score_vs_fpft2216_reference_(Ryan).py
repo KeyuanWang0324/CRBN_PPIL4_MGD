@@ -4,19 +4,57 @@ Positive control: does this project's docking METHODOLOGY (04's Vina pose
 KNOWN real CRBN-PPIL4 ternary complex, when given the real drug that
 complex was solved with?
 
-This is NOT a per-candidate scoring loop anymore (see chat discussion for
-why the earlier version of this script -- which scored every one of 06's
-candidates against the real 9DWV structure -- was methodologically
-invalid): 05/06/08's PPIL4 restraint (ppil4_pocket_residues() /
-[249, 250, 273, 275, 276, 277, 278, 279]) is ITSELF derived from 9DWV's
-own real contact residues. Scoring a candidate's dockq against 9DWV after
-handing its restraints the answer key isn't independent validation --
-PPIL4 lands close to the real interface almost by construction (see
-00_validate_docking_interface_05_(Ryan).py: 100% "found the spot" on
-PPIL4 across the whole 05 population, mean 6.3/8 residues). A high
-dockq-vs-9DWV per candidate was never evidence that candidate is a good
-binder -- it mostly just confirmed the restraint was applied. Candidate
-ranking now comes from 08's own HADDOCK score (see that script).
+This DOES score every molecule 08 docked -- all candidates plus all
+controls -- but read the next two paragraphs before using those numbers,
+because what a per-candidate dockq means changed when the protocol was
+locked, and it still does NOT mean what it looks like it means.
+
+THE ABSOLUTE VALUES ARE INFLATED AND ARE NOT VALIDATION. 05/06/08's PPIL4
+restraint ([249, 250, 273, 275, 276, 277, 278, 279]) is ITSELF derived
+from 9DWV's own real contact residues. Scoring a molecule's dockq against
+9DWV after handing its restraints the answer key isn't independent
+validation -- PPIL4 lands close to the real interface almost by
+construction (see 00_validate_docking_interface_05_(Ryan).py: 100% "found
+the spot" on PPIL4 across the whole 05 population, mean 6.3/8 residues).
+A high dockq here has never been evidence that a molecule is a good
+binder; on its own it mostly confirms the restraint was applied. Ranking
+still comes from 08's own HADDOCK score, NOT from this column.
+
+WHAT THE LOCK CHANGED, AND WHY IT STILL ISN'T ENOUGH. When the earlier
+version of this script was removed, 08 derived the CRBN-side active
+residues from EACH candidate's own Vina pose, so every molecule was docked
+under a DIFFERENT restraint set and the dockq spread was mostly restraint
+noise. Under ppil4_lock_v1 every molecule and control is docked against
+ONE committed restraint file (ambig_FIXED.tbl, PROTOCOL_LOCK.md §2), so
+the "answer key" is now identical for everyone and the variation between
+molecules is no longer explained by the restraints. That argument is what
+motivated running the full sweep.
+
+The sweep then falsified the useful half of it. Measured results (24
+molecules, ppil4_lock_v1):
+  - FPFT-2216, the real drug, tops the list at dockq 0.376 -- the
+    methodology check in main() passes, and passes cleanly.
+  - But negctrl_no_ppil4_arm (0.294) and negctrl_no_crbn_ppil4_arm (0.290)
+    rank 2nd and 3rd, above EVERY candidate. The second of those is the
+    fragment with both functional handles stripped and the worst HADDOCK
+    score of anything docked (-92.19).
+  - Z6466608628, the strongest positive control by HADDOCK score and the
+    buy list's rule-C bar, scores 0.061.
+  - Spearman vs 08's HADDOCK score: +0.055. Vs ligand heavy-atom count:
+    +0.066. So it is neither a restatement of the score nor a size
+    artifact -- it is close to independent of both.
+  - The distribution is bimodal (irmsd ~2-3 A vs ~5-9 A), i.e. it mostly
+    records whether THIS ONE rank-1 model out of ~160 happened to land in
+    the native-like basin. That is a single-model sampling outcome, not a
+    smooth property of the molecule.
+
+So: a molecule cannot be preferred or rejected on this column. It does not
+separate glues from degron-dead fragments -- the negatives beat the
+candidates. Treat it as a per-run geometry diagnostic (did the top model
+land on the real interface?), useful for spotting which models are worth
+looking at in PyMOL, and nothing more. Ranking stays with 08's HADDOCK
+score; the buy list's structure axis is built from BSA / cluster
+convergence / AIR / sd instead, none of which use this column.
 
 What DOES make sense: dock the real drug -- FPFT-2216, PDB ligand code
 A1BC8, SMILES verified against RCSB's official ligand page AND
@@ -42,21 +80,28 @@ Setup (do this BEFORE running this script):
      (~45 min - 1.5 hr), producing a rank-1 ternary model.
   3. Run this script to score that model against the real 9DWV structure.
 
-No re-docking is done here -- like the old version of this script, this
-only re-evaluates the rank-1 model 08 already produced, scoring it with
-HADDOCK3's own CAPRI class (haddock.libs.libcapri.CAPRI) against the real
-FPFT-2216/9DWV reference. 08's model has 3 chains (A=CRBN, C=ligand,
-B=PPIL4); the ligand chain is stripped before scoring, since the
-reference (and dockq/irmsd/fnat/lrmsd) are about the CRBN-PPIL4
-protein-protein interface specifically -- matching how the reference
-itself was built (DDB1/ligand/Zn dropped, see build_reference_pdb()).
+No re-docking is done here -- this only re-evaluates the rank-1 model 08
+already produced for each molecule, scoring it with HADDOCK3's own CAPRI
+class (haddock.libs.libcapri.CAPRI) against the real FPFT-2216/9DWV
+reference. 08's model has 3 chains (A=CRBN, C=ligand, B=PPIL4); the
+ligand chain is stripped before scoring, since the reference (and
+dockq/irmsd/fnat/lrmsd) are about the CRBN-PPIL4 protein-protein
+interface specifically -- matching how the reference itself was built
+(DDB1/ligand/Zn dropped, see build_reference_pdb()). Each molecule takes
+about a second, so the whole sweep is well under a minute.
 
 Outputs (this script used to only print, which is why 08's dockq_vs_9dwv
 column stayed empty even after 09 had been run):
-  - fills dockq_vs_9dwv on the FPFT_2216_positive_control row of
-    08_controls_results_(Ryan).csv -- the one molecule 09 scores. The 18
-    candidates' dockq_vs_9dwv stays blank on purpose (see above: circular).
+  - fills dockq_vs_9dwv for EVERY molecule present in 08's two result
+    CSVs -- 08_final_ternary_with_ligand_results_(Ryan).csv (candidates)
+    and 08_controls_results_(Ryan).csv (controls). No other column is
+    touched: PROTOCOL_LOCK.md §6 fixes the schema, so the caveats above
+    live in this docstring rather than in an extra CSV column.
   - writes REFERENCE_FPFT.json, PROTOCOL_LOCK.md §5's golden reference.
+
+08's runs are split across two roots -- ~/haddock_runs (where the
+candidates were run, off the iCloud-synced Desktop) and the in-project
+docking_tmp/ (where the controls were) -- so RUN_DIR_BASES searches both.
 
 Run with the same environment 08 uses (needs haddock3 + biopython installed):
     python3 "09_score_vs_fpft2216_reference_(Ryan).py"
@@ -80,21 +125,26 @@ POSITIVE_CONTROL_NAME = "FPFT_2216_positive_control"
 # the actual atoms in the cached 9DWV structure (see module docstring).
 POSITIVE_CONTROL_SMILES = "COc1cscc1c2cn(nn2)[C@H]3CCC(=O)NC3=O"
 
-RUN_DIR_BASE = os.path.join(SCRIPT_DIR, "docking_tmp", "haddock3_ternary_with_ligand_run")
+# 08's runs live in two places: the candidates were moved to ~/haddock_runs to
+# get them off the iCloud-synced Desktop (which corrupts in-flight run dirs),
+# while the controls were run before that move and are still under docking_tmp/.
+# Searched in order; the first base holding a completed 9_caprieval wins.
+RUN_DIR_BASES = [
+    os.path.join(os.path.expanduser("~"), "haddock_runs", "haddock3_ternary_with_ligand_run"),
+    os.path.join(SCRIPT_DIR, "docking_tmp", "haddock3_ternary_with_ligand_run"),
+]
 SCRATCH_DIR = os.path.join(SCRIPT_DIR, "docking_tmp", "09_capri_vs_fpft2216_scratch")
 
 REFERENCE_DIR = os.path.join(SCRIPT_DIR, "reference_structures")
 CIF_CACHE_PATH = os.path.join(REFERENCE_DIR, "FPFT-2216_9DWV.cif")
 REFERENCE_PDB_PATH = os.path.join(REFERENCE_DIR, "FPFT-2216_9DWV_reference_(Ryan).pdb")
 
-# Where this script's result goes. 08 writes the positive control's row with
-# dockq_vs_9dwv deliberately blank (its own caprieval dockq is self-referential
-# -- reference = the run's own best model), and its locked_stats() docstring
-# says "09 fills the real value against 9DWV". This is that fill: the ONLY
-# molecule 09 scores is POSITIVE_CONTROL_NAME, which lives in the controls CSV.
-# The 18 candidates' dockq_vs_9dwv stays blank on purpose -- see this module's
-# docstring on why a per-candidate dockq vs 9DWV is circular (their PPIL4
-# restraints are derived from 9DWV's own contact residues).
+# Where this script's results go -- both of 08's result CSVs. 08 writes every
+# row with dockq_vs_9dwv deliberately blank (its own caprieval dockq is
+# self-referential: reference = the run's own best model), and its locked_stats()
+# docstring says "09 fills the real value against 9DWV". This is that fill.
+# Only this column is touched; PROTOCOL_LOCK.md §6 fixes the rest of the schema.
+FINALISTS_CSV = os.path.join(SCRIPT_DIR, "08_final_ternary_with_ligand_results_(Ryan).csv")
 CONTROLS_CSV = os.path.join(SCRIPT_DIR, "08_controls_results_(Ryan).csv")
 # PROTOCOL_LOCK.md §5: the golden reference both wrappers must reproduce before
 # candidate runs are trusted. Committed alongside the locked protocol bundle.
@@ -165,14 +215,24 @@ def build_reference_pdb():
           f"structure's chains {CRBN_SOURCE_CHAIN}/{PPIL4_SOURCE_CHAIN})")
 
 
-def find_top_model_path():
-    """The rank-1 model from 08's ligand-inclusive run for the positive
-    control candidate (same TSV lookup logic as 07/08 -- 08's STEP_PLAN
-    has its final caprieval at step index 9)."""
-    caprieval_dir = os.path.join(RUN_DIR_BASE, POSITIVE_CONTROL_NAME, "run1", "9_caprieval")
-    tsv_path = os.path.join(caprieval_dir, "capri_ss.tsv")
-    if not os.path.exists(tsv_path):
+def find_caprieval_dir(molecule):
+    """08's final caprieval directory for one molecule, looked up across both
+    run roots (see RUN_DIR_BASES). 08's STEP_PLAN puts its final caprieval at
+    step index 9, same lookup 07/08 use. Returns None if no root has a
+    completed run for this molecule."""
+    for base in RUN_DIR_BASES:
+        caprieval_dir = os.path.join(base, molecule, "run1", "9_caprieval")
+        if os.path.exists(os.path.join(caprieval_dir, "capri_ss.tsv")):
+            return caprieval_dir
+    return None
+
+
+def find_top_model_path(molecule):
+    """The rank-1 model from 08's ligand-inclusive run for one molecule."""
+    caprieval_dir = find_caprieval_dir(molecule)
+    if caprieval_dir is None:
         return None
+    tsv_path = os.path.join(caprieval_dir, "capri_ss.tsv")
     with open(tsv_path, newline="") as f:
         rows = list(csv.DictReader(f, delimiter="\t"))
     top = next((r for r in rows if r["caprieval_rank"] == "1"), None)
@@ -186,14 +246,16 @@ def find_top_model_path():
     return None
 
 
-def locked_stats():
-    """The positive control's own locked-schema stats, recomputed here from the
-    same capri_ss.tsv 08 reads (mean/best/sd over the 10 best-scoring models,
-    plus the best model's cluster and the number of models scored). Duplicated
+def locked_stats(molecule):
+    """One molecule's locked-schema stats, recomputed here from the same
+    capri_ss.tsv 08 reads (mean/best/sd over the 10 best-scoring models, plus
+    the best model's cluster and the number of models scored). Duplicated
     rather than imported because 08's module name isn't a valid identifier and
     importing it would fire its whole docking main(). Returns None if no models
     were scored -- callers just skip the JSON in that case."""
-    caprieval_dir = os.path.join(RUN_DIR_BASE, POSITIVE_CONTROL_NAME, "run1", "9_caprieval")
+    caprieval_dir = find_caprieval_dir(molecule)
+    if caprieval_dir is None:
+        return None
     ss_path = os.path.join(caprieval_dir, "capri_ss.tsv")
     if not os.path.exists(ss_path):
         return None
@@ -214,44 +276,56 @@ def locked_stats():
     }
 
 
-def write_dockq_to_controls_csv(dockq):
-    """Fill dockq_vs_9dwv on the positive control's row in 08's controls CSV,
-    leaving every other row and column byte-identical. 08 preserves whatever it
-    finds in this column on re-runs (it only ever writes ""), so this value
-    survives a later 08 invocation."""
-    if not os.path.exists(CONTROLS_CSV):
-        print(f"NOTE: {os.path.basename(CONTROLS_CSV)} not found -- skipping CSV update. "
-              f"Run 08 with RUN_CONTROLS = True first.")
-        return
-    with open(CONTROLS_CSV, newline="") as f:
+def read_molecules(csv_path):
+    """The molecule names 08 wrote into one of its result CSVs, in file order.
+    Rows 08 marked incomplete ("-") are skipped -- there's no model to score."""
+    if not os.path.exists(csv_path):
+        return []
+    with open(csv_path, newline="") as f:
+        rows = list(csv.DictReader(f))
+    return [r["molecule"] for r in rows if r.get("mean_best_10") not in (None, "", "-")]
+
+
+def write_dockq_to_csv(csv_path, dockq_by_molecule):
+    """Fill dockq_vs_9dwv for every scored molecule in one of 08's result CSVs,
+    leaving every other row and column byte-identical -- PROTOCOL_LOCK.md §6
+    fixes this schema, so no column is added or reordered. 08 preserves whatever
+    it finds in this column on re-runs (it only ever writes ""), so these values
+    survive a later 08 invocation."""
+    name = os.path.basename(csv_path)
+    if not os.path.exists(csv_path):
+        print(f"NOTE: {name} not found -- skipping.")
+        return 0
+    with open(csv_path, newline="") as f:
         reader = csv.DictReader(f)
         fieldnames = reader.fieldnames
         rows = list(reader)
     if "dockq_vs_9dwv" not in (fieldnames or []):
-        print(f"NOTE: {os.path.basename(CONTROLS_CSV)} has no dockq_vs_9dwv column "
-              f"(pre-lock schema?) -- skipping CSV update.")
-        return
-    target = next((r for r in rows if r["molecule"] == POSITIVE_CONTROL_NAME), None)
-    if target is None:
-        print(f"NOTE: no {POSITIVE_CONTROL_NAME} row in {os.path.basename(CONTROLS_CSV)} "
-              f"-- skipping CSV update.")
-        return
-    previous = target["dockq_vs_9dwv"]
-    target["dockq_vs_9dwv"] = f"{dockq:.3f}"
-    with open(CONTROLS_CSV, "w", newline="") as f:
+        print(f"NOTE: {name} has no dockq_vs_9dwv column (pre-lock schema?) -- skipping.")
+        return 0
+    written = 0
+    for row in rows:
+        dockq = dockq_by_molecule.get(row["molecule"])
+        if dockq is None:
+            continue
+        row["dockq_vs_9dwv"] = f"{dockq:.3f}"
+        written += 1
+    if not written:
+        print(f"NOTE: nothing to write into {name}.")
+        return 0
+    with open(csv_path, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(rows)
-    changed = f" (was {previous!r})" if previous else ""
-    print(f"Wrote dockq_vs_9dwv={dockq:.3f} to {POSITIVE_CONTROL_NAME} in "
-          f"{os.path.basename(CONTROLS_CSV)}{changed}")
+    print(f"Wrote dockq_vs_9dwv for {written}/{len(rows)} molecules -> {name}")
+    return written
 
 
 def write_reference_json(result):
     """PROTOCOL_LOCK.md §5's golden reference: the numbers a second wrapper must
     reproduce (same cluster, DockQ within ~0.05) before its candidate runs are
     trusted. Commit this file."""
-    stats = locked_stats()
+    stats = locked_stats(POSITIVE_CONTROL_NAME)
     if stats is None:
         print("NOTE: no capri_ss.tsv for the positive control -- skipping "
               f"{os.path.basename(REFERENCE_JSON_PATH)}.")
@@ -275,14 +349,15 @@ def write_reference_json(result):
     print(f"Wrote golden reference (PROTOCOL_LOCK §5): {os.path.basename(REFERENCE_JSON_PATH)}")
 
 
-def strip_ligand_chain(model_path):
+def strip_ligand_chain(model_path, molecule):
     """08's model has 3 chains (A=CRBN, C=ligand, B=PPIL4) -- drop chain C
     so this is a straight 2-chain protein-protein comparison against the
-    reference, which never had the ligand in it either."""
+    reference, which never had the ligand in it either. Written per molecule
+    so a sweep doesn't have every model overwriting one scratch file."""
     opener = gzip.open if model_path.endswith(".gz") else open
     with opener(model_path, "rt") as f:
         lines = f.readlines()
-    out_path = os.path.join(SCRATCH_DIR, "positive_control_no_ligand.pdb")
+    out_path = os.path.join(SCRATCH_DIR, f"{molecule}_no_ligand.pdb")
     with open(out_path, "w") as f:
         for line in lines:
             if line.startswith(("ATOM", "HETATM")) and line[21] == "C":
@@ -291,31 +366,19 @@ def strip_ligand_chain(model_path):
     return out_path
 
 
-def main():
-    download_cif()
-    build_reference_pdb()
-    os.makedirs(SCRATCH_DIR, exist_ok=True)
-
-    model_path = find_top_model_path()
-    if model_path is None:
-        sys.exit(
-            f"No rank-1 model found for {POSITIVE_CONTROL_NAME} under {RUN_DIR_BASE}. "
-            f"Run the setup steps in this script's docstring first: "
-            f"04 with MANUAL_CANDIDATE = ({POSITIVE_CONTROL_NAME!r}, {POSITIVE_CONTROL_SMILES!r}), "
-            f"then 08 with CANDIDATE_NAME = {POSITIVE_CONTROL_NAME!r}."
-        )
-    no_ligand_path = strip_ligand_chain(model_path)
-
+def score_molecule(molecule, capri_params, identificator):
+    """CAPRI metrics for one molecule's rank-1 model against the real 9DWV
+    reference. Returns the result object, or None if the run is missing or the
+    alignment fails -- one bad molecule must not abort the whole sweep."""
     from pathlib import Path
     from haddock.libs.libcapri import CAPRI
-    from haddock.gear.yaml2cfg import read_from_yaml_config
-    from haddock.modules.analysis.caprieval import DEFAULT_CONFIG
-    capri_params = read_from_yaml_config(DEFAULT_CONFIG)
 
-    print(f"Scoring {POSITIVE_CONTROL_NAME}'s rank-1 model (ligand chain stripped) "
-          f"against the real FPFT-2216/9DWV reference structure...")
+    model_path = find_top_model_path(molecule)
+    if model_path is None:
+        return None
+    no_ligand_path = strip_ligand_chain(model_path, molecule)
     capri = CAPRI(
-        identificator=1,
+        identificator=identificator,
         model=Path(no_ligand_path),
         path=Path(SCRATCH_DIR),
         reference=Path(REFERENCE_PDB_PATH),
@@ -323,20 +386,74 @@ def main():
         ref_id=1,
         ff="aa",
     )
-    result = capri.run()
-    if result is None:
-        sys.exit("Alignment against the FPFT-2216 reference failed.")
+    try:
+        return capri.run()
+    except Exception as exc:                       # noqa: BLE001 -- keep the sweep going
+        print(f"  {molecule}: CAPRI failed ({type(exc).__name__}: {exc})")
+        return None
 
-    print(f"\ndockq={result.dockq:.3f}  irmsd={result.irmsd:.2f}  fnat={result.fnat:.3f}  "
-          f"lrmsd={result.lrmsd:.2f}  ilrmsd={result.ilrmsd:.2f}  rmsd={result.rmsd:.2f}")
 
-    # Persist it -- until now this number only ever reached stdout, which is why
-    # 08's dockq_vs_9dwv column stayed empty even after 09 had been run.
+def main():
+    download_cif()
+    build_reference_pdb()
+    os.makedirs(SCRATCH_DIR, exist_ok=True)
+
+    from haddock.gear.yaml2cfg import read_from_yaml_config
+    from haddock.modules.analysis.caprieval import DEFAULT_CONFIG
+    capri_params = read_from_yaml_config(DEFAULT_CONFIG)
+
+    targets = [(FINALISTS_CSV, read_molecules(FINALISTS_CSV)),
+               (CONTROLS_CSV, read_molecules(CONTROLS_CSV))]
+    total_molecules = sum(len(mols) for _, mols in targets)
+    if not total_molecules:
+        sys.exit(
+            f"No molecules found in {os.path.basename(FINALISTS_CSV)} or "
+            f"{os.path.basename(CONTROLS_CSV)}. Run 08 first."
+        )
+
+    print(f"Scoring {total_molecules} molecule(s) from 08 (rank-1 model, ligand chain "
+          f"stripped) against the real FPFT-2216/9DWV reference structure...\n")
+
+    results = {}
+    identificator = 0
+    for csv_path, molecules in targets:
+        for molecule in molecules:
+            identificator += 1
+            result = score_molecule(molecule, capri_params, identificator)
+            if result is None:
+                print(f"  {molecule:<32} no rank-1 model found -- skipped")
+                continue
+            results[molecule] = result
+            print(f"  {molecule:<32} dockq={result.dockq:.3f}  irmsd={result.irmsd:5.2f}  "
+                  f"fnat={result.fnat:.3f}  lrmsd={result.lrmsd:6.2f}")
+
+    if not results:
+        sys.exit(
+            "Nothing could be scored. 08's run directories were not found under any of: "
+            + ", ".join(RUN_DIR_BASES)
+        )
+
+    # Persist -- these numbers used to only reach stdout, which is why 08's
+    # dockq_vs_9dwv column stayed empty even after 09 had been run.
     print()
-    write_dockq_to_controls_csv(result.dockq)
-    write_reference_json(result)
+    dockq_by_molecule = {m: r.dockq for m, r in results.items()}
+    for csv_path, _ in targets:
+        write_dockq_to_csv(csv_path, dockq_by_molecule)
 
-    if result.dockq >= 0.23:
+    reference = results.get(POSITIVE_CONTROL_NAME)
+    if reference is None:
+        print(f"\nNOTE: {POSITIVE_CONTROL_NAME} was not scored -- skipping "
+              f"{os.path.basename(REFERENCE_JSON_PATH)} and the acceptance check below. "
+              f"Run 04 + 08 for it (see this script's docstring).")
+        total = time.time() - SCRIPT_START_TIME
+        print(f"\nTotal script runtime: {total:.0f}s ({total / 60:.1f} min)")
+        return
+    write_reference_json(reference)
+
+    # The methodology check is about the REAL drug only: it is the one molecule
+    # whose correct answer is independently known. Everything else in the sweep
+    # is a relative descriptor measured against this value (see module docstring).
+    if reference.dockq >= 0.23:
         print("\nPASS-ish: dockq >= 0.23 (CAPRI 'acceptable' threshold) -- the pipeline's own "
               "docking protocol can get at least roughly the right ternary architecture when "
               "given the real drug. This supports treating 08's candidate rankings as meaningful, "
@@ -346,6 +463,24 @@ def main():
               "known real complex even with the real drug. This is a problem with the methodology "
               "itself (restraints/sampling/force field), not with any particular candidate -- "
               "worth root-causing before trusting 08's candidate rankings.")
+
+    # Calibration check: if the negative controls aren't at the BOTTOM of this
+    # column, the column doesn't separate glues from degron-dead fragments and
+    # must not be used to prefer or reject a molecule. As of ppil4_lock_v1 they
+    # are not -- two of the three outrank every candidate (see module docstring).
+    negatives = {m: r.dockq for m, r in results.items() if m.startswith("negctrl_")}
+    candidates = {m: r.dockq for m, r in results.items() if m.startswith("cand_")}
+    if negatives and candidates:
+        best_negative = max(negatives, key=negatives.get)
+        beaten = [m for m, d in candidates.items() if d < negatives[best_negative]]
+        print(f"\nCALIBRATION: the best negative control ({best_negative}, "
+              f"dockq={negatives[best_negative]:.3f}) outranks {len(beaten)}/{len(candidates)} "
+              f"candidates on this column.")
+        if len(beaten) > len(candidates) / 2:
+            print("=> dockq_vs_9dwv does NOT separate glues from degron-dead fragments. Use it "
+                  "only as a per-run geometry diagnostic (did the top model land on the real "
+                  "interface?). Do NOT rank, prefer, or reject molecules on it -- ranking stays "
+                  "with 08's HADDOCK score.")
 
     total = time.time() - SCRIPT_START_TIME
     print(f"\nTotal script runtime: {total:.0f}s ({total / 60:.1f} min)")
