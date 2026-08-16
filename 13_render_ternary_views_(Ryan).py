@@ -63,21 +63,18 @@ WIDTH, HEIGHT, DPI = 620, 460, 120
 COLOURS = {
     # CRBN is the ANCHOR: every structure is superposed on it, so it is identical
     # in all 27 views and carries no information. It is therefore neutral grey --
-    # it gives context and then gets out of the way. The two things that actually
-    # vary between structures, PPIL4's position and the ligand, carry the colour,
-    # so the eye goes straight to the comparison.
+    # context, then out of the way. PPIL4's position and the ligand are what vary,
+    # so they carry the colour.
     #
-    # Kept deliberately low-chroma. These are large filled ribbons, not thin
-    # strokes: a hue that reads as pleasant on a small swatch is glaring across a
-    # whole domain, and saturated fills make the specular highlights bloom. Blue
-    # and orange still sit on the standard colour-vision-safe axis, so they stay
-    # distinguishable under deuteranopia and protanopia at this chroma too.
-    #
-    # Baked into the mesh as vertex colours at export, so one set has to work on
-    # both the light and dark theme.
-    "crbn":   (0.608, 0.647, 0.639),   # #9BA5A3 soft grey       - the fixed anchor
-    "ppil4":  (0.353, 0.510, 0.675),   # #5A82AC muted steel blue - varies between structures
-    "ligand": (0.788, 0.514, 0.310),   # #C9834F muted terracotta - the molecule being judged
+    # Deliberately dark and low-chroma. These are large filled ribbons: a value
+    # that looks right on a legend chip is glaring across a whole protein domain.
+    # Blue and orange still sit on the standard colour-vision-safe axis, so they
+    # stay separable under deuteranopia and protanopia at this chroma. They are
+    # baked into the mesh as vertex colours, so one set has to hold up on both the
+    # light and the dark theme -- which is the floor on how dark these can go.
+    "crbn":   (0.486, 0.522, 0.514),   # #7C8583 deep grey        - the fixed anchor
+    "ppil4":  (0.275, 0.408, 0.549),   # #46688C deep slate blue  - varies between structures
+    "ligand": (0.663, 0.424, 0.243),   # #A96C3E deep terracotta  - the molecule being judged
 }
 
 
@@ -118,9 +115,15 @@ def main():
         cmd.set_color(f"pg_{name}", list(rgb))
 
     cmd.set("ray_opaque_background", 0)
-    cmd.set("specular", 0.15)
-    cmd.set("shininess", 12)
-    cmd.set("ambient", 0.18)
+    # Lighting is kept flat and matte on purpose. Cartoon ribbons are large
+    # smooth surfaces, and PyMOL's default specular turns each one into a
+    # highlight that reads as glare regardless of how dark the base colour is.
+    cmd.set("specular", 0.05)
+    cmd.set("shininess", 10)
+    cmd.set("ambient", 0.10)
+    cmd.set("direct", 0.28)
+    cmd.set("reflect", 0.28)
+    cmd.set("light_count", 2)
     cmd.set("cartoon_fancy_helices", 1)
     cmd.set("cartoon_transparency", 0.0)
     cmd.set("ray_shadows", 0)
@@ -170,8 +173,14 @@ def main():
     # below spans every loaded object, so the camera still fits them all; the
     # far tails simply run past the edge of the frame, as they would in any
     # published figure of this complex.
+    # The ligand goes dead centre. Zooming on a wider selection centres the frame
+    # on that selection's bounding box instead, which puts the ligand off to one
+    # side -- and the ligand is the subject of every one of these images. Zooming
+    # on chain C with a large buffer keeps it centred while pulling back far
+    # enough to show both proteins around it. The far AlphaFold tails run past
+    # the edge, as they would in any published figure of this complex.
     cmd.orient(f"{reference} and (chain A or chain C)")
-    cmd.zoom("(chain A or chain C) or (chain B within 18 of chain C)", buffer=3.0, complete=1)
+    cmd.zoom(f"{reference} and chain C", buffer=26.0, complete=1)
     view = cmd.get_view()
 
     print(f"Rendering {len(loaded)} views at {WIDTH}x{HEIGHT} into "

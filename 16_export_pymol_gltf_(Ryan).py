@@ -77,21 +77,18 @@ RUN_DIR_BASES = [
 COLOURS = {
     # CRBN is the ANCHOR: every structure is superposed on it, so it is identical
     # in all 27 views and carries no information. It is therefore neutral grey --
-    # it gives context and then gets out of the way. The two things that actually
-    # vary between structures, PPIL4's position and the ligand, carry the colour,
-    # so the eye goes straight to the comparison.
+    # context, then out of the way. PPIL4's position and the ligand are what vary,
+    # so they carry the colour.
     #
-    # Kept deliberately low-chroma. These are large filled ribbons, not thin
-    # strokes: a hue that reads as pleasant on a small swatch is glaring across a
-    # whole domain, and saturated fills make the specular highlights bloom. Blue
-    # and orange still sit on the standard colour-vision-safe axis, so they stay
-    # distinguishable under deuteranopia and protanopia at this chroma too.
-    #
-    # Baked into the mesh as vertex colours at export, so one set has to work on
-    # both the light and dark theme.
-    "crbn":   (0.608, 0.647, 0.639),   # #9BA5A3 soft grey       - the fixed anchor
-    "ppil4":  (0.353, 0.510, 0.675),   # #5A82AC muted steel blue - varies between structures
-    "ligand": (0.788, 0.514, 0.310),   # #C9834F muted terracotta - the molecule being judged
+    # Deliberately dark and low-chroma. These are large filled ribbons: a value
+    # that looks right on a legend chip is glaring across a whole protein domain.
+    # Blue and orange still sit on the standard colour-vision-safe axis, so they
+    # stay separable under deuteranopia and protanopia at this chroma. They are
+    # baked into the mesh as vertex colours, so one set has to hold up on both the
+    # light and the dark theme -- which is the floor on how dark these can go.
+    "crbn":   (0.486, 0.522, 0.514),   # #7C8583 deep grey        - the fixed anchor
+    "ppil4":  (0.275, 0.408, 0.549),   # #46688C deep slate blue  - varies between structures
+    "ligand": (0.663, 0.424, 0.243),   # #A96C3E deep terracotta  - the molecule being judged
 }
 
 
@@ -196,9 +193,15 @@ def main():
     cmd.set("stick_quality", 8)
     cmd.set("cartoon_fancy_helices", 1)
     cmd.set("ray_opaque_background", 0)
-    cmd.set("specular", 0.15)
-    cmd.set("shininess", 12)
-    cmd.set("ambient", 0.18)
+    # Lighting is kept flat and matte on purpose. Cartoon ribbons are large
+    # smooth surfaces, and PyMOL's default specular turns each one into a
+    # highlight that reads as glare regardless of how dark the base colour is.
+    cmd.set("specular", 0.05)
+    cmd.set("shininess", 10)
+    cmd.set("ambient", 0.10)
+    cmd.set("direct", 0.28)
+    cmd.set("reflect", 0.28)
+    cmd.set("light_count", 2)
 
     index, reference_obj, total = {}, None, 0
     tmp_gltf = os.path.join(GLB_DIR, "_tmp.gltf")
@@ -233,19 +236,20 @@ def main():
         total += size
         print(f"  {display:<32} {size / 1e6:5.2f} MB")
 
+    loaded = []
     for display, run_name, role in entries:
         path = top_model_path(run_name)
         if path is None:
             print(f"  {display}: no rank-1 model -- skipped")
             continue
-        obj = "s%d" % len(index)
+        obj = "s%d" % len(loaded)
         cmd.load(path, obj)
         cmd.dss(obj)
         if reference_obj is None:
             reference_obj = obj
         else:
             cmd.super(f"{obj} and chain A and name CA", f"{reference_obj} and chain A and name CA")
-        export(obj, display, role)
+        loaded.append((obj, display, role))
 
     if os.path.exists(REFERENCE_PDB) and reference_obj:
         obj = "sref"
@@ -265,7 +269,24 @@ def main():
             cmd.create(obj, f"{obj} or sreflig", zoom=0)
             cmd.delete("sreflig")
             os.remove(tmp)
-        export(obj, "9DWV_reference", "reference")
+        loaded.append((obj, "9DWV_reference", "reference"))
+
+    # Put the ligand at the origin so the page's viewer orbits the molecule
+    # rather than the midpoint of a sprawling AlphaFold model. Crucially this is
+    # ONE translation -- the reference's ligand centre -- applied to every
+    # structure, not each structure's own centre. Re-centring each on its own
+    # ligand would shift them relative to each other by a couple of angstroms
+    # and quietly destroy the shared CRBN frame that makes them comparable.
+    if reference_obj:
+        cx, cy, cz = cmd.centerofmass(f"{reference_obj} and chain C")
+        shift = [1, 0, 0, -cx, 0, 1, 0, -cy, 0, 0, 1, -cz, 0, 0, 0, 1]
+        for obj, _, _ in loaded:
+            cmd.transform_object(obj, shift)
+        print(f"Ligand centred: all structures shifted by "
+              f"({-cx:.1f}, {-cy:.1f}, {-cz:.1f}) A -- one shared translation.")
+
+    for obj, display, role in loaded:
+        export(obj, display, role)
 
     with open(INDEX_JSON, "w") as f:
         json.dump(index, f, separators=(",", ":"), indent=0)
