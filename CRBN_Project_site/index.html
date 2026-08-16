@@ -1,0 +1,534 @@
+<title>PPIL4 Glue Triage</title>
+<style>
+  :root{
+    --paper:#F5F7F6; --panel:#FFFFFF; --sunk:#EDF0EF;
+    --ink:#141A19; --body:#3A4442; --muted:#6B7674; --faint:#8D9795;
+    --rule:#D8DEDC; --hair:#E6EAE9;
+    --accent:#12695E; --accent-soft:#12695E1F;
+    --cross:#9C6B15; --posc:#3A579C; --negc:#94443A;
+    --measure:64ch;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --paper:#0E1413; --panel:#151D1B; --sunk:#111817;
+      --ink:#EAF0EE; --body:#B9C4C1; --muted:#8B9794; --faint:#6E7A77;
+      --rule:#26312F; --hair:#1D2725;
+      --accent:#5FBCAE; --accent-soft:#5FBCAE1F;
+      --cross:#C99A3E; --posc:#7E9AD9; --negc:#CF7C70;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#0E1413; --panel:#151D1B; --sunk:#111817;
+    --ink:#EAF0EE; --body:#B9C4C1; --muted:#8B9794; --faint:#6E7A77;
+    --rule:#26312F; --hair:#1D2725;
+    --accent:#5FBCAE; --accent-soft:#5FBCAE1F;
+    --cross:#C99A3E; --posc:#7E9AD9; --negc:#CF7C70;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; background:var(--paper); color:var(--body);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+    font-size:17px; line-height:1.65; letter-spacing:-0.003em;
+  }
+  .serif{font-family:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif}
+  .mono{font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+        font-variant-numeric:tabular-nums}
+
+  .wrap{max-width:1080px; margin:0 auto; padding:0 24px}
+  .col{max-width:var(--measure)}
+  h1,h2,h3{color:var(--ink); text-wrap:balance; margin:0}
+  h1{font-size:clamp(2.1rem,5.2vw,3.15rem); line-height:1.08; letter-spacing:-0.022em; font-weight:600}
+  h2{font-size:1.5rem; line-height:1.2; letter-spacing:-0.015em; font-weight:600}
+  h3{font-size:1.02rem; line-height:1.35; font-weight:650; letter-spacing:-0.008em}
+  p{margin:0}
+  a{color:var(--accent); text-underline-offset:3px; text-decoration-thickness:1px}
+  a:focus-visible,summary:focus-visible{outline:2px solid var(--accent); outline-offset:3px; border-radius:2px}
+  strong{color:var(--ink); font-weight:640}
+
+  .eyebrow{
+    font-size:.72rem; text-transform:uppercase; letter-spacing:.14em;
+    color:var(--muted); font-weight:600;
+  }
+
+  /* ---- masthead ---- */
+  header{border-bottom:1px solid var(--rule); background:var(--panel)}
+  .head-in{display:flex; flex-direction:column; gap:20px; padding:52px 0 44px}
+  .lede{font-size:1.16rem; line-height:1.55; color:var(--body); max-width:60ch}
+  .boundary{
+    border-left:2px solid var(--accent); padding:12px 0 12px 18px;
+    max-width:62ch; font-size:.95rem; color:var(--muted);
+  }
+  .meta{
+    display:flex; flex-wrap:wrap; gap:8px 22px; padding-top:4px;
+    font-size:.79rem; color:var(--faint); letter-spacing:.02em;
+  }
+
+  main{display:flex; flex-direction:column; gap:64px; padding:64px 0 40px}
+  section{display:flex; flex-direction:column; gap:22px}
+  .stack{display:flex; flex-direction:column; gap:16px}
+  .sec-head{display:flex; flex-direction:column; gap:9px; max-width:var(--measure)}
+  .sec-head::before{content:""; width:26px; height:2px; background:var(--accent)}
+
+  /* ---- score axis panel ---- */
+  .panel{
+    background:var(--panel); border:1px solid var(--rule); border-radius:3px;
+    padding:26px 22px 20px; overflow-x:auto;
+  }
+  .chart{min-width:520px}
+  .axis-top{
+    display:grid; grid-template-columns:var(--lab) 1fr 58px; align-items:end;
+    gap:0 14px; padding-bottom:9px; --lab:210px;
+  }
+  .axis-note{grid-column:2; position:relative; height:32px}
+  .flag{position:absolute; bottom:0; transform:translateX(-50%); text-align:center; width:130px}
+  .flag b{display:block; font-size:.7rem; font-weight:650; color:var(--ink); letter-spacing:.01em}
+  .flag span{display:block; font-size:.66rem; color:var(--faint)}
+  /* Threshold rules are drawn on an overlay that repeats the row grid, so the
+     percentages resolve against the same track column the dots use. */
+  .track-area{position:relative}
+  .vgrid{
+    position:absolute; inset:0; display:grid; gap:0 14px; pointer-events:none;
+    grid-template-columns:var(--lab) 1fr 58px; --lab:210px;
+  }
+  .vlines{grid-column:2; position:relative}
+  .vline{
+    position:absolute; top:0; bottom:0; border-left:1px dashed var(--muted); opacity:.5;
+  }
+  .row{
+    display:grid; grid-template-columns:var(--lab) 1fr 58px; align-items:center;
+    gap:0 14px; padding:2px 0; --lab:210px;
+  }
+  .rn{
+    font-size:.775rem; text-align:right; color:var(--body); white-space:nowrap;
+    overflow:hidden; text-overflow:ellipsis;
+    font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  }
+  .rt{position:relative; height:15px}
+  .rt::before{
+    content:""; position:absolute; left:0; right:0; top:50%; height:1px;
+    background:var(--hair);
+  }
+  .dot{
+    position:absolute; top:50%; width:9px; height:9px; border-radius:50%;
+    transform:translate(-50%,-50%); background:var(--accent);
+  }
+  .rv{
+    font-size:.75rem; text-align:right; color:var(--muted);
+    font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+    font-variant-numeric:tabular-nums;
+  }
+  .r-candidate .dot{background:var(--accent)}
+  .r-crosscheck .dot{background:var(--cross)}
+  .r-pos .dot{background:var(--posc)}
+  .r-neg .dot{background:var(--negc)}
+  .r-pos .rn,.r-neg .rn{color:var(--muted)}
+  .r-pos .dot,.r-neg .dot{width:10px; height:10px; border-radius:2px}
+  .scale{
+    display:grid; grid-template-columns:var(--lab) 1fr 58px; gap:0 14px;
+    padding-top:8px; --lab:210px;
+  }
+  .scale-in{
+    grid-column:2; display:flex; justify-content:space-between;
+    font-size:.68rem; color:var(--faint); border-top:1px solid var(--rule); padding-top:5px;
+  }
+  .legend{
+    display:flex; flex-wrap:wrap; gap:7px 20px; padding-top:16px;
+    font-size:.75rem; color:var(--muted);
+  }
+  .key{display:inline-flex; align-items:center; gap:7px}
+  .sw{width:9px; height:9px; border-radius:50%; flex:none}
+  .sw.sq{border-radius:2px; width:10px; height:10px}
+
+  .caption{font-size:.85rem; color:var(--muted); max-width:70ch}
+
+  /* ---- finding callouts ---- */
+  .findings{display:grid; gap:14px; grid-template-columns:repeat(auto-fit,minmax(255px,1fr))}
+  .find{
+    background:var(--panel); border:1px solid var(--rule); border-radius:3px;
+    padding:18px 18px 16px; display:flex; flex-direction:column; gap:8px;
+  }
+  .find .eyebrow{color:var(--negc)}
+  .find p{font-size:.88rem; line-height:1.55}
+
+  /* ---- pipeline ---- */
+  .steps{display:flex; flex-direction:column; border-top:1px solid var(--hair)}
+  .step{
+    display:grid; grid-template-columns:44px 1fr; gap:0 16px; align-items:baseline;
+    padding:13px 0; border-bottom:1px solid var(--hair);
+  }
+  .step-n{
+    font-size:.75rem; color:var(--faint); letter-spacing:.04em; font-weight:650;
+    font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  }
+  .step.key-step .step-n{color:var(--accent)}
+  .step p{font-size:.88rem; color:var(--muted); margin-top:3px}
+  .step.key-step h3{color:var(--ink)}
+
+  /* ---- tables ---- */
+  .tw{overflow-x:auto; border:1px solid var(--rule); border-radius:3px; background:var(--panel)}
+  table{border-collapse:collapse; width:100%; min-width:520px; font-size:.84rem}
+  th,td{padding:9px 14px; text-align:left; border-bottom:1px solid var(--hair)}
+  thead th{
+    font-size:.7rem; text-transform:uppercase; letter-spacing:.09em;
+    color:var(--faint); font-weight:600; background:var(--sunk); white-space:nowrap;
+  }
+  tbody tr:last-child td{border-bottom:0}
+  td.num{
+    text-align:right; font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+    font-variant-numeric:tabular-nums; color:var(--ink); white-space:nowrap;
+  }
+  td.nm{font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace; color:var(--ink); white-space:nowrap}
+  .tag{
+    display:inline-block; font-size:.68rem; letter-spacing:.05em; font-weight:650;
+    padding:2px 7px; border-radius:2px; text-transform:uppercase; white-space:nowrap;
+  }
+  .t-buy{background:var(--accent-soft); color:var(--accent)}
+  .t-other{background:var(--sunk); color:var(--muted)}
+
+  details{border-top:1px solid var(--hair); padding:12px 0}
+  summary{cursor:pointer; font-size:.9rem; color:var(--ink); font-weight:600}
+  details p{font-size:.88rem; color:var(--muted); padding-top:9px; max-width:var(--measure)}
+
+  footer{
+    border-top:1px solid var(--rule); margin-top:56px; padding:30px 0 60px;
+    font-size:.8rem; color:var(--faint);
+  }
+  footer p{max-width:70ch}
+
+  @media (max-width:640px){
+    body{font-size:16px}
+    .axis-top,.row,.scale,.vgrid{--lab:118px}
+    .rn{font-size:.7rem}
+    .head-in{padding:38px 0 32px}
+    main{gap:52px; padding:48px 0 30px}
+  }
+</style>
+
+<header>
+  <div class="wrap head-in">
+    <p class="eyebrow">Computational target triage &middot; CRBN molecular glue degraders</p>
+    <h1 class="serif">Can a molecular glue be built to degrade PPIL4?</h1>
+    <p class="lede">
+      A structure-based pipeline that designs candidate cereblon (CRBN) glue degraders of
+      <strong>PPIL4</strong>, a spliceosome component, and ranks them by whether they can plausibly
+      hold a CRBN&ndash;ligand&ndash;PPIL4 ternary complex together. 2,500 designed analogs enter;
+      20 come out with full docking, calibration, and provenance.
+    </p>
+    <p class="boundary">
+      This is a <strong>structural-plausibility enrichment</strong> pipeline. It prioritises chemotypes
+      that are geometrically consistent with forming a ternary complex. It is <strong>not</strong> a
+      validated predictor of degradation or efficacy, and contains <strong>no experimental
+      confirmation</strong> of PPIL4 recruitment, binding, or anti-cancer activity. Read the rankings
+      as triage, not truth.
+    </p>
+    <div class="meta mono">
+      <span>Protocol <strong>ppil4_lock_v1</strong></span>
+      <span>HADDOCK3 2026.7.0</span>
+      <span>Reference PDB 9DWV</span>
+      <span>27 molecules docked</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section>
+    <div class="sec-head">
+      <p class="eyebrow">The result</p>
+      <h2 class="serif">Every molecule on one axis, against two bars it has to clear</h2>
+      <p class="caption">
+        HADDOCK score over the 10 best models of each run (further left is better). Candidates are
+        docked in the same locked protocol as the controls, so the 20 shortlisted molecules and all
+        6 controls sit on one scale. The two dashed lines are what make the numbers mean anything.
+      </p>
+    </div>
+
+    <div class="panel">
+      <div class="chart">
+        <div class="axis-top">
+          <div class="axis-note">
+            <div class="flag" style="left:20.87%"><b>Usable bar &minus;125.6</b><span>strongest control</span></div>
+            <div class="flag" style="left:50.66%"><b>Noise floor &minus;112.2</b><span>degron-dead negative</span></div>
+          </div>
+        </div>
+
+        <div class="track-area">
+          <div class="vgrid" aria-hidden="true">
+            <div></div>
+            <div class="vlines">
+              <span class="vline" style="left:20.87%"></span>
+              <span class="vline" style="left:50.66%"></span>
+            </div>
+            <div></div>
+          </div>
+          <div class="row r-candidate"><div class="rn">RW_708</div><div class="rt"><span class="dot" style="left:6.44%"></span></div><div class="rv">-132.1</div></div>
+<div class="row r-candidate"><div class="rn">RW_491</div><div class="rt"><span class="dot" style="left:6.48%"></span></div><div class="rv">-132.1</div></div>
+<div class="row r-candidate"><div class="rn">RW_1987</div><div class="rt"><span class="dot" style="left:11.32%"></span></div><div class="rv">-129.9</div></div>
+<div class="row r-candidate"><div class="rn">RW_1959</div><div class="rt"><span class="dot" style="left:14.65%"></span></div><div class="rv">-128.4</div></div>
+<div class="row r-candidate"><div class="rn">RW_465</div><div class="rt"><span class="dot" style="left:16.48%"></span></div><div class="rv">-127.6</div></div>
+<div class="row r-candidate"><div class="rn">RW_1992</div><div class="rt"><span class="dot" style="left:17.32%"></span></div><div class="rv">-127.2</div></div>
+<div class="row r-candidate"><div class="rn">RW_2392</div><div class="rt"><span class="dot" style="left:17.98%"></span></div><div class="rv">-126.9</div></div>
+<div class="row r-pos"><div class="rn">Z6466608628</div><div class="rt"><span class="dot" style="left:20.87%"></span></div><div class="rv">-125.6</div></div>
+<div class="row r-candidate"><div class="rn">RW_234</div><div class="rt"><span class="dot" style="left:20.92%"></span></div><div class="rv">-125.6</div></div>
+<div class="row r-candidate"><div class="rn">RW_2123</div><div class="rt"><span class="dot" style="left:21.36%"></span></div><div class="rv">-125.4</div></div>
+<div class="row r-candidate"><div class="rn">RW_1668</div><div class="rt"><span class="dot" style="left:21.87%"></span></div><div class="rv">-125.2</div></div>
+<div class="row r-candidate"><div class="rn">RW_445</div><div class="rt"><span class="dot" style="left:21.90%"></span></div><div class="rv">-125.1</div></div>
+<div class="row r-candidate"><div class="rn">RW_779</div><div class="rt"><span class="dot" style="left:23.46%"></span></div><div class="rv">-124.4</div></div>
+<div class="row r-candidate"><div class="rn">RW_381</div><div class="rt"><span class="dot" style="left:24.72%"></span></div><div class="rv">-123.9</div></div>
+<div class="row r-candidate"><div class="rn">RW_1092</div><div class="rt"><span class="dot" style="left:26.02%"></span></div><div class="rv">-123.3</div></div>
+<div class="row r-candidate"><div class="rn">RW_1078</div><div class="rt"><span class="dot" style="left:27.48%"></span></div><div class="rv">-122.6</div></div>
+<div class="row r-candidate"><div class="rn">RW_80</div><div class="rt"><span class="dot" style="left:33.35%"></span></div><div class="rv">-120.0</div></div>
+<div class="row r-candidate"><div class="rn">RW_72</div><div class="rt"><span class="dot" style="left:35.99%"></span></div><div class="rv">-118.8</div></div>
+<div class="row r-neg"><div class="rn">no glutarimide (degron-dead)</div><div class="rt"><span class="dot" style="left:50.66%"></span></div><div class="rv">-112.2</div></div>
+<div class="row r-candidate"><div class="rn">RW_672</div><div class="rt"><span class="dot" style="left:50.87%"></span></div><div class="rv">-112.1</div></div>
+<div class="row r-pos"><div class="rn">FPFT-2216 (real drug)</div><div class="rt"><span class="dot" style="left:52.48%"></span></div><div class="rv">-111.4</div></div>
+<div class="row r-pos"><div class="rn">TM-04-064-02</div><div class="rt"><span class="dot" style="left:55.64%"></span></div><div class="rv">-110.0</div></div>
+<div class="row r-crosscheck"><div class="rn">TZ_6</div><div class="rt"><span class="dot" style="left:58.75%"></span></div><div class="rv">-108.6</div></div>
+<div class="row r-neg"><div class="rn">no PPIL4 arm</div><div class="rt"><span class="dot" style="left:66.45%"></span></div><div class="rv">-105.1</div></div>
+<div class="row r-crosscheck"><div class="rn">TZ_118</div><div class="rt"><span class="dot" style="left:68.86%"></span></div><div class="rv">-104.0</div></div>
+<div class="row r-neg"><div class="rn">both handles stripped</div><div class="rt"><span class="dot" style="left:95.14%"></span></div><div class="rv">-92.2</div></div>
+        </div>
+
+        <div class="scale">
+          <div class="scale-in mono"><span>&minus;135.0</span><span>&minus;123.8</span><span>&minus;112.5</span><span>&minus;101.3</span><span>&minus;90.0</span></div>
+        </div>
+
+        <div class="legend">
+          <span class="key"><span class="sw" style="background:var(--accent)"></span>Designed candidate (18)</span>
+          <span class="key"><span class="sw" style="background:var(--cross)"></span>Cross-check, second screen (2)</span>
+          <span class="key"><span class="sw sq" style="background:var(--posc)"></span>Positive control (3)</span>
+          <span class="key"><span class="sw sq" style="background:var(--negc)"></span>Negative control (3)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="col stack">
+      <p>
+        The controls are the whole point of this chart. A degron-dead negative &mdash; a molecule with
+        the CRBN-binding handle deliberately removed, which <em>cannot</em> work &mdash; scores
+        <strong>&minus;112.2</strong>, marginally better than FPFT-2216, the real drug this complex was
+        solved with. So anything scoring above roughly &minus;112 is indistinguishable from a molecule
+        known to be inert, and <em>&ldquo;beats FPFT-2216&rdquo; is a meaningless claim.</em>
+      </p>
+      <p>
+        That is why the bar used here is <strong>Z6466608628 at &minus;125.6</strong>, the strongest
+        control in the set. Seven of the twenty candidates clear it.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <p class="eyebrow">What the project falsified about itself</p>
+      <h2 class="serif">Three results that cut against the pipeline</h2>
+      <p class="caption">
+        Each of these was found by testing a metric the project was already relying on. They are
+        recorded here because they constrain what the ranking above can be read to mean.
+      </p>
+    </div>
+    <div class="findings">
+      <div class="find">
+        <p class="eyebrow">Discarded metric</p>
+        <h3>A ranking column failed its own calibration</h3>
+        <p>
+          DockQ against the real 9DWV structure looked like a quality score. Measured across all 26
+          molecules, two <em>negative</em> controls placed 2nd and 3rd &mdash; above every candidate.
+          Its correlation with the docking score is +0.055. It is now kept as a geometry diagnostic
+          and is barred from the ranking.
+        </p>
+      </div>
+      <div class="find">
+        <p class="eyebrow">Retired stage</p>
+        <h3>An earlier stage was structurally blind</h3>
+        <p>
+          The first ternary stage never placed the ligand in the force field, so its output was fixed
+          by the contact residues alone. Three separate pairs of different molecules returned
+          byte-identical scores. It was replaced by a stage that docks the ligand as a real third body.
+        </p>
+      </div>
+      <div class="find">
+        <p class="eyebrow">Failed cross-check</p>
+        <h3>Two independent screens disagree</h3>
+        <p>
+          A second screen ranked its own candidates highly. Re-docked here under one protocol, all
+          three sampled molecules landed below every candidate and below the noise floor. The same
+          molecule scores ~14.5 units better under the other protocol &mdash; so the two score sets
+          were never comparable.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <p class="eyebrow">Validation</p>
+      <h2 class="serif">Handed the real drug, does the protocol find the real structure?</h2>
+    </div>
+    <div class="col stack">
+      <p>
+        The one molecule whose correct answer is independently known is FPFT-2216, the compound the
+        CRBN&ndash;PPIL4 ternary complex (PDB <strong>9DWV</strong>) was solved with. Running it through
+        the identical pipeline reproduces the experimental architecture at
+        <strong>DockQ 0.376</strong> &mdash; above the CAPRI &ldquo;acceptable&rdquo; threshold of 0.23,
+        with an interface RMSD of 2.07&nbsp;&Aring; and 65% of native contacts recovered.
+      </p>
+      <p>
+        That validates the <em>method</em>, and only the method. It is one data point, and it says
+        nothing about whether any individual candidate is a real degrader. It is also partly circular:
+        the PPIL4-side restraints are themselves derived from 9DWV&rsquo;s own contact residues, so
+        PPIL4 lands near the true interface partly by construction.
+      </p>
+    </div>
+    <div class="tw">
+      <table>
+        <thead>
+          <tr><th>Acceptance test</th><th>Measured</th><th>Threshold</th><th>Result</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>DockQ vs 9DWV</td><td class="num">0.376</td><td class="num">&ge; 0.23</td><td><span class="tag t-buy">Pass</span></td></tr>
+          <tr><td>Interface RMSD</td><td class="num">2.07 &Aring;</td><td class="num">&mdash;</td><td><span class="tag t-other">Acceptable</span></td></tr>
+          <tr><td>Native contacts recovered</td><td class="num">0.647</td><td class="num">&mdash;</td><td><span class="tag t-other">Acceptable</span></td></tr>
+          <tr><td>Golden reference reproduced</td><td class="num">byte-identical</td><td class="num">&mdash;</td><td><span class="tag t-buy">Pass</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <p class="eyebrow">Method</p>
+      <h2 class="serif">The pipeline, in order</h2>
+      <p class="caption">
+        Each stage narrows the pool and feeds the next. Stage 08 is where the ranking is actually
+        decided; everything before it is a filter, and everything after is calibration and assembly.
+      </p>
+    </div>
+    <div class="steps col">
+      <div class="step"><span class="step-n">01</span><div><h3>Analog design</h3><p>2,500 thalidomide analogs generated with the glutarimide degron fixed and the benzo-ring substituents varied.</p></div></div>
+      <div class="step"><span class="step-n">02&ndash;03</span><div><h3>CRBN-glue classifiers</h3><p>Random-forest models on pooled ChEMBL actives, scaffold-split, to drop chemotypes that do not look like CRBN binders.</p></div></div>
+      <div class="step"><span class="step-n">04</span><div><h3>Vina docking</h3><p>Each candidate docked into CRBN&rsquo;s thalidomide pocket and PPIL4&rsquo;s RRM interface; supplies the starting pose everything downstream uses.</p></div></div>
+      <div class="step"><span class="step-n">05&ndash;06</span><div><h3>Ligand-free ternary pre-filter</h3><p>Coarse HADDOCK3 screens. Retained only as a cheap viability check &mdash; see the structural-blindness finding above.</p></div></div>
+      <div class="step key-step"><span class="step-n">08</span><div><h3>Ligand-inclusive 3-body docking &mdash; the ranking stage</h3><p>CRBN, the ligand, and PPIL4 docked as three separate bodies, with the ligand parameterised into the CNS force field so its real chemistry can differentiate candidates. ~70 minutes per molecule.</p></div></div>
+      <div class="step"><span class="step-n">09</span><div><h3>Scoring against the real structure</h3><p>Every docked molecule re-scored against 9DWV, which is what exposed the DockQ calibration failure.</p></div></div>
+      <div class="step"><span class="step-n">11&ndash;12</span><div><h3>Buy list assembly</h3><p>Ranking, calibration bars, decision rules, and registry lookup composed into the final list.</p></div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <p class="eyebrow">One protocol, shared</p>
+      <h2 class="serif">Why the scores are comparable at all</h2>
+    </div>
+    <div class="col stack">
+      <p>
+        A HADDOCK score only means something within one exact protocol. Two people running
+        &ldquo;the same&rdquo; method produce numbers that cannot be ranked against each other. So the
+        protocol is pinned to committed, executable artifacts rather than a prose description: one
+        restraint file identical for every molecule, a fixed random seed, fixed input structures, a
+        pinned HADDOCK3 version, and a fixed output schema.
+      </p>
+      <p>
+        The restraints deserve specific mention. Earlier versions derived the CRBN-side contact
+        residues from <em>each candidate&rsquo;s own</em> docked pose, which quietly leaked pose noise
+        into the ranking. They are now one committed file for every molecule and control, so the only
+        thing that varies between runs is the molecule itself. There is also no direct
+        CRBN&ndash;PPIL4 restraint: the ternary complex is bridged only through the ligand, so the
+        protein&ndash;protein interface has to be earned by the molecule rather than imposed.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <p class="eyebrow">Output</p>
+      <h2 class="serif">The shortlist</h2>
+      <p class="caption">
+        Ranked by docking score. Three independent rules gate the recommendation: a credible CRBN
+        pocket pose upstream, a non-negative structure-quality score, and clearing the
+        &minus;125.6 control bar. Structures are held back from this page &mdash; see the note below.
+      </p>
+    </div>
+    <div class="tw">
+      <table>
+        <thead>
+          <tr><th>#</th><th>ID</th><th>Chemotype</th><th>Score</th><th>Rules</th><th>Call</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="num">1</td><td class="nm">RW_708</td><td>cyano phthalimide, phenylpiperazine arm</td><td class="num">-132.1</td><td class="num">1/3</td><td><span class="tag t-other">Add</span></td></tr>
+          <tr><td class="num">2</td><td class="nm">RW_491</td><td>methoxy phthalimide, phenylpiperazine arm</td><td class="num">-132.1</td><td class="num">1/3</td><td><span class="tag t-other">Add</span></td></tr>
+          <tr><td class="num">3</td><td class="nm">RW_1987</td><td>dimethylamino isoindolinone, phenylpiperazine arm</td><td class="num">-129.9</td><td class="num">3/3</td><td><span class="tag t-buy">Buy</span></td></tr>
+          <tr><td class="num">4</td><td class="nm">RW_1959</td><td>hydroxy isoindolinone, phenylpiperazine arm</td><td class="num">-128.4</td><td class="num">3/3</td><td><span class="tag t-buy">Buy</span></td></tr>
+          <tr><td class="num">5</td><td class="nm">RW_465</td><td>bromo isoindolinone, phenylpiperazine arm</td><td class="num">-127.6</td><td class="num">3/3</td><td><span class="tag t-buy">Buy</span></td></tr>
+          <tr><td class="num">6</td><td class="nm">RW_1992</td><td>trifluoromethyl isoindolinone, phenylpiperazine arm</td><td class="num">-127.2</td><td class="num">3/3</td><td><span class="tag t-buy">Buy</span></td></tr>
+          <tr><td class="num">7</td><td class="nm">RW_2392</td><td>carboxylic-acid isoindolinone, phenylpiperazine arm</td><td class="num">-126.9</td><td class="num">1/3</td><td><span class="tag t-other">No-buy</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="caption">
+      Rows 8&ndash;20 continue to &minus;104.0. The final three sit above the noise floor and are
+      carried only for completeness &mdash; on score they are not distinguishable from an inert molecule.
+    </p>
+
+    <div class="col">
+      <details>
+        <summary>Why only four &ldquo;Buy&rdquo; calls out of twenty?</summary>
+        <p>
+          Because the rules are independent. The two best-scoring molecules both fail on structure
+          quality: RW_708 has the widest spread across its top ten models of anything docked
+          (sd 12.0) and ranks last of all 21 on the structure axis, so its leading mean is not backed
+          by a convergent funnel; RW_491 also falls below that line. Passing on score alone was judged
+          insufficient. The remaining rows are retained to cover the extremes of each axis, which is
+          what a triage list is for.
+        </p>
+      </details>
+      <details>
+        <summary>Are these compounds purchasable?</summary>
+        <p>
+          Mostly no. Exact-structure lookup against PubChem returns a registry entry for only 3 of the
+          25 molecules on the list; the rest are novel designs with no CAS number, so acquiring them
+          means custom synthesis. The list also contains five pairs of constitutional isomers, which
+          is why every row is pinned by InChIKey rather than by name or formula.
+        </p>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <p class="eyebrow">Boundaries</p>
+      <h2 class="serif">What this does not show</h2>
+    </div>
+    <div class="col stack">
+      <p>
+        <strong>No experimental validation.</strong> PPIL4 has no public CRBN-glue activity data. Every
+        number here is a structural proxy.
+      </p>
+      <p>
+        <strong>The score is size- and interface-biased.</strong> Larger molecules with more surface to
+        bury score better regardless of merit, which is exactly why the control set, rather than an
+        absolute number, defines the bar.
+      </p>
+      <p>
+        <strong>The positive control is partly circular.</strong> The PPIL4 restraints derive from
+        9DWV&rsquo;s own contacts. A neutral-restraint control, testing whether the protocol finds the
+        interface unaided, has not been run.
+      </p>
+      <p>
+        <strong>The biological hypothesis is unproven.</strong> PPIL4 is broadly common-essential and is
+        not shown to be selectively required in RAS-driven cancers. Any tumour selectivity would have to
+        come from partial-degradation dosing, which remains to be tested.
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer class="wrap">
+  <p>
+    Structural-plausibility triage for CRBN&ndash;PPIL4 molecular glue degraders. Docking performed with
+    HADDOCK3 2026.7.0 under protocol <span class="mono">ppil4_lock_v1</span>; reference structure PDB
+    9DWV. No experimental work is reported on this page.
+  </p>
+</footer>
