@@ -78,16 +78,20 @@ COLOURS = {
     # CRBN is the ANCHOR: every structure is superposed on it, so it is identical
     # in all 27 views and carries no information. It is therefore neutral grey --
     # it gives context and then gets out of the way. The two things that actually
-    # vary between structures, PPIL4's position and the ligand, take the saturated
-    # colours, so the eye goes straight to the comparison.
+    # vary between structures, PPIL4's position and the ligand, carry the colour,
+    # so the eye goes straight to the comparison.
     #
-    # Blue / orange / neutral is also the standard colour-vision-safe triple:
-    # it stays distinguishable under deuteranopia and protanopia, which a
-    # green/blue pair does not. These are baked into the mesh as vertex colours
-    # at export, so one set has to work on both the light and dark theme.
-    "crbn":   (0.580, 0.620, 0.612),   # #949E9C neutral grey  - the fixed anchor
-    "ppil4":  (0.231, 0.510, 0.839),   # #3B82D6 blue          - varies between structures
-    "ligand": (0.910, 0.455, 0.231),   # #E8743B orange        - the molecule being judged
+    # Kept deliberately low-chroma. These are large filled ribbons, not thin
+    # strokes: a hue that reads as pleasant on a small swatch is glaring across a
+    # whole domain, and saturated fills make the specular highlights bloom. Blue
+    # and orange still sit on the standard colour-vision-safe axis, so they stay
+    # distinguishable under deuteranopia and protanopia at this chroma too.
+    #
+    # Baked into the mesh as vertex colours at export, so one set has to work on
+    # both the light and dark theme.
+    "crbn":   (0.608, 0.647, 0.639),   # #9BA5A3 soft grey       - the fixed anchor
+    "ppil4":  (0.353, 0.510, 0.675),   # #5A82AC muted steel blue - varies between structures
+    "ligand": (0.788, 0.514, 0.310),   # #C9834F muted terracotta - the molecule being judged
 }
 
 
@@ -192,6 +196,9 @@ def main():
     cmd.set("stick_quality", 8)
     cmd.set("cartoon_fancy_helices", 1)
     cmd.set("ray_opaque_background", 0)
+    cmd.set("specular", 0.15)
+    cmd.set("shininess", 12)
+    cmd.set("ambient", 0.18)
 
     index, reference_obj, total = {}, None, 0
     tmp_gltf = os.path.join(GLB_DIR, "_tmp.gltf")
