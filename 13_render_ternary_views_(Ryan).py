@@ -61,9 +61,9 @@ WIDTH, HEIGHT, DPI = 620, 460, 120
 
 # Page palette (see CRBN_Project_site/index.html).
 COLOURS = {
-    "crbn":   (0.071, 0.412, 0.369),   # #12695E
-    "ppil4":  (0.227, 0.341, 0.612),   # #3A579C
-    "ligand": (0.612, 0.420, 0.082),   # #9C6B15
+    "crbn":   (0.090, 0.651, 0.486),   # #17A67C emerald
+    "ppil4":  (0.424, 0.510, 0.910),   # #6C82E8 periwinkle
+    "ligand": (0.949, 0.569, 0.239),   # #F2913D amber
 }
 
 
