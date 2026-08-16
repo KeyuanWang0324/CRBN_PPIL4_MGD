@@ -75,9 +75,19 @@ RUN_DIR_BASES = [
 
 # Page palette, shared with 13's renders and the legend swatches.
 COLOURS = {
-    "crbn":   (0.090, 0.651, 0.486),   # #17A67C emerald
-    "ppil4":  (0.424, 0.510, 0.910),   # #6C82E8 periwinkle
-    "ligand": (0.949, 0.569, 0.239),   # #F2913D amber
+    # CRBN is the ANCHOR: every structure is superposed on it, so it is identical
+    # in all 27 views and carries no information. It is therefore neutral grey --
+    # it gives context and then gets out of the way. The two things that actually
+    # vary between structures, PPIL4's position and the ligand, take the saturated
+    # colours, so the eye goes straight to the comparison.
+    #
+    # Blue / orange / neutral is also the standard colour-vision-safe triple:
+    # it stays distinguishable under deuteranopia and protanopia, which a
+    # green/blue pair does not. These are baked into the mesh as vertex colours
+    # at export, so one set has to work on both the light and dark theme.
+    "crbn":   (0.580, 0.620, 0.612),   # #949E9C neutral grey  - the fixed anchor
+    "ppil4":  (0.231, 0.510, 0.839),   # #3B82D6 blue          - varies between structures
+    "ligand": (0.910, 0.455, 0.231),   # #E8743B orange        - the molecule being judged
 }
 
 
