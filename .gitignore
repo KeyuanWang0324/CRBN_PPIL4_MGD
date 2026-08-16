@@ -5,3 +5,6 @@ docking_tmp/
 __pycache__/
 locked_campaign_runs/
 PPIL4_CRBN_locked_ternary_model_v3_(Tyrone)/run_ppil4_ternary*/
+
+# Vendored browser library for the project page (kept in the CRBN_Project repo,
+# which is what GitHub Pages serves); not part of the pipeline.

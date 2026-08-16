@@ -23,6 +23,7 @@ Run with the SYSTEM python (needs rdkit), after 11, 12 and 13:
         "14_build_candidate_panels_(Ryan).py"
 """
 import csv
+import hashlib
 import html
 import os
 import re
@@ -361,6 +362,35 @@ def reference_panel():
 </details>"""
 
 
+def stamp_asset_versions(page):
+    """Point the script tag at content-hashed URLs for viewer.js and
+    structures.json.
+
+    index.html changes on every rebuild so browsers re-fetch it, but the two
+    asset files are separate requests and get served from cache -- which is how
+    a rebuilt page ends up running the previous viewer against the previous
+    data. Worse, a cached viewer paired with a rebuilt schema silently draws
+    nothing rather than failing loudly. Hashing the contents into the query
+    string makes the URL change exactly when the file does."""
+    def digest(path):
+        if not os.path.exists(path):
+            return "0"
+        with open(path, "rb") as f:
+            return hashlib.sha256(f.read()).hexdigest()[:10]
+
+    viewer_v = digest(os.path.join(SITE_DIR, "viewer.js"))
+    data_v = digest(os.path.join(SITE_DIR, "structures.json"))
+    lib_v = digest(os.path.join(SITE_DIR, "3Dmol-min.js"))
+    tag = (f'<script src="viewer.js?v={viewer_v}" '
+           f'data-structures="structures.json?v={data_v}" '
+           f'data-lib="3Dmol-min.js?v={lib_v}" defer></script>')
+    page, n = re.subn(r'<script src="viewer\.js[^"]*"[^>]*></script>', tag, page)
+    if not n:
+        page = page.replace("</body>", tag + "\n\n</body>", 1)
+    print(f"  assets stamped: viewer.js?v={viewer_v}, structures.json?v={data_v}")
+    return page
+
+
 def inject(page, start, end, body, what):
     if start not in page or end not in page:
         sys.exit(f"Marker comments for {what} not found. Expected:\n  {start}\n  {end}")
@@ -409,6 +439,7 @@ def main():
         page = f.read()
     page = inject(page, START, END, panels, "candidate panels")
     page = inject(page, CTRL_START, CTRL_END, controls_block, "control panels")
+    page = stamp_asset_versions(page)
     with open(INDEX_HTML, "w") as f:
         f.write(page)
 

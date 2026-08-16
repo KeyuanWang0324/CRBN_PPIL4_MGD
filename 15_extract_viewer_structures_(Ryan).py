@@ -1,41 +1,39 @@
 """
-Extract a compact, browser-ready form of every ternary model on the project page
--- 20 candidates, 6 controls, and the experimental 9DWV reference -- into
-CRBN_Project_site/structures.json, for the page's interactive cartoon viewer.
+Write a trimmed, viewer-ready PDB for every ternary model on the project page --
+20 candidates, 6 controls, and the experimental 9DWV reference -- into
+CRBN_Project_site/pdb/, for the page's interactive 3Dmol viewer.
 
-WHAT IS KEPT, AND WHY IT IS ENOUGH. Full models are ~6,000 atoms each; shipping
-27 of them would be tens of megabytes. A cartoon representation only needs, per
-residue: where the C-alpha is, which way the peptide plane faces (so the ribbon
-can be given a width direction rather than being a bare tube), and what
-secondary structure the residue is in (so helices and strands can be drawn wide
-and loops thin). That is three numbers, three numbers and one character per
-residue, plus the ligand's heavy atoms and bonds -- a few hundred KB for all 27
-instead of tens of megabytes.
+WHY PDB RATHER THAN A CUSTOM FORMAT. The page previously shipped hand-rolled
+coordinate arrays and drew the cartoon itself. Reproducing what PyMOL does --
+ribbon framing, helix smoothing, strand arrows, sheet twist -- by hand gets you
+something that is recognisably not a cartoon. Handing a real PDB to a real
+molecular viewer gets the real thing. So this writes standard PDB and the page
+renders it with 3Dmol.js.
 
-WHY THIS RUNS UNDER PYMOL. Secondary structure is not in the model files; it has
-to be assigned from geometry. Rather than reimplement DSSP, this uses PyMOL's
-own `dss`, which is the same assignment the static renders use -- so the
-interactive cartoon and the rendered image agree about what is a helix.
-Superposition uses PyMOL's `super` for the same reason.
+WHAT IS TRIMMED, AND WHY IT IS SAFE. Cartoons are built from the backbone, so
+side chains and hydrogens are dropped and only N, CA, C and O are kept for the
+protein. The ligand is kept in full, because it is drawn as ball-and-stick and
+every atom matters there. That takes a model from ~6,000 atoms to ~2,400 --
+about 200 KB per structure, fetched only when a record is opened.
 
-EVERYTHING IS SUPERPOSED ON CRBN. CRBN is the fixed part of the complex, so
-putting it in one place across all structures makes PPIL4's position genuinely
-comparable between molecules rather than an artifact of each model's arbitrary
-frame.
+SECONDARY STRUCTURE IS WRITTEN EXPLICITLY. PyMOL assigns it with `dss` but does
+not write HELIX/SHEET records when saving PDB, and a viewer left to guess will
+disagree with the static renders about what is a helix. So the assignment is
+read back out of PyMOL and emitted as proper HELIX/SHEET records, which 3Dmol
+honours -- making the interactive cartoon and the rendered images agree.
 
-The reference is handled differently in one respect: 9DWV is an experimental
-structure, so its ligand is the real FPFT-2216 read from the deposited mmCIF
-rather than anything this pipeline produced. Its PPIL4 chain is also short --
-only the RRM domain was resolved -- while the docked models carry a full
-AlphaFold PPIL4, so the reference looks sparser. That is the experiment, not
-the extraction.
+EVERYTHING IS SUPERPOSED ON CRBN, so PPIL4's position is comparable between
+structures rather than an artifact of each model's arbitrary frame.
 
-Coordinates are rounded to 0.1 A, far below any resolution this supports.
+The reference is the deposited 9DWV entry, with the real FPFT-2216 read from the
+deposited chemical component rather than from any docking run. Its PPIL4 chain
+is short because only the RRM domain was resolved experimentally.
 
 Run under PyMOL, from the project directory:
     /Applications/PyMOL.app/Contents/MacOS/PyMOL -cq "15_extract_viewer_structures_(Ryan).py"
 """
 import csv
+import hashlib
 import json
 import os
 import sys
@@ -55,20 +53,19 @@ def _project_dir():
 
 SCRIPT_DIR = _project_dir()
 SITE_DIR = os.path.join(SCRIPT_DIR, "CRBN_Project_site")
-OUT_JSON = os.path.join(SITE_DIR, "structures.json")
+PDB_DIR = os.path.join(SITE_DIR, "pdb")
+INDEX_JSON = os.path.join(SITE_DIR, "structures.json")
 
 BUY_LIST = os.path.join(SCRIPT_DIR, BUY_LIST_NAME)
 CONTROLS_CSV = os.path.join(SCRIPT_DIR, "08_controls_results_(Ryan).csv")
 REFERENCE_PDB = os.path.join(SCRIPT_DIR, "reference_structures", "FPFT-2216_9DWV_reference_(Ryan).pdb")
 REFERENCE_CIF = os.path.join(SCRIPT_DIR, "reference_structures", "FPFT-2216_9DWV.cif")
-REFERENCE_LIGAND_CODE = "A1BC8"          # FPFT-2216's PDB chemical component id
+REFERENCE_LIGAND_CODE = "A1BC8"
 
 RUN_DIR_BASES = [
     os.path.join(os.path.expanduser("~"), "haddock_runs", "haddock3_ternary_with_ligand_run"),
     os.path.join(SCRIPT_DIR, "docking_tmp", "haddock3_ternary_with_ligand_run"),
 ]
-
-BOND_CUTOFF = 1.95      # longest plausible heavy-atom covalent bond
 
 
 def top_model_path(run_name):
@@ -89,8 +86,79 @@ def top_model_path(run_name):
     return None
 
 
+def _col(buf, start, text):
+    """Place `text` at 1-based PDB column `start`."""
+    i = start - 1
+    buf[i:i + len(text)] = list(text)
+
+
+def helix_record(serial, chain, name1, res1, name2, res2):
+    buf = [" "] * 80
+    _col(buf, 1, "HELIX ")
+    _col(buf, 8, f"{serial:>3d}")
+    _col(buf, 12, f"{('H' + str(serial))[:3]:>3s}")
+    _col(buf, 16, f"{name1[:3]:>3s}")
+    _col(buf, 20, chain)
+    _col(buf, 22, f"{res1:>4d}")
+    _col(buf, 28, f"{name2[:3]:>3s}")
+    _col(buf, 32, chain)
+    _col(buf, 34, f"{res2:>4d}")
+    _col(buf, 39, f"{1:>2d}")                    # helixClass 1 = right-handed alpha
+    _col(buf, 72, f"{res2 - res1 + 1:>5d}")
+    return "".join(buf).rstrip()
+
+
+def sheet_record(strand, chain, name1, res1, name2, res2, total):
+    buf = [" "] * 80
+    _col(buf, 1, "SHEET ")
+    _col(buf, 8, f"{strand:>3d}")
+    _col(buf, 12, f"{('S' + str(strand))[:3]:>3s}")
+    _col(buf, 15, f"{total:>2d}")
+    _col(buf, 18, f"{name1[:3]:>3s}")
+    _col(buf, 22, chain)
+    _col(buf, 23, f"{res1:>4d}")
+    _col(buf, 29, f"{name2[:3]:>3s}")
+    _col(buf, 33, chain)
+    _col(buf, 34, f"{res2:>4d}")
+    _col(buf, 39, f"{0:>2d}")                    # sense 0 = first strand / unknown
+    return "".join(buf).rstrip()
+
+
+def ss_records(cmd, obj):
+    """HELIX/SHEET records for PyMOL's own dss assignment.
+
+    Inside iterate's namespace `ss` is the secondary structure but `s` is the
+    settings object -- reading `s` raises "unknown setting", hence the local
+    dict being named something else."""
+    runs, rows = [], []
+    cmd.iterate(f"{obj} and name CA and polymer",
+                "rows.append((chain, int(resi), resn, ss))",
+                space={"rows": rows, "int": int})
+    if not rows:
+        return []
+    current = None
+    for chain, resi, resn, sec in rows:
+        kind = (sec or "L")[:1].upper()
+        if current and current[0] == kind and current[1] == chain and resi == current[4] + 1:
+            current[4], current[5] = resi, resn
+            continue
+        if current and current[0] in ("H", "S"):
+            runs.append(current)
+        current = [kind, chain, resi, resn, resi, resn]
+    if current and current[0] in ("H", "S"):
+        runs.append(current)
+
+    helices = [r for r in runs if r[0] == "H" and r[4] > r[2]]
+    strands = [r for r in runs if r[0] == "S" and r[4] > r[2]]
+    out = []
+    for i, r in enumerate(helices, 1):
+        out.append(helix_record(i, r[1], r[3], r[2], r[5], r[4]))
+    for i, r in enumerate(strands, 1):
+        out.append(sheet_record(i, r[1], r[3], r[2], r[5], r[4], len(strands)))
+    return out
+
+
 def reference_ligand_atoms():
-    """The real FPFT-2216 from the deposited mmCIF -- not a docked pose."""
     if not os.path.exists(REFERENCE_CIF):
         return []
     atoms, header, in_loop = [], [], False
@@ -112,47 +180,24 @@ def reference_ligand_atoms():
                     continue
                 if rec.get("type_symbol", "C").upper() == "H":
                     continue
-                atoms.append((rec["type_symbol"].upper(),
+                atoms.append((rec.get("label_atom_id", "C")[:4], rec["type_symbol"].upper(),
                               (float(rec["Cartn_x"]), float(rec["Cartn_y"]), float(rec["Cartn_z"]))))
     return atoms
 
 
-def bonds_for(atoms):
-    out = []
-    for i in range(len(atoms)):
-        xi, yi, zi = atoms[i][1]
-        for j in range(i + 1, len(atoms)):
-            xj, yj, zj = atoms[j][1]
-            if (xi - xj) ** 2 + (yi - yj) ** 2 + (zi - zj) ** 2 <= BOND_CUTOFF ** 2:
-                out.append([i, j])
-    return out
-
-
-def chain_cartoon(cmd, obj, chain):
-    """Per-residue (CA, carbonyl O, secondary structure) for one chain.
-
-    The O is what gives the ribbon a width direction: CA alone defines a tube
-    but not which way the peptide plane faces, so a CA-only cartoon twists
-    arbitrarily. Residues missing either atom are dropped rather than guessed."""
-    # NB: inside iterate_state's namespace `ss` is the residue's secondary
-    # structure but `s` is PyMOL's settings object -- reading `s` raises
-    # "unknown setting". Keep the local dict under a different name.
-    ca, ox, sec = {}, {}, {}
-    cmd.iterate_state(1, f"{obj} and chain {chain} and name CA and polymer",
-                      "ca[int(resi)] = (x, y, z); sec[int(resi)] = ss",
-                      space={"ca": ca, "sec": sec, "int": int})
-    cmd.iterate_state(1, f"{obj} and chain {chain} and name O and polymer",
-                      "ox[int(resi)] = (x, y, z)", space={"ox": ox, "int": int})
-    out = []
-    for resi in sorted(ca):
-        if resi not in ox:
-            continue
-        out.append((resi, ca[resi], ox[resi], (sec.get(resi) or "L")[:1].upper()))
-    return out
-
-
-def flat(points, r=1):
-    return [round(float(v), r) for p in points for v in p]
+def write_structure(cmd, obj, out_path):
+    """Trim to backbone + ligand and save, with SS records at the top."""
+    cmd.remove(f"{obj} and hydro")
+    cmd.remove(f"{obj} and polymer and not name N+CA+C+O")
+    records = ss_records(cmd, obj)
+    body = cmd.get_pdbstr(obj)
+    with open(out_path, "w") as f:
+        if records:
+            f.write("\n".join(records) + "\n")
+        f.write(body)
+    with open(out_path, "rb") as f:
+        version = hashlib.sha256(f.read()).hexdigest()[:10]
+    return os.path.getsize(out_path), len(records), version
 
 
 def main():
@@ -167,88 +212,58 @@ def main():
         for r in csv.DictReader(f):
             entries.append((r["molecule"], r["molecule"], "control"))
 
-    out, reference_obj = {}, None
+    os.makedirs(PDB_DIR, exist_ok=True)
+    index, reference_obj, total = {}, None, 0
+
     for display, run_name, role in entries:
         path = top_model_path(run_name)
         if path is None:
             print(f"  {display}: no rank-1 model -- skipped")
             continue
-        obj = "s" + str(len(out))
+        obj = "s%d" % len(index)
         cmd.load(path, obj)
-        cmd.dss(obj)                                   # assign secondary structure
+        cmd.dss(obj)
         if reference_obj is None:
             reference_obj = obj
         else:
             cmd.super(f"{obj} and chain A and name CA", f"{reference_obj} and chain A and name CA")
+        size, nrec, ver = write_structure(cmd, obj, os.path.join(PDB_DIR, f"{display}.pdb"))
+        index[display] = {"role": role, "pdb": f"pdb/{display}.pdb?v={ver}"}
+        total += size
+        print(f"  {display:<32} {size // 1024:>4} KB, {nrec} SS records")
 
-        lig = []
-        cmd.iterate_state(1, f"{obj} and chain C and not elem H",
-                          "lig.append((elem.upper(), (x, y, z)))", space={"lig": lig})
-        a, b = chain_cartoon(cmd, obj, "A"), chain_cartoon(cmd, obj, "B")
-        out[display] = {
-            "role": role,
-            "a": {"ca": flat([r[1] for r in a]), "o": flat([r[2] for r in a]),
-                  "ss": "".join(r[3] for r in a)},
-            "b": {"ca": flat([r[1] for r in b]), "o": flat([r[2] for r in b]),
-                  "ss": "".join(r[3] for r in b)},
-            "el": [x[0] for x in lig],
-            "lig": flat([x[1] for x in lig]),
-            "bonds": bonds_for(lig),
-        }
-        cmd.delete(obj) if False else None             # keep loaded for superposition frame
-
-    # The experimental reference, superposed into the same CRBN frame.
     if os.path.exists(REFERENCE_PDB) and reference_obj:
         obj = "sref"
         cmd.load(REFERENCE_PDB, obj)
         cmd.dss(obj)
         cmd.super(f"{obj} and chain A and name CA", f"{reference_obj} and chain A and name CA")
-        # The mmCIF ligand is in the deposited frame; move it by the same
+        # The deposited ligand is in the original frame; move it by the same
         # transform PyMOL just applied to the reference's protein chains.
-        cmd.create("sref_lig", "none")
-        lig_atoms = reference_ligand_atoms()
-        if lig_atoms:
-            pdb = "".join(
-                f"HETATM{i + 1:5d} {('X' + str(i))[:4]:<4s} LIG X 900    "
-                f"{x:8.3f}{y:8.3f}{z:8.3f}  1.00  0.00          {el[:2]:>2s}\n"
-                for i, (el, (x, y, z)) in enumerate(lig_atoms))
-            tmp = os.path.join(SITE_DIR, "_ref_lig.pdb")
-            os.makedirs(SITE_DIR, exist_ok=True)
+        atoms = reference_ligand_atoms()
+        if atoms:
+            tmp = os.path.join(PDB_DIR, "_lig.pdb")
             with open(tmp, "w") as f:
-                f.write(pdb + "END\n")
-            cmd.load(tmp, "sref_lig")
-            matrix = cmd.get_object_matrix(obj)
-            cmd.transform_object("sref_lig", matrix)
+                for i, (name, el, (x, y, z)) in enumerate(atoms, 1):
+                    f.write(f"HETATM{i:5d} {name:<4s} LIG C 900    "
+                            f"{x:8.3f}{y:8.3f}{z:8.3f}  1.00  0.00          {el[:2]:>2s}\n")
+                f.write("END\n")
+            cmd.load(tmp, "sreflig")
+            cmd.transform_object("sreflig", cmd.get_object_matrix(obj))
+            cmd.create(obj, f"{obj} or sreflig", zoom=0)
+            cmd.delete("sreflig")
             os.remove(tmp)
-        moved = []
-        cmd.iterate_state(1, "sref_lig", "moved.append((elem.upper(), (x, y, z)))",
-                          space={"moved": moved})
-        a, b = chain_cartoon(cmd, obj, "A"), chain_cartoon(cmd, obj, "B")
-        out["9DWV_reference"] = {
-            "role": "reference",
-            "a": {"ca": flat([r[1] for r in a]), "o": flat([r[2] for r in a]),
-                  "ss": "".join(r[3] for r in a)},
-            "b": {"ca": flat([r[1] for r in b]), "o": flat([r[2] for r in b]),
-                  "ss": "".join(r[3] for r in b)},
-            "el": [x[0] for x in moved],
-            "lig": flat([x[1] for x in moved]),
-            "bonds": bonds_for(moved),
-        }
-        print(f"  9DWV reference: CRBN {len(a)} res, PPIL4 {len(b)} res, "
-              f"ligand {len(moved)} heavy atoms (real FPFT-2216 from the mmCIF)")
+        size, nrec, ver = write_structure(cmd, obj, os.path.join(PDB_DIR, "9DWV_reference.pdb"))
+        index["9DWV_reference"] = {"role": "reference", "pdb": f"pdb/9DWV_reference.pdb?v={ver}"}
+        total += size
+        print(f"  {'9DWV_reference':<32} {size // 1024:>4} KB, {nrec} SS records, "
+              f"{len(atoms)} ligand atoms (real FPFT-2216)")
 
-    os.makedirs(SITE_DIR, exist_ok=True)
-    with open(OUT_JSON, "w") as f:
-        json.dump(out, f, separators=(",", ":"))
-
-    residues = sum(len(v["a"]["ss"]) + len(v["b"]["ss"]) for v in out.values())
-    helix = sum(v["a"]["ss"].count("H") + v["b"]["ss"].count("H") for v in out.values())
-    sheet = sum(v["a"]["ss"].count("S") + v["b"]["ss"].count("S") for v in out.values())
-    size = os.path.getsize(OUT_JSON) / 1024
-    print(f"\nWrote {os.path.relpath(OUT_JSON, SCRIPT_DIR)}: {len(out)} structures, "
-          f"{residues:,} residues ({helix:,} helix, {sheet:,} strand), {size:.0f} KB")
-    print("All superposed on CRBN; secondary structure assigned by PyMOL's dss, "
-          "so the interactive cartoon and the static renders agree.")
+    with open(INDEX_JSON, "w") as f:
+        json.dump(index, f, separators=(",", ":"), indent=0)
+    print(f"\nWrote {len(index)} PDBs into {os.path.relpath(PDB_DIR, SCRIPT_DIR)}/ "
+          f"({total / 1024 / 1024:.1f} MB total, fetched one at a time on demand)")
+    print("Superposed on CRBN; HELIX/SHEET written from PyMOL's dss so the interactive "
+          "cartoon matches the static renders.")
 
 
 main()
