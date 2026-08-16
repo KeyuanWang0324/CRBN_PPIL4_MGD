@@ -380,10 +380,17 @@ def stamp_asset_versions(page):
 
     viewer_v = digest(os.path.join(SITE_DIR, "viewer.js"))
     data_v = digest(os.path.join(SITE_DIR, "structures.json"))
-    lib_v = digest(os.path.join(SITE_DIR, "3Dmol-min.js"))
+    # One version for the whole lib/ directory: three.js and its two loaders are
+    # only ever upgraded together, so a single stamp is enough and keeps the tag
+    # readable. Mesh URLs carry their own hash, stamped by 16.
+    lib_v = hashlib.sha256(b"".join(
+        open(os.path.join(SITE_DIR, "lib", n), "rb").read()
+        for n in sorted(os.listdir(os.path.join(SITE_DIR, "lib")))
+        if n.endswith(".js")
+    )).hexdigest()[:10] if os.path.isdir(os.path.join(SITE_DIR, "lib")) else "0"
     tag = (f'<script src="viewer.js?v={viewer_v}" '
            f'data-structures="structures.json?v={data_v}" '
-           f'data-lib="3Dmol-min.js?v={lib_v}" defer></script>')
+           f'data-lib="lib" data-libv="{lib_v}" defer></script>')
     page, n = re.subn(r'<script src="viewer\.js[^"]*"[^>]*></script>', tag, page)
     if not n:
         page = page.replace("</body>", tag + "\n\n</body>", 1)
