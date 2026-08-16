@@ -92,9 +92,11 @@ about a second, so the whole sweep is well under a minute.
 
 Outputs (this script used to only print, which is why 08's dockq_vs_9dwv
 column stayed empty even after 09 had been run):
-  - fills dockq_vs_9dwv for EVERY molecule present in 08's two result
-    CSVs -- 08_final_ternary_with_ligand_results_(Ryan).csv (candidates)
-    and 08_controls_results_(Ryan).csv (controls). No other column is
+  - fills dockq_vs_9dwv for EVERY molecule present in 08's three result
+    CSVs -- 08_final_ternary_with_ligand_results_(Ryan).csv (candidates),
+    08_controls_results_(Ryan).csv (controls) and
+    08_crosscheck_results_(Ryan).csv (Tyrone's molecules run through this
+    same locked protocol, PROTOCOL_LOCK.md section 8). No other column is
     touched: PROTOCOL_LOCK.md §6 fixes the schema, so the caveats above
     live in this docstring rather than in an extra CSV column.
   - writes REFERENCE_FPFT.json, PROTOCOL_LOCK.md §5's golden reference.
@@ -146,6 +148,11 @@ REFERENCE_PDB_PATH = os.path.join(REFERENCE_DIR, "FPFT-2216_9DWV_reference_(Ryan
 # Only this column is touched; PROTOCOL_LOCK.md §6 fixes the rest of the schema.
 FINALISTS_CSV = os.path.join(SCRIPT_DIR, "08_final_ternary_with_ligand_results_(Ryan).csv")
 CONTROLS_CSV = os.path.join(SCRIPT_DIR, "08_controls_results_(Ryan).csv")
+# 08's third locked-schema CSV: Tyrone's molecules docked through this protocol
+# (PROTOCOL_LOCK.md section 8). Same treatment as the other two -- the column is
+# filled for them so the two screens can be compared row-for-row -- and the same
+# caveat applies: it is a geometry diagnostic, not a ranking column.
+CROSSCHECK_CSV = os.path.join(SCRIPT_DIR, "08_crosscheck_results_(Ryan).csv")
 # PROTOCOL_LOCK.md §5: the golden reference both wrappers must reproduce before
 # candidate runs are trusted. Committed alongside the locked protocol bundle.
 REFERENCE_JSON_PATH = os.path.join(SCRIPT_DIR, "REFERENCE_FPFT.json")
@@ -403,7 +410,8 @@ def main():
     capri_params = read_from_yaml_config(DEFAULT_CONFIG)
 
     targets = [(FINALISTS_CSV, read_molecules(FINALISTS_CSV)),
-               (CONTROLS_CSV, read_molecules(CONTROLS_CSV))]
+               (CONTROLS_CSV, read_molecules(CONTROLS_CSV)),
+               (CROSSCHECK_CSV, read_molecules(CROSSCHECK_CSV))]
     total_molecules = sum(len(mols) for _, mols in targets)
     if not total_molecules:
         sys.exit(

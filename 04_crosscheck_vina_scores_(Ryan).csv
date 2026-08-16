@@ -1,0 +1,4 @@
+name,crbn_affinity,ppil4_affinity,combined_affinity,overlap,consistent,n_contacts,overlap_atoms
+tyrone_118,-9.678,-5.321,-14.999,0.8333333333333334,False,11,"C,C,C,C,C,C,C,N,C,O,N,C,O,O,C,C,C,C,C,O"
+tyrone_6,-9.667,-5.286,-14.953,0.9545454545454546,False,11,"C,C,C,C,C,C,C,O,N,C,O,C,C,C,C,C,N,O,C,O,H"
+tyrone_45,-8.491,-5.422,-13.913,0.9545454545454546,False,10,"C,C,C,C,C,C,C,C,O,N,C,O,C,C,C,C,N,O,C,O,H"

@@ -139,6 +139,29 @@ CONTROLS = [
     ("negctrl_no_ppil4_arm", "O=C1CCC(N2Cc3ccccc3C2=O)C(=O)N1"),
 ]
 
+# Cross-check molecules: candidates picked by Tyrone's independent guided
+# screen (10_*), run through Ryan's pipeline so both rankings can be compared
+# on the SAME molecules under the same locked protocol (PROTOCOL_LOCK.md §8).
+# Named tyrone_<his number> so they can never be confused with Ryan's own
+# cand_<n> (which are 01's generated analogs, numbered independently).
+#
+# All three happen to also exist in 01's library under a different name --
+# tyrone_118 = cand_1981, tyrone_45 = cand_467, tyrone_6 = cand_85 (identical
+# SMILES) -- but they are re-docked here under their own names rather than
+# reusing those poses: Vina's search is stochastic, and the existing
+# cand_* poses on disk no longer match the affinities recorded for them in
+# SCREENING_SUMMARY_CSV_ROOT (that file predates RESUME). Re-docking gives one
+# self-consistent pose + affinity + overlap set, which is what 08 then uses.
+#
+# Kept OUT of the funnel summary (same as CONTROLS -- they aren't part of 03's
+# candidate pool) and written to their own CSV instead.
+CROSSCHECK = [
+    ("tyrone_118", "COc1ccc2c(c1C#N)C(=O)N(C1CCC(=O)NC1=O)C2=O"),
+    ("tyrone_45", "Cc1ccc2c(c1Br)C(=O)N(C1CCC(=O)NC1=O)C2=O"),
+    ("tyrone_6", "CCc1cccc2c1C(=O)N(C1CCC(=O)NC1=O)C2=O"),
+]
+CROSSCHECK_CSV = os.path.join(SCRIPT_DIR, "04_crosscheck_vina_scores_(Ryan).csv")
+
 
 def load_candidates():
     if MANUAL_CANDIDATE is not None:
@@ -433,12 +456,13 @@ def main():
 
     # Run list: candidates + controls (controls excluded from the funnel summary).
     # RESUME skips anything already docked, so this only docks what's missing.
-    control_names = set()
+    control_names, crosscheck_names = set(), set()
     run_list = list(CANDIDATES)
     if MANUAL_CANDIDATE is None:
         control_names = {n for n, _ in CONTROLS}
+        crosscheck_names = {n for n, _ in CROSSCHECK}
         have = {n for n, _ in run_list}
-        run_list += [(n, s) for n, s in CONTROLS if n not in have]
+        run_list += [(n, s) for n, s in CONTROLS + CROSSCHECK if n not in have]
 
     prior_summary = {}
     if MANUAL_CANDIDATE is None and os.path.exists(SCREENING_SUMMARY_CSV_ROOT):
@@ -460,7 +484,8 @@ def main():
         done = i - 1 - skipped
         elapsed = time.time() - loop_start
         eta = (elapsed / done) * (len(run_list) - i + 1) if done > 0 else 0
-        tag = "control" if candidate_name in control_names else "candidate"
+        tag = ("control" if candidate_name in control_names else
+               "crosscheck" if candidate_name in crosscheck_names else "candidate")
         print(f"\n== [{i}/{len(run_list)}] {tag}: {candidate_name} "
               f"({elapsed:.0f}s in this step, ~{eta:.0f}s remaining | "
               f"{time.time() - SCRIPT_START_TIME:.0f}s total script time) ==")
@@ -539,22 +564,46 @@ def main():
         # controls -- so a RESUME run never clobbers the candidates it skipped.
         fields = ["name", "crbn_affinity", "ppil4_affinity", "combined_affinity",
                   "overlap", "consistent", "n_contacts", "overlap_atoms"]
-        merged = {n: row for n, row in prior_summary.items() if n not in control_names}
+
+        def as_row(r):
+            return {"name": r["name"], "crbn_affinity": r["crbn_affinity"],
+                    "ppil4_affinity": r["ppil4_affinity"], "combined_affinity": r["combined_affinity"],
+                    "overlap": r["overlap"], "consistent": r["consistent"],
+                    "n_contacts": r["n_contacts"], "overlap_atoms": ",".join(r["overlap_atoms"])}
+
+        def write_summary(out_paths, rows_by_name, label):
+            rows_out = sorted(rows_by_name.values(), key=lambda x: float(x["combined_affinity"]))
+            for out_path in out_paths:
+                with open(out_path, "w", newline="") as f:
+                    writer = csv.DictWriter(f, fieldnames=fields)
+                    writer.writeheader()
+                    for row in rows_out:
+                        writer.writerow(row)
+                print(f"Wrote {out_path} ({len(rows_out)} {label})")
+
+        # Merge newly-docked candidate rows into the preserved prior summary, dropping
+        # controls and cross-check molecules -- so a RESUME run never clobbers the
+        # candidates it skipped, and neither set leaks into the funnel's ranked pool.
+        excluded = control_names | crosscheck_names
+        merged = {n: row for n, row in prior_summary.items() if n not in excluded}
         for r in results:
-            if r["name"] in control_names:
-                continue
-            merged[r["name"]] = {"name": r["name"], "crbn_affinity": r["crbn_affinity"],
-                                 "ppil4_affinity": r["ppil4_affinity"], "combined_affinity": r["combined_affinity"],
-                                 "overlap": r["overlap"], "consistent": r["consistent"],
-                                 "n_contacts": r["n_contacts"], "overlap_atoms": ",".join(r["overlap_atoms"])}
-        rows_out = sorted(merged.values(), key=lambda x: float(x["combined_affinity"]))
-        for out_path in (SCREENING_SUMMARY_CSV, SCREENING_SUMMARY_CSV_ROOT):
-            with open(out_path, "w", newline="") as f:
-                writer = csv.DictWriter(f, fieldnames=fields)
-                writer.writeheader()
-                for row in rows_out:
-                    writer.writerow(row)
-            print(f"Wrote {out_path} ({len(rows_out)} candidates)")
+            if r["name"] not in excluded:
+                merged[r["name"]] = as_row(r)
+        write_summary((SCREENING_SUMMARY_CSV, SCREENING_SUMMARY_CSV_ROOT), merged, "candidates")
+
+        # Cross-check molecules get their own CSV (same columns). Merged the same
+        # way, so a RESUME run that skips an already-docked one keeps its numbers.
+        if crosscheck_names:
+            prior_crosscheck = {}
+            if os.path.exists(CROSSCHECK_CSV):
+                with open(CROSSCHECK_CSV) as f:
+                    prior_crosscheck = {row["name"]: row for row in csv.DictReader(f)}
+            cross = {n: row for n, row in prior_crosscheck.items() if n in crosscheck_names}
+            for r in results:
+                if r["name"] in crosscheck_names:
+                    cross[r["name"]] = as_row(r)
+            if cross:
+                write_summary((CROSSCHECK_CSV,), cross, "cross-check molecules")
 
     total = time.time() - SCRIPT_START_TIME
     print(f"\nTotal script runtime: {total:.0f}s ({total / 60:.1f} min)")

@@ -1,0 +1,4 @@
+molecule,mean_best_10,best_haddock,sd_best_10,dockq_vs_9dwv,cluster_id,n_models,protocol_version
+tyrone_118,-104.011,-111.448,3.301,0.281,2,161,ppil4_lock_v1
+tyrone_45,-98.973,-108.449,5.271,0.062,6,155,ppil4_lock_v1
+tyrone_6,-108.564,-112.633,3.59,0.188,1,165,ppil4_lock_v1

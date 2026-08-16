@@ -186,6 +186,28 @@ CONTROLS = [
 ]
 CONTROLS_CSV = os.path.join(SCRIPT_DIR, "08_controls_results_(Ryan).csv")
 
+# --- Cross-check molecules (PROTOCOL_LOCK.md section 8) --------------------
+# Candidates picked by Tyrone's independent guided screen (10_*), docked here
+# through Ryan's locked protocol so the two screens can be compared on the SAME
+# molecules. Same locked cfg/restraints/seed as everything else -- the only
+# thing that differs is where the molecule came from.
+#
+# Kept OUT of the candidate finalists (they aren't from 03/06's pool, and
+# mixing them in would silently change what "top 20 of the funnel" means) and
+# out of the controls CSV (they calibrate nothing) -- they get their own CSV,
+# same locked schema. Named tyrone_<his number>; all three also exist in 01's
+# library under a different name (tyrone_118 = cand_1981, tyrone_45 = cand_467,
+# tyrone_6 = cand_85, identical SMILES), but none of those three was ever
+# docked here, so there is no double-counting in the finalists.
+# Each needs its 04 Vina pose first (04's CROSSCHECK list docks them).
+RUN_CROSSCHECK = True
+CROSSCHECK = [
+    "tyrone_118",   # COc1ccc2c(c1C#N)C(=O)N(C1CCC(=O)NC1=O)C2=O   (cyano/methoxy phthalimide)
+    "tyrone_45",    # Cc1ccc2c(c1Br)C(=O)N(C1CCC(=O)NC1=O)C2=O     (bromo/methyl phthalimide)
+    "tyrone_6",     # CCc1cccc2c1C(=O)N(C1CCC(=O)NC1=O)C2=O        (ethyl phthalimide)
+]
+CROSSCHECK_CSV = os.path.join(SCRIPT_DIR, "08_crosscheck_results_(Ryan).csv")
+
 NCORES = max(1, (os.cpu_count() or 4) - 1)
 
 STEP_PLAN = [
@@ -631,33 +653,34 @@ def write_finalists(all_rows):
           f"{', '.join(n for n, _ in finalists)}")
 
 
-def run_controls():
-    """Dock the CONTROLS through the SAME locked protocol and write them to
-    CONTROLS_CSV -- separate from the candidate finalists. A control whose 04
-    Vina pose doesn't exist yet is skipped with a message (08 can't make the
-    pose -- no Vina in the haddock venv -- so run 04 with MANUAL_CANDIDATE for
-    it first). Resumes: a control that already has a real result is not re-run."""
-    result = {name: row for name, row in load_existing_rows(CONTROLS_CSV)}
-    to_run = [n for n in CONTROLS if result.get(n) is None]  # includes prior skips/failures -> retried
+def run_named_set(names, csv_path, kind):
+    """Dock a fixed, named set of molecules (the controls, or the cross-check
+    set) through the SAME locked protocol as the candidates, writing them to
+    their OWN csv_path -- separate from the candidate finalists. A molecule
+    whose 04 Vina pose doesn't exist yet is skipped with a message (08 can't
+    make the pose -- no Vina in the haddock venv -- so run 04 for it first).
+    Resumes: a molecule that already has a real result is not re-run."""
+    result = {name: row for name, row in load_existing_rows(csv_path)}
+    to_run = [n for n in names if result.get(n) is None]  # includes prior skips/failures -> retried
     if not to_run:
-        print(f"All {len(CONTROLS)} controls already have results in {CONTROLS_CSV} -- skipping controls.")
+        print(f"All {len(names)} {kind}s already have results in {csv_path} -- skipping {kind}s.")
         return
-    print(f"\n== Docking {len(to_run)} control(s) into {CONTROLS_CSV}: {', '.join(to_run)} ==")
+    print(f"\n== Docking {len(to_run)} {kind}(s) into {csv_path}: {', '.join(to_run)} ==")
     for name in to_run:
         complex_pdb = os.path.join(VINA_OUT_DIR, name, "CRBN_candidate_complex.pdb")
         if not os.path.exists(complex_pdb):
-            print(f"[control {name}] no 04 Vina pose ({os.path.relpath(complex_pdb, SCRIPT_DIR)} missing) -- "
-                  "run 04 with MANUAL_CANDIDATE for it first (SMILES in the CONTROLS comment). Skipping.")
+            print(f"[{kind} {name}] no 04 Vina pose ({os.path.relpath(complex_pdb, SCRIPT_DIR)} missing) -- "
+                  f"run 04 for it first (its SMILES is in 04's CONTROLS/CROSSCHECK list). Skipping.")
             result[name] = None
         else:
             try:
-                result[name] = run_candidate(name, f"control {name}")
+                result[name] = run_candidate(name, f"{kind} {name}")
             except subprocess.CalledProcessError:
-                print(f"[control {name}] HADDOCK3 failed -- skipping.")
+                print(f"[{kind} {name}] HADDOCK3 failed -- skipping.")
                 result[name] = None
-        write_results_csv([(n, result.get(n)) for n in CONTROLS], path=CONTROLS_CSV)
-    ok = [n for n in CONTROLS if result.get(n) is not None]
-    print(f"Controls: {len(ok)}/{len(CONTROLS)} docked -> {CONTROLS_CSV} ({', '.join(ok) or 'none yet'})")
+        write_results_csv([(n, result.get(n)) for n in names], path=csv_path)
+    ok = [n for n in names if result.get(n) is not None]
+    print(f"{kind.capitalize()}s: {len(ok)}/{len(names)} docked -> {csv_path} ({', '.join(ok) or 'none yet'})")
 
 
 def main():
@@ -673,7 +696,11 @@ def main():
     # Controls first (funnel mode only): dock the calibration set through the same
     # locked protocol into their OWN CSV (kept out of the candidate finalists).
     if RUN_CONTROLS and not CANDIDATE_NAME:
-        run_controls()
+        run_named_set(CONTROLS, CONTROLS_CSV, "control")
+    # Then the cross-check set (Tyrone's molecules through this protocol), also
+    # into its own CSV -- same reason: it isn't part of this funnel's ranking.
+    if RUN_CROSSCHECK and not CANDIDATE_NAME:
+        run_named_set(CROSSCHECK, CROSSCHECK_CSV, "crosscheck")
 
     candidate_names = pick_candidate_names()
 

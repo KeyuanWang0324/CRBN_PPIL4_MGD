@@ -64,11 +64,53 @@ TOP_FRACTION = 0.20
 # Leave blank for normal funnel behavior.
 CANDIDATE_NAME = ""
 
+# --- Run a named subset only (backfill / cross-check) -----------------------
+# Fills the buy-list schema's legacy_05_* columns for molecules 05's normal
+# funnel pass never reached -- Tyrone's cross-check molecules (which are not in
+# 04's funnel pool at all) and 08 finalists that fell outside TOP_FRACTION.
+#
+# This stage is a LEGACY signal and known to be near-dead: it never puts the
+# ligand in the CNS topology, so its result is determined by the CRBN contact
+# set alone -- cand_1981 and cand_85 (different molecules, same contact set)
+# got byte-identical scores. 08 replaced it as the ranking stage. It is run
+# here only because the buy-list schema still carries the column.
+#
+# RUN_ONLY_MODE exists because this script has no RESUME: in normal funnel
+# mode `selected` is the top TOP_FRACTION of everything 04 screened (~125
+# candidates), and every one of them would re-dock. This flag restricts the run
+# to RUN_ONLY and nothing else, sending results to RUN_ONLY_CSV so the funnel's
+# own ranked output (which 06 reads) is never touched.
+#
+# Used twice so far:
+#   RUN_ONLY = ["tyrone_118", "tyrone_45", "tyrone_6"]   -> 05_crosscheck_ternary_scores_(Ryan).csv
+#   RUN_ONLY = ["cand_779", "cand_1078"]                 -> 05_backfill_ternary_scores_(Ryan).csv
+# The second is a backfill: TOP_FRACTION = 0.20 means 05 only ever docked the
+# best 20% by Vina combined affinity, so those two 08 finalists never got a
+# legacy_05_* value even though the buy-list schema has the column.
+RUN_ONLY_MODE = False
+RUN_ONLY = ["cand_779", "cand_1078"]
+RUN_ONLY_CSV = os.path.join(SCRIPT_DIR, "05_backfill_ternary_scores_(Ryan).csv")
+# 04's Vina numbers for a RUN_ONLY molecule: cross-check molecules are in 04's
+# own cross-check CSV, ordinary funnel candidates in the screening summary.
+VINA_LOOKUP_CSVS = [
+    os.path.join(SCRIPT_DIR, "04_crosscheck_vina_scores_(Ryan).csv"),
+    SCREENING_SUMMARY_CSV,
+]
+
 # CNS's "@@" include syntax truncates paths at "(" -- keep this filename
 # parenthesis-free since it's fed directly to HADDOCK3 as a molecule.
 CRBN_RECEPTOR_ONLY_PDB = os.path.join(SCRIPT_DIR, "CRBN_receptor_thalidomide_Ryan.pdb")
 PPIL4_SOURCE_PDB = os.path.join(SCRIPT_DIR, "PPIL4_alphafold_(Ryan).pdb")
-RUN_DIR_BASE = os.path.join(SCRIPT_DIR, "docking_tmp", "haddock3_novel_candidate_run")
+# The run tree lives OUTSIDE the project, same as 08 (PROTOCOL_LOCK.md section 3a),
+# for two independent reasons:
+#   1. iCloud syncs ~/Desktop on this machine and races HADDOCK3's io.json handoff.
+#   2. HADDOCK3 validates run_dir against [a-zA-Z0-9._-/\] and hard-fails on
+#      anything else -- and this project's own path is non-ASCII, so a run_dir
+#      under SCRIPT_DIR cannot start at all here ("The 'run_dir' parameter can
+#      only have [a-zA-Z0-9._-/\] characters").
+# Only the disposable run tree moves; the deliverable CSVs stay in the project.
+LOCAL_RUN_ROOT = os.environ.get("HADDOCK_RUN_ROOT") or os.path.expanduser("~/haddock_runs")
+RUN_DIR_BASE = os.path.join(LOCAL_RUN_ROOT, "haddock3_novel_candidate_run")
 PPIL4_PDB = os.path.join(RUN_DIR_BASE, "PPIL4_chainB.pdb")
 
 # HADDOCK3's own `ncores` default is 4 regardless of machine size -- bump it
@@ -201,11 +243,12 @@ def run_with_heartbeat(cmd, run_dir=None, step_plan=None, interval=20, label=Non
         thread.join()
 
 
-def write_results_csv(results):
-    """Write the current (possibly partial) results list to RESULTS_CSV.
-    Called after every candidate, not just at the end, so a later
-    candidate's failure can't lose earlier candidates' results."""
-    with open(RESULTS_CSV, "w", newline="") as f:
+def write_results_csv(results, path=RESULTS_CSV):
+    """Write the current (possibly partial) results list to `path` (RESULTS_CSV
+    by default, RUN_ONLY_CSV in RUN_ONLY_MODE). Called after every
+    candidate, not just at the end, so a later candidate's failure can't lose
+    earlier candidates' results."""
+    with open(path, "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["name", "crbn_affinity", "ppil4_affinity", "combined_affinity",
                           "score", "dockq", "irmsd", "fnat", "lrmsd"])
@@ -331,6 +374,25 @@ def main():
         selected = [{"name": CANDIDATE_NAME, "crbn_affinity": float("nan"), "ppil4_affinity": float("nan"),
                      "combined_affinity": float("nan"), "overlap": float("nan"), "consistent": True}]
         skipped = []
+    elif RUN_ONLY_MODE:
+        print(f"RUN_ONLY_MODE set -- running only {len(RUN_ONLY)} molecule(s), bypassing "
+              f"{SCREENING_SUMMARY_CSV}/TOP_FRACTION: {', '.join(RUN_ONLY)}")
+        vina = {}
+        for path in VINA_LOOKUP_CSVS:            # first file wins per name
+            if os.path.exists(path):
+                with open(path, newline="") as f:
+                    for row in csv.DictReader(f):
+                        vina.setdefault(row["name"], row)
+        missing = [n for n in RUN_ONLY if n not in vina]
+        if missing:
+            sys.exit(f"No 04 Vina row for {', '.join(missing)} in any of "
+                      f"{', '.join(VINA_LOOKUP_CSVS)} -- run 04 for them first.")
+        selected = [{"name": n, "crbn_affinity": float(vina[n]["crbn_affinity"]),
+                     "ppil4_affinity": float(vina[n]["ppil4_affinity"]),
+                     "combined_affinity": float(vina[n]["combined_affinity"]),
+                     "overlap": float(vina[n]["overlap"]),
+                     "consistent": vina[n]["consistent"] == "True"} for n in RUN_ONLY]
+        skipped = []
     else:
         print("== Reading Vina screening results from 04 ==")
         with open(SCREENING_SUMMARY_CSV, newline="") as f:
@@ -403,7 +465,10 @@ def main():
             }
         results.append(result)
         if not CANDIDATE_NAME:
-            write_results_csv(results)  # write after every candidate so a later failure can't lose earlier results
+            # Write after every candidate so a later failure can't lose earlier results.
+            # Cross-check molecules go to their own CSV -- they aren't part of the
+            # funnel ranking 06 reads.
+            write_results_csv(results, path=RUN_ONLY_CSV if RUN_ONLY_MODE else RESULTS_CSV)
 
     results.sort(key=lambda r: (r["dockq"] == "-", -float(r["dockq"]) if r["dockq"] != "-" else 0))
     print_table(
@@ -422,8 +487,9 @@ def main():
               f"output is still under {RUN_DIR_BASE}/{CANDIDATE_NAME}/ for 06 to use directly via its "
               "own CANDIDATE_NAME.")
     else:
-        write_results_csv(results)
-        print(f"Wrote {RESULTS_CSV}")
+        out_path = RUN_ONLY_CSV if RUN_ONLY_MODE else RESULTS_CSV
+        write_results_csv(results, path=out_path)
+        print(f"Wrote {out_path}")
 
     total = time.time() - SCRIPT_START_TIME
     print(f"Total script runtime: {total:.0f}s ({total / 60:.1f} min)")
