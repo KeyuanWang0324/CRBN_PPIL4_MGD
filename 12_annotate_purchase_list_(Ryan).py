@@ -37,9 +37,10 @@ risk specifying the wrong isomer, so the name column is left empty for them and
 the structure carries the specification. Only the 3 registry hits get a name,
 taken from PubChem.
 
-PURITY is a specification you REQUEST, not a property to look up: candidates get
->=95% (HPLC) for screening, controls >=98% (HPLC) because they are the
-quantitative reference every candidate is judged against.
+PURITY AND HANDLING are specifications you REQUEST, not properties to look up.
+The whole list is >=98% (HPLC), sterile, endotoxin-free and nuclease-free,
+cell-culture grade preferred -- uniform across candidates and controls, because
+they all go into the same cell-based work.
 
 Run with the SYSTEM python (needs rdkit, certifi), after 11:
     /Library/Frameworks/Python.framework/Versions/3.12/bin/python3 \
@@ -70,8 +71,20 @@ PUBCHEM_CACHE = os.path.join(SCRIPT_DIR, "docking_tmp", "pubchem_registry_cache.
 PUBCHEM = "https://pubchem.ncbi.nlm.nih.gov/rest/pug"
 CAS_RE = re.compile(r"^\d{2,7}-\d{2}-\d$")
 
-PURITY_CANDIDATE = ">=95% (HPLC)"
-PURITY_CONTROL = ">=98% (HPLC)"
+# Requested spec, applied uniformly to candidates and controls alike. It was
+# previously >=95% for candidates and >=98% only for the controls; the whole list
+# is now >=98% because every compound is destined for the same cell-based work.
+PURITY = ">=98% (HPLC)"
+
+# The handling requirements are uniform, so they repeat on every row rather than
+# living in a header note -- an order sheet gets split, filtered and pasted, and a
+# requirement that only exists at the top of the file does not survive that.
+#
+# NOTE ON THE WORDING: the request said "无核酶", which literally reads as
+# ribozyme-free. Ribozymes are catalytic RNAs and are not a contaminant of
+# chemical synthesis; the intended spec is nuclease-free, which is what a vendor
+# will understand, so it is written as 无核酸酶 here.
+QUALITY = "无菌; 无内毒素; 无核酸酶; 优先细胞培养级别 (sterile; endotoxin-free; nuclease-free; cell-culture grade preferred)"
 NOT_REGISTERED = "-"       # no CAS exists; the structure is the specification
 
 ORDER_COLUMNS = [
@@ -81,6 +94,7 @@ ORDER_COLUMNS = [
     "分子量 MW",
     "CAS号 CAS No.",
     "纯度级别 Purity",
+    "质量要求 Quality Requirements",
 ]
 
 
@@ -163,7 +177,7 @@ def main():
 
         formula = rdMolDescriptors.CalcMolFormula(mol)
         mw = round(Descriptors.MolWt(mol), 2)
-        purity = PURITY_CONTROL if is_control else PURITY_CANDIDATE
+        purity = PURITY
         cas = hit["cas"][0] if hit["cid"] and hit["cas"] else NOT_REGISTERED
         if cas == NOT_REGISTERED:
             unregistered.append(name)
@@ -175,6 +189,7 @@ def main():
             "分子量 MW": mw,
             "CAS号 CAS No.": cas,
             "纯度级别 Purity": purity,
+            "质量要求 Quality Requirements": QUALITY,
         })
         annotated.append({
             "name": name,
@@ -185,6 +200,7 @@ def main():
             "cas_number": cas,
             "registered": "yes" if cas != NOT_REGISTERED else "no",
             "purity_grade": purity,
+            "quality_requirements": QUALITY,
             "inchikey": Chem.MolToInchiKey(mol),
             # Only real registry names. See NO INVENTED NAMES in the docstring.
             "chemical_name": hit["iupac"] if hit["cid"] else "",
@@ -194,7 +210,7 @@ def main():
         AllChem.Compute2DCoords(mol)
         mol.SetProp("_Name", name)
         for key, value in (("Code", name), ("Molecular_Formula", formula), ("MW", str(mw)),
-                           ("CAS", cas), ("Purity", purity),
+                           ("CAS", cas), ("Purity", purity), ("Quality", QUALITY),
                            ("InChIKey", Chem.MolToInchiKey(mol)),
                            ("Role", "control" if is_control else "candidate")):
             mol.SetProp(key, value)
