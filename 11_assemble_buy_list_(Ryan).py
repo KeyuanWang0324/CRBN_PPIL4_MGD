@@ -116,8 +116,8 @@ LEGACY_05_BACKFILL_CSV = os.path.join(SCRIPT_DIR, "05_backfill_ternary_scores_(R
 
 OUT_CSV = os.path.join(SCRIPT_DIR, "final_buy_list_lock_v1_top20_(Ryan).csv")
 OUT_CROSSCHECK_CSV = os.path.join(SCRIPT_DIR, "final_buy_list_crosscheck_(Ryan).csv")
-# The order sheet: just what to buy. Name + SMILES, nothing else.
-OUT_PURCHASE_CSV = os.path.join(SCRIPT_DIR, "Final Buy List for Purchase.csv")
+# The order sheet is built by 12, which reads this script's buy list directly --
+# one owner, so the two cannot drift apart.
 
 RUN_DIR_BASES = [
     os.path.join(os.path.expanduser("~"), "haddock_runs", "haddock3_ternary_with_ligand_run"),
@@ -455,28 +455,6 @@ def main():
           f"{PROTOCOL_VERSION}) + {len(controls)} controls")
     if dropped:
         print(f"  below the cut: {', '.join(r['name'] for r in dropped)}")
-
-    # The order sheet: name + SMILES for every candidate and control, nothing
-    # else. Candidates in buy-list rank order, then the controls. Each SMILES is
-    # the one that molecule was actually docked with (04's input), re-checked
-    # here against RDKit so a row that cannot be parsed is never handed to a
-    # supplier as if it were orderable.
-    from rdkit import Chem
-    purchase, unparseable = [], []
-    for r in kept + controls:
-        smiles = r.get("smiles", "")
-        if not smiles or Chem.MolFromSmiles(smiles) is None:
-            unparseable.append(r["name"])
-        purchase.append({"name": r["name"], "smiles": smiles})
-    with open(OUT_PURCHASE_CSV, "w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=["name", "smiles"])
-        writer.writeheader()
-        writer.writerows(purchase)
-    print(f"Wrote {OUT_PURCHASE_CSV}\n  {len(kept)} candidates + {len(controls)} controls, "
-          "name + SMILES only")
-    if unparseable:
-        print(f"  WARNING: SMILES missing or unparseable for {', '.join(unparseable)} -- "
-              "do not order these without checking.")
 
     cross_rows = [r for r in rows if r["role"] == "crosscheck"]
     if cross_rows:

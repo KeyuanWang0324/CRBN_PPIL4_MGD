@@ -235,8 +235,8 @@ def panel(row, extra, dockq):
         verdict = ('<p class="flagline">Between the noise floor and the &minus;125.6 control bar.</p>')
 
     cas = extra.get("cas_number", "")
-    registry = ("Not a registered substance &mdash; custom synthesis"
-                if cas.startswith("none") else html.escape(cas))
+    registry = (html.escape(cas) if extra.get("registered") == "yes"
+                else "Not a registered substance &mdash; custom synthesis")
 
     def cell(label, value, note=""):
         note_html = f'<span class="dn">{note}</span>' if note else ""
