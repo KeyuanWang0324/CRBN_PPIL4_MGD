@@ -110,7 +110,7 @@ REFERENCE_NOTE = (
 
 # One-line rationale per molecule, mirroring the shortlist table's reason column.
 WHY = {
-    "RW_708": "Best score of anything docked, and last of the 18 on structure.",
+    "RW_708": "Best score of anything docked, and last of the 18 designed candidates on structure.",
     "RW_491": "Second-best score; structure axis still below the line.",
     "RW_1987": "Top-5 on dock, structure and pose at once. Strongest all-round profile.",
     "RW_1959": "Clears all three, structure by only +0.01.",
@@ -119,17 +119,17 @@ WHY = {
     "RW_2392": "Clears the control bar on score alone; fails both other axes.",
     "RW_234": "Misses the control bar by 0.02 units.",
     "RW_2123": "Passes nothing; mid-pack on every axis at once.",
-    "RW_1668": "The structure extreme: best structure score of all 21.",
+    "RW_1668": "The structure extreme: best structure score of all 20 scored molecules.",
     "RW_445": "Second-best structure score and second-largest interface.",
     "RW_779": "Good structure, weak upstream pose. Bromo member of the halogen series.",
-    "RW_381": "The pose extreme: best upstream Vina pose of all 18.",
+    "RW_381": "The pose extreme: best upstream Vina pose of the 18 designed candidates.",
     "RW_1092": "Strong structure and pose, held off only by docking rank.",
     "RW_1078": "Middling throughout; the fluoro member of the halogen series.",
     "RW_80": "Worst upstream pose of the 18, but a well-converged funnel.",
     "RW_72": "Positional isomer of the Z6466608628 positive control.",
-    "RW_672": "Weakest of the 18; above the noise floor.",
-    "TZ_6": "From the second screen. Below the noise floor.",
-    "TZ_118": "From the second screen. Lowest structure score of all 21.",
+    "RW_672": "Weakest of the 18; does not clear the noise floor.",
+    "TZ_6": "From the second screen. Does not clear the noise floor.",
+    "TZ_118": "From the second screen. Lowest structure score of all 20 scored molecules.",
 }
 
 NOISE_FLOOR = -112.202
@@ -143,7 +143,7 @@ def read_csv(path):
         return list(csv.DictReader(f))
 
 
-def depiction_svg(smiles, width=300, height=210):
+def depiction_svg(smiles, label="", width=300, height=210):
     """2D structure drawn from the docked SMILES, themed for the page.
 
     RDKit hard-codes black for the carbon skeleton, which disappears on the dark
@@ -175,6 +175,11 @@ def depiction_svg(smiles, width=300, height=210):
     svg = re.sub(r"(stroke|fill):#000000", r"\1:currentColor", svg)
     svg = svg.replace("stroke:#000000", "stroke:currentColor")
     svg = svg.replace("<svg ", '<svg class="mol2d" role="img" ', 1)
+    # role="img" without an accessible name announces as a bare "image"; with 27
+    # depictions on the page that is 27 meaningless stops for a screen reader.
+    if label:
+        svg = re.sub(r"(<svg\b[^>]*>)", r"\1<title>2D structure of " + html.escape(label) + "</title>",
+                     svg, count=1)
     return svg
 
 
@@ -226,10 +231,10 @@ def panel(row, extra, dockq):
     score = float(row["haddock_mean_best10"])
 
     if score > NOISE_FLOOR:
-        verdict = ('<p class="flagline">Above the &minus;112.2 noise floor &mdash; this score is '
-                   'not distinguishable from a degron-dead negative control.</p>')
+        verdict = ('<p class="flagline">Does not clear the &minus;112.20 noise floor &mdash; this '
+                   'score is not distinguishable from a degron-dead negative control.</p>')
     elif score < GLUE_BAR:
-        verdict = ('<p class="okline">Clears the &minus;125.6 control bar set by the strongest '
+        verdict = ('<p class="okline">Clears the &minus;125.61 control bar set by the strongest '
                    'positive control.</p>')
     else:
         verdict = ('<p class="flagline">Between the noise floor and the &minus;125.6 control bar.</p>')
@@ -243,13 +248,15 @@ def panel(row, extra, dockq):
         return f'<div class="d"><span class="dl">{label}</span><b>{value}</b>{note_html}</div>'
 
     docking = "".join([
-        cell("Mean, best 10", fmt(score, 3), f"rank #{row['dock_rank_of_18']} &middot; z {fmt(row['dock_z'], 2)}"),
+        cell("Mean, best 10", fmt(score, 3),
+             f"#{row['dock_rank_of_18']} against the 18 designed &middot; z {fmt(row['dock_z'], 2)}"),
         cell("Best single model", fmt(row["haddock_best_model"], 3)),
         cell("Spread (sd)", fmt(row["sd_best_10"], 2), "lower is a tighter funnel"),
         cell("Models scored", fmt(row["n_models"])),
     ])
     structure = "".join([
-        cell("Structure axis", fmt(row["structure_score_z"], 3), f"rank #{row['structure_rank_of_18']}"),
+        cell("Structure axis", fmt(row["structure_score_z"], 3),
+             f"#{row['structure_rank_of_18']} against the 18 designed"),
         cell("Buried interface", f'{fmt(row["bsa_mean_best10"], 0)} &Aring;&sup2;'),
         cell("Top cluster", f'{float(row["top_cluster_fraction"]) * 100:.0f}%', "of all models"),
         cell("Restraint energy", fmt(row["air_mean_best10"], 1), "AIR, lower is better"),
@@ -257,10 +264,12 @@ def panel(row, extra, dockq):
         cell("DockQ vs 9DWV", fmt(dockq, 3), "diagnostic only, not ranked on"),
     ])
     upstream = "".join([
-        cell("Vina, CRBN pocket", f'{fmt(row["vina_crbn_affinity"], 2)} kcal/mol', f"rank #{row['vina_rank_of_18']}"),
+        cell("Vina, CRBN pocket", f'{fmt(row["vina_crbn_affinity"], 2)} kcal/mol',
+             f"#{row['vina_rank_of_18']} against the 18 designed"),
         cell("Vina, combined", f'{fmt(row["vina_combined_affinity"], 2)} kcal/mol'),
         cell("Pose overlap", fmt(row["degron_contact_overlap"], 2)),
-        cell("P(CRBN glue)", fmt(row["p_crbn_glue"]), "classifier, saturated &mdash; weak signal"),
+        cell("RF glue-likeness", fmt(row["p_crbn_glue"]),
+             "vote fraction, uncalibrated &mdash; saturated across the library, weak signal"),
     ])
     identity = "".join([
         cell("Formula", html.escape(extra.get("molecular_formula", "&mdash;"))),
@@ -289,7 +298,7 @@ def panel(row, extra, dockq):
     {verdict}
     <div class="c-rulerow">{rules}</div>
     <div class="c-vis">
-      <figure class="v2d">{depiction_svg(smiles)}<figcaption>2D structure, drawn from the exact
+      <figure class="v2d">{depiction_svg(smiles, name)}<figcaption>2D structure, drawn from the exact
         SMILES that was docked.</figcaption></figure>
       {img_block}
     </div>
@@ -321,8 +330,8 @@ def control_panel(row, meta, smiles, has_img):
         cell("DockQ vs 9DWV", fmt(row["dockq_vs_9dwv"], 3), "diagnostic only"),
         cell("Models scored", fmt(row["n_models"])),
     ])
-    two_d = (f'<figure class="v2d">{depiction_svg(smiles)}<figcaption>2D structure, drawn from the '
-             f'SMILES that was docked.</figcaption></figure>') if smiles else ""
+    two_d = (f'<figure class="v2d">{depiction_svg(smiles, meta["label"])}<figcaption>2D structure, '
+             f'drawn from the SMILES that was docked.</figcaption></figure>') if smiles else ""
 
     return f"""<details class="cand ctrl" id="c-{html.escape(name)}">
   <summary>
@@ -354,7 +363,7 @@ def reference_panel():
   <div class="c-body">
     <p class="c-why">{REFERENCE_NOTE}</p>
     <div class="c-vis">
-      <figure class="v2d">{depiction_svg(CONTROL_META['FPFT_2216_positive_control']['smiles'])}
+      <figure class="v2d">{depiction_svg(CONTROL_META['FPFT_2216_positive_control']['smiles'], 'FPFT-2216')}
         <figcaption>FPFT-2216, the ligand in the deposited structure.</figcaption></figure>
       {viewer_block("9DWV_reference", "Experimental structure (PDB 9DWV)", False)}
     </div>
