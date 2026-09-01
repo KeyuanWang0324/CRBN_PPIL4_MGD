@@ -23,7 +23,10 @@ RAS-driven cancer through the spliceosome.
    alongside the Prp19/NTC complex and the second-step factors DHX38 and CDC40 — our
    analysis, not an established result, and a weak signal for a broadly essential gene.
 3. **PPIL4 is a druggable CRBN glue target** — the CRBN–FPFT-2216–PPIL4 ternary
-   complex is solved (PDB **9DWV**).
+   complex is solved (PDB **9DWV**). PPIL4 was surfaced as a CRBN neosubstrate by
+   Petzold, Gainza *et al.*, who mined the CRBN target space computationally and then
+   confirmed compound-dependent recruitment of several previously uncharacterised
+   neosubstrates, PPIL4 among them (*Science*, 2025).
 4. **Hypothesis (what this project tests):** a *selective* PPIL4 degrader could
    impair splicing in a way RAS-driven cancers are especially vulnerable to.
    FPFT-2216 is promiscuous (also degrades IKZF1/3, CK1α, PDE6D, DTWD1), so a
@@ -140,7 +143,9 @@ Most scripts detect the wrong interpreter and re-exec into the correct one autom
 - **No experimental validation of these designs.** None of the ranked candidates has been made or
   tested; every score is a structural proxy. Note this is *not* the same as saying the target is
   unvalidated — PPIL4 is a demonstrated CRBN-glue target (FPFT-2216, Z6466608628; ternary complex
-  solved as PDB 9DWV). What has not been reported is a **selective** PPIL4 degrader.
+  solved as PDB 9DWV). A PPIL4-**selective** glue has been reported too — Z6466608628 (a control here), which recruits
+  PPIL4 at EC50 0.34 µM but degrades it only modestly and is presented as a lead for optimisation.
+  The gap is a *potent* selective degrader, not the absence of any.
 - **HADDOCK score is size-biased and interface-dominated** — known glues rank mid-pack; the positive/negative controls in the buy list are the intended calibration.
 - **The positive control is partly circular** (PPIL4 restraints derive from 9DWV); a neutral-restraint control is planned to test whether the protocol finds the interface unaided.
 - Candidate rankings are **enrichment/triage**, not potency predictions.
