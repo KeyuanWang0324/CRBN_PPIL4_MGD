@@ -208,6 +208,16 @@ def main():
 
     def export(obj, display, role):
         nonlocal total
+        # The shared shift puts the REFERENCE structure's ligand on the origin, so
+        # every other ligand lands a few angstrom off it -- and 9DWV's is a
+        # different molecule again. Recording each ligand's own centre lets the
+        # page's viewer orbit the drug exactly, for every structure, without
+        # moving any geometry: the meshes stay in the one shared CRBN frame that
+        # makes them comparable, and only the camera target differs.
+        try:
+            lx, ly, lz = cmd.centerofmass(f"{obj} and chain C")
+        except Exception:                      # no ligand chain (should not happen)
+            lx = ly = lz = 0.0
         cmd.hide("everything")
         cmd.show("cartoon", f"{obj} and (chain A or chain B)")
         cmd.show("sticks", f"{obj} and chain C")
@@ -232,9 +242,11 @@ def main():
             url = f"glb/{display}.glb"
         with open(os.path.join(GLB_DIR, os.path.basename(url)), "rb") as f:
             version = hashlib.sha256(f.read()).hexdigest()[:10]
-        index[display] = {"role": role, "mesh": f"{url}?v={version}"}
+        index[display] = {"role": role, "mesh": f"{url}?v={version}",
+                          "centre": [round(lx, 2), round(ly, 2), round(lz, 2)]}
         total += size
-        print(f"  {display:<32} {size / 1e6:5.2f} MB")
+        print(f"  {display:<32} {size / 1e6:5.2f} MB   ligand centre "
+              f"({lx:5.1f},{ly:5.1f},{lz:5.1f})")
 
     loaded = []
     for display, run_name, role in entries:
