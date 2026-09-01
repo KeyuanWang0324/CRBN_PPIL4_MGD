@@ -78,10 +78,13 @@ CONTROL_META = {
         "label": "Degron removed",
         "kind": "Negative control &middot; cannot bind CRBN",
         "smiles": "",
-        "sets": "<strong>The noise floor.</strong> The glutarimide degron is deleted, so this "
-                "molecule physically cannot engage CRBN. It nonetheless outscores FPFT-2216 &mdash; "
-                "which is why anything above roughly &minus;112 is not distinguishable from an inert "
-                "molecule, and why &ldquo;beats the real drug&rdquo; is a meaningless claim.",
+        "sets": "<strong>The noise floor.</strong> The glutarimide CRBN-binding handle is deleted, "
+                "so this molecule is <em>designed</em> not to engage the degron pocket. That is the "
+                "intent of the control rather than a certainty &mdash; CRBN binders without a "
+                "glutarimide are known, and docking scores geometry, not binding. Either way it "
+                "outscores FPFT-2216 here, which is why anything above roughly &minus;112 cannot be "
+                "told apart from a molecule expected to be inert, and why &ldquo;beats the real "
+                "drug&rdquo; is a meaningless claim.",
     },
     "negctrl_no_ppil4_arm": {
         "label": "No PPIL4 arm",
