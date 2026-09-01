@@ -397,9 +397,11 @@ def stamp_asset_versions(page):
         for n in sorted(os.listdir(os.path.join(SITE_DIR, "lib")))
         if n.endswith(".js")
     )).hexdigest()[:10] if os.path.isdir(os.path.join(SITE_DIR, "lib")) else "0"
+    gloss_v = digest(os.path.join(SITE_DIR, "glossary.js"))
     tag = (f'<script src="viewer.js?v={viewer_v}" '
            f'data-structures="structures.json?v={data_v}" '
-           f'data-lib="lib" data-libv="{lib_v}" defer></script>')
+           f'data-lib="lib" data-libv="{lib_v}" defer></script>\n'
+           f'<script src="glossary.js?v={gloss_v}" defer></script>')
     page, n = re.subn(r'<script src="viewer\.js[^"]*"[^>]*></script>', tag, page)
     if not n:
         page = page.replace("</body>", tag + "\n\n</body>", 1)
