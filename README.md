@@ -125,27 +125,6 @@ the FPFT-2216 golden reference reproduced byte-identically in the same session.
 - `ternary_structures/` — extracted, chain-colored ternary models (`.pse`).
 - `PROTOCOL_LOCK.md`, `ambig_FIXED.tbl`, `crbn_active_FIXED.txt`, `ppil4_active_FIXED.txt` — the locked protocol bundle.
 
-## Project website
-
-`CRBN_Project_site/` is the source of the public write-up, deployed to a **separate repo**
-([KeyuanWang0324/CRBN_Project](https://github.com/KeyuanWang0324/CRBN_Project)) and served at
-<https://keyuanwang0324.github.io/CRBN_Project/>. Deployment is a file copy into that repo — the
-two are not linked, so they can drift if only one is updated.
-
-| File | What it is |
-|---|---|
-| `index.html` | the page. ~89% of it is generated: the 27 candidate/control records sit between marker comments and are rewritten by 14. Only the prose, CSS and score chart outside those markers are hand-edited. |
-| `glb/` | 27 binary-glTF meshes exported from PyMOL by 16 (~27 MB) |
-| `structures.json` | index of mesh URLs, each with that structure's ligand centre |
-| `viewer.js` | three.js viewer; builds on record open, disposes on close (WebGL contexts are capped ~16, the page has 27) |
-| `glossary.js` | 44 hover definitions, each with an analogy; annotates text nodes at load |
-| `lib/` | vendored three.js + GLTFLoader + OrbitControls — the page makes **no** external request |
-| `img/` | static PyMOL renders, used as the no-JavaScript fallback |
-
-Rebuild order after any pipeline change: **11 → 12 → 13 → 16 → 14**. 14 must run last: it injects
-the records and stamps a content hash onto `viewer.js`, `glossary.js`, `structures.json` and `lib/`
-so browsers re-fetch exactly what changed. GitHub Pages takes roughly 30–60 s to serve a push.
-
 ## Environment
 
 **Three** interpreters, not two — PyMOL is its own:
@@ -195,23 +174,6 @@ isoindolinone core and none of the six di-oxo phthalimides passes — but that i
 Fisher exact p = 0.25. The di-oxo set actually scores *better* on average (−126.1 vs −124.5); what
 separates them is the structure axis, not the score.
 
-## Ordering, and how the vendor sheet was checked
-
-Only **3 of the 25** compounds on the order sheet are registered substances (TZ_6 244057-33-8,
-Z6466608628 2869183-63-9, negctrl_no_ppil4_arm 26581-81-7), confirmed by exact-structure PubChem
-lookup. The other 22 are novel and can only be made to order, so **the structure is the
-specification** — which is why `Final Buy List for Purchase.sdf` exists and is the file to send.
-
-The sheet contains **five pairs of constitutional isomers** — `RW_491`/`RW_2392`,
-`RW_2123`/`RW_1668`, `RW_381`/`RW_1092`, `RW_1078`/`RW_80`, and `RW_72`/`Z6466608628` — so the
-molecular formula is *not* a specification on its own. All 25 InChIKeys are unique; quote those.
-
-The vendor returned `副本生物物料采购(3).xlsx` with a drawn structure for every row. All 25 were
-checked against our own depictions, scaffold-aligned so substituent positions compare directly:
-**25/25 correct, including all five isomer pairs.** Their drawing tool suppresses hydrogens, so
-`RW_1959`'s hydroxyl and `RW_2392`'s carboxylic acid render as a bare `O` — verified against
-`RW_491`, where a real methyl is drawn.
-
 ## Limitations (read before trusting any number)
 
 - **No experimental validation of these designs.** None of the ranked candidates has been made or
@@ -229,71 +191,6 @@ checked against our own depictions, scaffold-aligned so substituent positions co
   that they are small.
 - **The positive control is partly circular** (PPIL4 restraints derive from 9DWV); a neutral-restraint control is planned to test whether the protocol finds the interface unaided.
 - Candidate rankings are **enrichment/triage**, not potency predictions.
-
-## References
-
-Harvard style, matching the project page. Sources whose full author list could not be verified are
-cited by organisation in the online-resource form rather than guessed.
-
-**Target, prior art and rationale**
-
-- Baek, K., Metivier, R.J., Roy Burman, S.S., Bushman, J.W., Yoon, H., Lumpkin, R.J., Abeja, D.M.,
-  Lakshminarayan, M., Yue, H., Ojeda, S., Verano, A.L., Gray, N.S., Donovan, K.A. and Fischer, E.S.
-  (2025) 'Unveiling the hidden interactome of CRBN molecular glues', *Nature Communications*, 16,
-  6831. doi:[10.1038/s41467-025-62099-w](https://doi.org/10.1038/s41467-025-62099-w).
-  — Z6466608628 and the CRBN–FPFT-2216–PPIL4 structure. **The same paper covers both**; they were
-  previously cited separately.
-- Hsu, T.Y. et al. (2015) 'The spliceosome is a therapeutic vulnerability in MYC-driven cancer',
-  *Nature*, 525(7569), pp. 384–388. doi:[10.1038/nature14985](https://doi.org/10.1038/nature14985).
-- Petzold, G., Gainza, P. et al. (2025) 'Mining the CRBN target space redefines rules for molecular
-  glue–induced neosubstrate recognition', *Science*, 389(6755).
-  doi:[10.1126/science.adt6736](https://doi.org/10.1126/science.adt6736). — where PPIL4 came from.
-- RCSB Protein Data Bank (2025) *Entry 9DWV*. Available at: <https://www.rcsb.org/structure/9DWV>
-  (Accessed: 2 September 2026).
-
-**Methods and software**
-
-- Basu, S. and Wallner, B. (2016) 'DockQ: a quality measure for protein–protein docking models',
-  *PLOS ONE*, 11(8), e0161879. doi:[10.1371/journal.pone.0161879](https://doi.org/10.1371/journal.pone.0161879).
-- Dominguez, C., Boelens, R. and Bonvin, A.M.J.J. (2003) 'HADDOCK: a protein–protein docking
-  approach based on biochemical or biophysical information', *Journal of the American Chemical
-  Society*, 125(7), pp. 1731–1737. doi:[10.1021/ja026939x](https://doi.org/10.1021/ja026939x).
-- Eberhardt, J., Santos-Martins, D., Tillack, A.F. and Forli, S. (2021) 'AutoDock Vina 1.2.0: new
-  docking methods, expanded force field, and Python bindings', *Journal of Chemical Information and
-  Modeling*, 61(8), pp. 3891–3898. doi:[10.1021/acs.jcim.1c00203](https://doi.org/10.1021/acs.jcim.1c00203).
-- Jumper, J. et al. (2021) 'Highly accurate protein structure prediction with AlphaFold', *Nature*,
-  596(7873), pp. 583–589. doi:[10.1038/s41586-021-03819-2](https://doi.org/10.1038/s41586-021-03819-2).
-- Pedregosa, F. et al. (2011) 'Scikit-learn: machine learning in Python', *Journal of Machine
-  Learning Research*, 12, pp. 2825–2830.
-- RDKit (2026) *RDKit: open-source cheminformatics*. Available at: <https://www.rdkit.org/>
-  (Accessed: 2 September 2026).
-- Schrödinger, LLC (2026) *The PyMOL molecular graphics system*, version 3.1.6. Available at:
-  <https://pymol.org/> (Accessed: 2 September 2026).
-- Schüttelkopf, A.W. and van Aalten, D.M.F. (2004) 'PRODRG: a tool for high-throughput
-  crystallography of protein–ligand complexes', *Acta Crystallographica Section D*, 60(8),
-  pp. 1355–1363. doi:[10.1107/S0907444904011679](https://doi.org/10.1107/S0907444904011679).
-- three.js (2026) *three.js JavaScript 3D library*, r140. Available at: <https://threejs.org/>
-  (Accessed: 2 September 2026).
-- Trott, O. and Olson, A.J. (2010) 'AutoDock Vina: improving the speed and accuracy of docking with
-  a new scoring function, efficient optimization, and multithreading', *Journal of Computational
-  Chemistry*, 31(2), pp. 455–461. doi:[10.1002/jcc.21334](https://doi.org/10.1002/jcc.21334).
-- van Zundert, G.C.P. et al. (2016) 'The HADDOCK2.2 web server: user-friendly integrative modeling
-  of biomolecular complexes', *Journal of Molecular Biology*, 428(4), pp. 720–725.
-  doi:[10.1016/j.jmb.2015.09.014](https://doi.org/10.1016/j.jmb.2015.09.014).
-
-**Databases and compound sources**
-
-- Broad Institute (2026) *DepMap portal*. Available at: <https://depmap.org/> (Accessed: 2 September 2026).
-- European Bioinformatics Institute (2026) *ChEMBL database*. Available at:
-  <https://www.ebi.ac.uk/chembl/> (Accessed: 2 September 2026).
-- MedChemExpress (2026) *Z6466608628 (HY-175599)*. Available at: <https://www.medchemexpress.com/>
-  (Accessed: 2 September 2026).
-- National Center for Biotechnology Information (2026) *PubChem*. Available at:
-  <https://pubchem.ncbi.nlm.nih.gov/> (Accessed: 2 September 2026).
-
-> **Not listed:** the *Nature Communications* 2026 paper cited above for the RAS–splicing
-> dependency. It could not be verified; the claim is hedged as emerging evidence rather than
-> asserted, and an unverified source is worse than none. Supply the citation and it goes in.
 
 ## Contact
 
