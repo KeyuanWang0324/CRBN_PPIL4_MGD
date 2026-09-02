@@ -356,7 +356,14 @@ Dock more of them and they enter the buy list automatically via 11.
    `ConfigurationError: The 'run_dir' parameter can only have [...] characters`. 08 was
    already immune (its tree is under `~/haddock_runs` for the iCloud reason in §3a); 05 was
    not, and was moved to the same root. Same fix, second independent reason.
-7. **The buy list has no generator script.** `final_buy_list_lock_v1_(Ryan).csv` was assembled
+7. **The order package is verified against the vendor's own drawings.** The supplier returned
+   `副本生物物料采购(3).xlsx` with a structure drawn for every one of the 25 rows. All 25 match ours
+   (checked scaffold-aligned, so substituent positions compare directly), including all five
+   constitutional-isomer pairs — the one class of error no text field would catch, since those
+   share a formula and a mass. Two apparent mismatches were the vendor tool suppressing hydrogens
+   (`RW_1959`'s OH, `RW_2392`'s COOH render as a bare `O`), confirmed against `RW_491` where a real
+   methyl is drawn. Their three catalogue substitutions match ours by CAS.
+8. **The buy list has no generator script.** `final_buy_list_lock_v1_(Ryan).csv` was assembled
    by hand, so two of its derived columns cannot be recomputed from source: `structure_score_z`
    and `rule_a_upstream_crbn_pose`. 11 re-derives both from written-down definitions
    (§6's named structure axis; "top-half Vina rank AND pose overlap ≥ 0.70") — the
