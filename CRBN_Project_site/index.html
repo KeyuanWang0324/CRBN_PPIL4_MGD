@@ -139,7 +139,10 @@
   .mechfig h3{margin-bottom:5px}
   .mechfig .caption{margin-bottom:13px}
   .mechfig .fw{overflow-x:auto}
-  .mechfig .fw svg{display:block; width:100%; min-width:830px; height:auto}
+  .mechfig .fw svg{display:block; width:100%; min-width:var(--figmin,830px); height:auto}
+  /* small diagrams must not be blown up until their labels outsize the body text */
+  .mechfig.sm{max-width:500px; --figmin:330px}
+  .mechfig.md{max-width:660px; --figmin:430px}
   .mechfig{--s-cand:#0d8a76; --s-ctrl:#4a3aa7; --warn-bg:#9C6B1514}
   @media (prefers-color-scheme:dark){
     :root:not([data-theme="light"]) .mechfig{--s-cand:#32a08e; --s-ctrl:#9085e9; --warn-bg:#b58a3316}
@@ -500,12 +503,95 @@
         confirmation</strong> of PPIL4 recruitment, binding, or anti-cancer activity. Read the rankings
         as triage, not truth.
       </p>
+      <figure class="mechfig sm">
+        <h3>What a molecular glue degrader has to do</h3>
+        <p class="caption">Left to themselves CRBN and PPIL4 never meet. The designed molecule is the only thing that brings them together &mdash; and it is the whole deliverable.</p>
+        <div class="fw"><svg class="fx" viewBox="0 0 392 250" role="img"
+               aria-label="Without a molecular glue CRBN and PPIL4 never meet; with it they are held together and PPIL4 is ubiquitinated">
+            <!-- counterfactual: without the glue, nothing happens -->
+            <g opacity=".55">
+              <ellipse cx="60" cy="32" rx="30" ry="19" fill="none" stroke="var(--rule)" stroke-width="1.3"/>
+              <text class="sub" x="60" y="36" text-anchor="middle" style="font-size:9px">CRBN</text>
+              <ellipse cx="158" cy="32" rx="28" ry="17" fill="none" stroke="var(--rule)" stroke-width="1.3" stroke-dasharray="4 3"/>
+              <text class="sub" x="158" y="36" text-anchor="middle" style="font-size:9px">PPIL4</text>
+            </g>
+            <g stroke="var(--s-cross)" stroke-width="2" stroke-linecap="round">
+              <path d="M105 27 L115 37"/><path d="M115 27 L105 37"/>
+            </g>
+            <text class="sub" x="200" y="28" style="fill:var(--ink);font-size:10px" font-weight="650">Without the glue</text>
+            <text class="sub" x="200" y="44" style="font-size:9.5px">these two proteins never meet</text>
+
+            <!-- with the glue: the whole event happens -->
+            <ellipse cx="92" cy="160" rx="62" ry="44" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
+            <text class="lbl" x="92" y="157" text-anchor="middle" style="fill:var(--accent);font-size:14px">CRBN</text>
+            <text class="sub" x="92" y="173" text-anchor="middle" style="font-size:9.5px">E3 substrate receptor</text>
+            <ellipse cx="286" cy="160" rx="58" ry="42" fill="none" stroke="var(--s-ctrl)" stroke-width="1.5" stroke-dasharray="5 4"/>
+            <text class="lbl" x="286" y="157" text-anchor="middle" style="fill:var(--s-ctrl);font-size:14px">PPIL4</text>
+            <text class="sub" x="286" y="173" text-anchor="middle" style="font-size:9.5px">the target protein</text>
+
+            <!-- the hero: the molecule this whole project designs -->
+            <circle cx="191" cy="160" r="34" fill="var(--s-cand)" opacity=".12"/>
+            <circle cx="191" cy="160" r="34" fill="none" stroke="var(--s-cand)" stroke-width="1" opacity=".45"/>
+            <g stroke="var(--s-cand)" stroke-width="2.6" stroke-linecap="round">
+              <path d="M154 160 L165 160"/><path d="M217 160 L228 160"/>
+            </g>
+            <path d="M217 160 l-13 -19 h-26 l-13 19 l13 19 h26 z" fill="var(--s-cand)"/>
+            <path d="M191 194 L191 210" stroke="var(--rule)" stroke-width="1.1" fill="none"/>
+            <text class="lbl" x="191" y="224" text-anchor="middle" style="font-size:12px">Molecular glue (MGD)</text>
+            <text class="sub" x="191" y="240" text-anchor="middle" style="font-size:10px">only it brings the two together &mdash; and it is what this project designs</text>
+
+            <!-- consequence: PPIL4 gets tagged -->
+            <path d="M320 126 L330 112" stroke="var(--muted)" stroke-width="1.1" fill="none"/>
+            <g fill="var(--sunk)" stroke="var(--muted)" stroke-width="1.1">
+              <circle cx="336" cy="106" r="6.5"/><circle cx="352" cy="96" r="6.5"/><circle cx="368" cy="87" r="6.5"/>
+            </g>
+            <text class="sub" x="330" y="72" text-anchor="end" style="font-size:9.5px">ubiquitin</text>
+            <text class="sub" x="330" y="83" text-anchor="end" style="font-size:8.5px">chain</text>
+          </svg></div>
+      </figure>
+
       <div class="facts">
         <div class="fact"><b>2,500</b><span>analogs designed</span></div>
         <div class="fact"><b>27</b><span>molecules docked under the locked protocol (18 designed + 3 cross-check + 6 controls)</span></div>
         <div class="fact"><b>0.376</b><span>DockQ of the FPFT-2216 reproduction &mdash; method check against 9DWV, not a candidate score</span></div>
         <div class="fact"><b>4</b><span>of the 20 shortlisted clear all three rules</span></div>
       </div>
+
+      <figure class="mechfig">
+        <h3>Where the project stands</h3>
+        <p class="caption">The computational half is finished and the buy list is ready. Nothing has been to the bench.</p>
+        <div class="fw"><svg class="fx" viewBox="0 0 1030 118" role="img"
+           aria-label="Design and triage done, buy list ready, wet-lab validation not started, conclusion pending">
+        <line x1="70" y1="46" x2="960" y2="46" stroke="var(--hair)" stroke-width="2"/>
+        <line x1="70" y1="46" x2="366" y2="46" stroke="var(--accent)" stroke-width="2.5"/>
+        <g>
+          <circle cx="70" cy="46" r="13" fill="var(--accent)"/>
+          <text class="sub" x="70" y="51" text-anchor="middle" style="fill:#fff;font-size:11px" font-weight="700">✓</text>
+          <text class="lbl" x="70" y="20" text-anchor="middle" style="font-size:12px">Computational triage</text>
+          <text class="sub" x="70" y="76" text-anchor="middle" style="fill:var(--accent);font-size:10.5px" font-weight="650">done</text>
+          <text class="sub" x="70" y="92" text-anchor="middle" style="font-size:10px">2,499 &rarr; 18 in 27 runs</text>
+        </g>
+        <g>
+          <circle cx="366" cy="46" r="13" fill="var(--accent)"/>
+          <text class="sub" x="366" y="51" text-anchor="middle" style="fill:#fff;font-size:11px" font-weight="700">✓</text>
+          <text class="lbl" x="366" y="20" text-anchor="middle" style="font-size:12px">Buy list</text>
+          <text class="sub" x="366" y="76" text-anchor="middle" style="fill:var(--accent);font-size:10.5px" font-weight="650">ready</text>
+          <text class="sub" x="366" y="92" text-anchor="middle" style="font-size:10px">25 molecules, with structures and specs</text>
+        </g>
+        <g>
+          <circle cx="662" cy="46" r="13" fill="var(--paper)" stroke="var(--s-cross)" stroke-width="2.5"/>
+          <text class="lbl" x="662" y="20" text-anchor="middle" style="font-size:12px">Wet-lab validation</text>
+          <text class="sub" x="662" y="76" text-anchor="middle" style="fill:var(--s-cross);font-size:10.5px" font-weight="650">next &middot; not started</text>
+          <text class="sub" x="662" y="92" text-anchor="middle" style="font-size:10px">degradation &rarr; selectivity &rarr; RAS dependence</text>
+        </g>
+        <g>
+          <circle cx="960" cy="46" r="13" fill="var(--paper)" stroke="var(--rule)" stroke-width="2.5"/>
+          <text class="lbl" x="960" y="20" text-anchor="middle" style="font-size:12px">Conclusion</text>
+          <text class="sub" x="960" y="76" text-anchor="middle" style="font-size:10.5px">waits on the experiments</text>
+        </g>
+      </svg></div>
+      </figure>
+
     </section>
 
     <section id="background">
@@ -687,7 +773,7 @@
         </div>
       </div>
 
-      <figure class="mechfig">
+      <figure class="mechfig md">
         <h3>What this project actually computes</h3>
         <p class="caption">Not &ldquo;how tightly does the ligand bind CRBN&rdquo;, but the shape of all three at once &mdash; CRBN, ligand and PPIL4 as a single ternary complex. The glue has to hold an interface that neither protein has on its own.</p>
         <div class="fw"><svg class="fx" viewBox="0 0 560 372" role="img"
@@ -772,6 +858,132 @@
         </p>
       </div>
 
+      <figure class="mechfig">
+        <h3>What PPIL4 does, and why RAS makes it a pressure point</h3>
+        <p class="caption">Introns are cut out of pre-mRNA by the spliceosome; PPIL4 acts at its catalytic activation step. RAS raises transcriptional load, so the same machine has more to do.</p>
+        <div class="fw"><svg class="fx" viewBox="0 0 900 268" role="img"
+           aria-label="Introns are cut out of pre-mRNA by the spliceosome; PPIL4 acts at its catalytic activation step">
+        <defs>
+          <marker id="a5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0 0 L10 5 L0 10 z" fill="var(--muted)"/>
+          </marker>
+        </defs>
+        <text class="sub" x="0" y="20" style="font-size:12px">Fresh from DNA: <tspan class="mono" fill="var(--ink)" font-weight="650">pre-mRNA</tspan> &mdash; useful stretches with junk in between</text>
+        <g>
+          <rect x="0" y="36" width="92" height="34" rx="3" fill="var(--accent)" opacity=".85"/>
+          <rect x="92" y="44" width="104" height="18" fill="var(--rule)"/>
+          <rect x="196" y="36" width="84" height="34" rx="3" fill="var(--accent)" opacity=".85"/>
+          <rect x="280" y="44" width="116" height="18" fill="var(--rule)"/>
+          <rect x="396" y="36" width="100" height="34" rx="3" fill="var(--accent)" opacity=".85"/>
+        </g>
+        <text class="sub" x="46"  y="59" text-anchor="middle" style="fill:#fff;font-size:11.5px" font-weight="650">exon</text>
+        <text class="sub" x="238" y="59" text-anchor="middle" style="fill:#fff;font-size:11.5px" font-weight="650">exon</text>
+        <text class="sub" x="446" y="59" text-anchor="middle" style="fill:#fff;font-size:11.5px" font-weight="650">exon</text>
+        <text class="sub" x="144" y="88" text-anchor="middle" style="font-size:11px">intron (cut out)</text>
+        <text class="sub" x="338" y="88" text-anchor="middle" style="font-size:11px">intron (cut out)</text>
+
+        <path d="M248 104 L248 132" stroke="var(--muted)" stroke-width="1.3" marker-end="url(#a5)"/>
+        <rect x="150" y="140" width="200" height="40" rx="20" fill="var(--s-ctrl)" opacity=".14" stroke="var(--s-ctrl)" stroke-width="1.4"/>
+        <text class="lbl" x="250" y="165" text-anchor="middle" style="fill:var(--s-ctrl);font-size:13px">Spliceosome</text>
+        <text class="sub" x="250" y="204" text-anchor="middle" style="font-size:11.5px">dozens of proteins: scissors plus stapler</text>
+        <rect x="88" y="218" width="324" height="34" rx="3" fill="var(--s-ctrl)" opacity=".10"/>
+        <text class="sub" x="250" y="240" text-anchor="middle" style="fill:var(--s-ctrl);font-size:12px" font-weight="650">PPIL4 sits at its catalytic activation step</text>
+
+        <path d="M512 53 L566 53" stroke="var(--muted)" stroke-width="1.4" marker-end="url(#a5)"/>
+        <g>
+          <rect x="582" y="36" width="92" height="34" rx="3" fill="var(--accent)" opacity=".85"/>
+          <rect x="674" y="36" width="84" height="34" fill="var(--accent)" opacity=".85"/>
+          <rect x="758" y="36" width="100" height="34" rx="3" fill="var(--accent)" opacity=".85"/>
+          <line x1="674" y1="36" x2="674" y2="70" stroke="var(--paper)" stroke-width="1.6"/>
+          <line x1="758" y1="36" x2="758" y2="70" stroke="var(--paper)" stroke-width="1.6"/>
+        </g>
+        <text class="sub" x="720" y="20" text-anchor="middle" style="font-size:12px">Mature <tspan class="mono" fill="var(--ink)" font-weight="650">mRNA</tspan> &mdash; only now can it make protein</text>
+        <text class="sub" x="720" y="90" text-anchor="middle" style="font-size:11px">one wrong splice site ruins the whole protein</text>
+        <rect x="566" y="140" width="334" height="112" rx="4" fill="var(--warn-bg)"/>
+        <text class="sub" x="586" y="166" style="fill:var(--ink);font-size:12.5px" font-weight="650">Why look here?</text>
+        <text class="sub" x="586" y="192" style="font-size:12px">RAS pushes transcription far up, so the</text>
+        <text class="sub" x="586" y="212" style="font-size:12px">splicing load spikes &mdash; the machine runs</text>
+        <text class="sub" x="586" y="238" style="font-size:12px"><tspan fill="var(--ink)" font-weight="650">flat out</tspan>. Slow it and RAS cells fail first.</text>
+      </svg></div>
+      </figure>
+
+      <figure class="mechfig">
+        <h3>Almost everything known about glues comes from zinc fingers &mdash; PPIL4 is not one</h3>
+        <p class="caption">Left, a C2H2 zinc finger: a zinc ion holds a small &beta; hairpin, and that hairpin is what CRBN reads. Right, PPIL4: no zinc, no hairpin, two folded domains and a long disordered tail. The lower panels are backbone traces rendered from this project&rsquo;s own structure files.</p>
+        <div class="fw"><svg class="fx" viewBox="0 0 1030 364" role="img"
+           aria-label="C2H2 zinc finger against PPIL4, as schematics and as real backbone structures">
+        <rect x="0" y="0" width="466" height="364" rx="4" fill="var(--sunk)" opacity=".55"/>
+        <text class="lbl" x="24" y="28" style="font-size:13.5px">Where glues are understood: <tspan style="fill:var(--s-ctrl)">C2H2 zinc fingers</tspan></text>
+
+        <path d="M92 74 l30 -14 l30 14 l0 40 l-30 14 l-30 -14 z" fill="var(--panel)" stroke="var(--s-ctrl)" stroke-width="1.4"/>
+        <circle cx="122" cy="94" r="9" fill="var(--s-ctrl)"/>
+        <text class="sub" x="122" y="98" text-anchor="middle" style="fill:#fff;font-size:9px" font-weight="700">Zn</text>
+        <g stroke="var(--s-ctrl)" stroke-width="1" fill="none" opacity=".7">
+          <path d="M113 87 L98 76"/><path d="M131 87 L146 76"/><path d="M113 101 L98 112"/><path d="M131 101 L146 112"/>
+        </g>
+        <text class="sub" x="94" y="70" text-anchor="end" style="font-size:9px">Cys</text>
+        <text class="sub" x="150" y="70" style="font-size:9px">Cys</text>
+        <text class="sub" x="94" y="120" text-anchor="end" style="font-size:9px">His</text>
+        <text class="sub" x="150" y="120" style="font-size:9px">His</text>
+        <text class="sub" x="112" y="170" text-anchor="middle" style="font-size:10px">one zinc ion holds the shape</text>
+
+        <path d="M152 94 C186 94 196 74 214 74 C232 74 240 94 240 94 C240 94 232 114 214 114 C196 114 186 94 152 94 Z"
+              fill="none" stroke="var(--s-ctrl)" stroke-width="1.6"/>
+        <circle cx="240" cy="94" r="10" fill="var(--s-cand)"/>
+        <text class="sub" x="240" y="98" text-anchor="middle" style="fill:#fff;font-size:10px" font-weight="700">G</text>
+        <text class="sub" x="196" y="52" text-anchor="middle" style="font-size:10px" font-weight="650">&beta; hairpin</text>
+        <text class="sub" x="201" y="142" text-anchor="middle" style="font-size:10px">a key glycine at the tip</text>
+
+        <path d="M266 34 C304 34 352 60 352 94 C352 128 304 154 266 154 L266 116 A22 22 0 0 0 266 72 Z"
+              fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
+        <text class="lbl" x="320" y="98" text-anchor="middle" style="fill:var(--accent);font-size:12px">CRBN</text>
+        <text class="sub" x="320" y="172" text-anchor="middle" style="font-size:10px">what CRBN reads is</text>
+        <text class="sub" x="320" y="186" text-anchor="middle" style="font-size:10px" font-weight="650">this small hairpin shape</text>
+
+        <rect x="24" y="200" width="418" height="34" rx="3" fill="var(--panel)"/>
+        <text class="sub" x="40" y="214" style="font-size:10.5px">Sievers et&nbsp;al. 2018 profiled all <tspan class="mono" style="fill:var(--ink)" font-weight="650">6,572</tspan> human zinc fingers:</text>
+        <text class="sub" x="40" y="228" style="font-size:10.5px"><tspan class="mono" style="fill:var(--ink)" font-weight="650">11</tspan> were degradable by thalidomide analogs, <tspan class="mono" style="fill:var(--ink)" font-weight="650">6</tspan> pulled the whole protein.</text>
+
+        <text class="lbl" x="484" y="120" text-anchor="middle" style="font-size:22px;fill:var(--muted)">vs</text>
+
+        <rect x="506" y="0" width="524" height="364" rx="4" fill="var(--accent-soft)"/>
+        <text class="lbl" x="530" y="28" style="font-size:13.5px">What we are after: <tspan style="fill:var(--accent)">PPIL4</tspan></text>
+
+        <path d="M566 78 C566 54 588 42 616 42 C650 42 672 58 672 88 C672 122 650 140 616 140 C588 140 566 124 566 100 Z"
+              fill="var(--panel)" stroke="var(--s-ctrl)" stroke-width="1.5"/>
+        <text class="sub" x="619" y="86" text-anchor="middle" style="font-size:10.5px" font-weight="650">cyclophilin domain</text>
+        <text class="sub" x="619" y="102" text-anchor="middle" style="font-size:9.5px">(a folding enzyme)</text>
+        <path d="M688 66 C688 52 700 46 716 46 C736 46 748 56 748 76 C748 96 736 106 716 106 C700 106 688 98 688 84 Z"
+              fill="var(--panel)" stroke="var(--s-ctrl)" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <text class="sub" x="718" y="80" text-anchor="middle" style="font-size:10px" font-weight="650">RRM</text>
+        <path d="M672 92 L688 82" stroke="var(--s-ctrl)" stroke-width="1.4"/>
+        <text class="sub" x="660" y="164" text-anchor="middle" style="font-size:11px" font-weight="650">No zinc, no zinc finger, no &beta; hairpin</text>
+        <text class="sub" x="660" y="180" text-anchor="middle" style="font-size:10px">a completely different shape</text>
+
+        <rect x="530" y="200" width="476" height="34" rx="3" fill="var(--panel)"/>
+        <text class="sub" x="548" y="214" style="font-size:10.5px">Reported <tspan style="fill:var(--ink)" font-weight="650">non-zinc-finger</tspan> CRBN targets are few: GSPT1, CK1&alpha;, PDE6D, RAB28.</text>
+        <text class="sub" x="548" y="228" style="font-size:10.5px">PPIL4 was confirmed only recently, with a complex structure &mdash; <tspan style="fill:var(--ink)" font-weight="650">a class only just opened</tspan>.</text>
+              <!-- real backbone structures, rendered straight from this project's PDB files -->
+        <path d="M24 240 L442 240" stroke="var(--hair)" stroke-width="1"/>
+        <rect x="22" y="246" width="160" height="113" rx="3" fill="var(--panel)"/>
+        <svg x="22" y="246" width="160" height="113" viewBox="0 0 214 152" preserveAspectRatio="xMidYMid meet"><polyline points="110.1,38.5 108.6,42.7 106.1,45.6 102.0,46.9 97.0,47.1 91.5,47.0 86.3,47.4 82.1,49.1 79.1,52.5 77.0,57.2 75.1,62.3 73.0,67.2 70.1,71.0 65.7,73.2 60.1,74.4" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-opacity="0.38" stroke-linecap="round" stroke-linejoin="round"/><polyline points="112.6,30.4 111.1,34.1 110.1,38.5" fill="none" stroke="var(--accent)" stroke-width="2.8" stroke-opacity="0.46" stroke-linecap="round" stroke-linejoin="round"/><polyline points="60.1,74.4 54.4,75.2 49.6,76.4 46.6,78.6 46.0,82.3 47.1,87.1" fill="none" stroke="var(--accent)" stroke-width="2.8" stroke-opacity="0.46" stroke-linecap="round" stroke-linejoin="round"/><polyline points="82.2,114.3 83.9,111.0 85.9,107.4 88.1,102.9" fill="none" stroke="var(--s-ctrl)" stroke-width="2.8" stroke-opacity="0.46" stroke-linecap="round" stroke-linejoin="round"/><polyline points="119.2,115.5 120.5,110.0 121.9,104.7 123.4,100.7 125.1,97.7" fill="none" stroke="var(--s-ctrl)" stroke-width="2.8" stroke-opacity="0.46" stroke-linecap="round" stroke-linejoin="round"/><polyline points="155.5,110.6 157.5,108.3 159.7,104.8 162.1,100.0 164.5,94.9" fill="none" stroke="var(--s-ctrl)" stroke-width="2.8" stroke-opacity="0.46" stroke-linecap="round" stroke-linejoin="round"/><polyline points="138.5,37.1 130.0,50.6" fill="none" stroke="var(--accent)" stroke-width="2.0" stroke-opacity="0.44" stroke-linecap="round" stroke-linejoin="round"/><polyline points="123.4,100.7 127.8,71.5" fill="none" stroke="var(--s-ctrl)" stroke-width="2.0" stroke-opacity="0.44" stroke-linecap="round" stroke-linejoin="round"/><circle cx="134.9" cy="62.3" r="9.9" fill="var(--s-cross)"/><polyline points="141.6,38.9 138.5,37.1 134.6,34.9 129.5,32.3 124.1,30.0 119.1,28.5 115.0,28.4 112.6,30.4" fill="none" stroke="var(--accent)" stroke-width="3.2" stroke-opacity="0.55" stroke-linecap="round" stroke-linejoin="round"/><polyline points="47.1,87.1 49.2,92.2 51.2,96.7" fill="none" stroke="var(--accent)" stroke-width="3.2" stroke-opacity="0.55" stroke-linecap="round" stroke-linejoin="round"/><polyline points="80.7,117.9 82.2,114.3" fill="none" stroke="var(--s-ctrl)" stroke-width="3.2" stroke-opacity="0.55" stroke-linecap="round" stroke-linejoin="round"/><polyline points="88.1,102.9 90.4,98.7" fill="none" stroke="var(--s-ctrl)" stroke-width="3.2" stroke-opacity="0.55" stroke-linecap="round" stroke-linejoin="round"/><polyline points="116.4,122.7 117.9,120.1 119.2,115.5" fill="none" stroke="var(--s-ctrl)" stroke-width="3.2" stroke-opacity="0.55" stroke-linecap="round" stroke-linejoin="round"/><polyline points="125.1,97.7 126.8,95.1 128.6,93.2" fill="none" stroke="var(--s-ctrl)" stroke-width="3.2" stroke-opacity="0.55" stroke-linecap="round" stroke-linejoin="round"/><polyline points="153.8,112.3 155.5,110.6" fill="none" stroke="var(--s-ctrl)" stroke-width="3.2" stroke-opacity="0.55" stroke-linecap="round" stroke-linejoin="round"/><polyline points="164.5,94.9 166.6,90.2 168.0,87.1" fill="none" stroke="var(--s-ctrl)" stroke-width="3.2" stroke-opacity="0.55" stroke-linecap="round" stroke-linejoin="round"/><polyline points="168.0,87.1 146.3,66.7" fill="none" stroke="var(--s-ctrl)" stroke-width="2.2" stroke-opacity="0.52" stroke-linecap="round" stroke-linejoin="round"/><polyline points="146.4,42.9 144.4,40.9 141.6,38.9" fill="none" stroke="var(--accent)" stroke-width="3.6" stroke-opacity="0.63" stroke-linecap="round" stroke-linejoin="round"/><polyline points="51.2,96.7 52.5,99.8" fill="none" stroke="var(--accent)" stroke-width="3.6" stroke-opacity="0.63" stroke-linecap="round" stroke-linejoin="round"/><polyline points="52.5,99.8 54.5,99.9" fill="none" stroke="var(--s-ctrl)" stroke-width="3.6" stroke-opacity="0.63" stroke-linecap="round" stroke-linejoin="round"/><polyline points="77.9,123.3 79.3,121.2 80.7,117.9" fill="none" stroke="var(--s-ctrl)" stroke-width="3.6" stroke-opacity="0.63" stroke-linecap="round" stroke-linejoin="round"/><polyline points="90.4,98.7 92.8,95.5 95.1,94.3" fill="none" stroke="var(--s-ctrl)" stroke-width="3.6" stroke-opacity="0.63" stroke-linecap="round" stroke-linejoin="round"/><polyline points="112.8,121.2 114.7,122.8 116.4,122.7" fill="none" stroke="var(--s-ctrl)" stroke-width="3.6" stroke-opacity="0.63" stroke-linecap="round" stroke-linejoin="round"/><polyline points="128.6,93.2 130.6,92.3" fill="none" stroke="var(--s-ctrl)" stroke-width="3.6" stroke-opacity="0.63" stroke-linecap="round" stroke-linejoin="round"/><polyline points="152.0,113.3 153.8,112.3" fill="none" stroke="var(--s-ctrl)" stroke-width="3.6" stroke-opacity="0.63" stroke-linecap="round" stroke-linejoin="round"/><polyline points="104.2,53.9 109.0,56.0" fill="none" stroke="var(--accent)" stroke-width="3.9" stroke-opacity="0.71" stroke-linecap="round" stroke-linejoin="round"/><polyline points="147.4,44.5 146.4,42.9" fill="none" stroke="var(--accent)" stroke-width="3.9" stroke-opacity="0.71" stroke-linecap="round" stroke-linejoin="round"/><polyline points="54.5,99.9 57.5,100.0" fill="none" stroke="var(--s-ctrl)" stroke-width="3.9" stroke-opacity="0.71" stroke-linecap="round" stroke-linejoin="round"/><polyline points="76.3,123.6 77.9,123.3" fill="none" stroke="var(--s-ctrl)" stroke-width="3.9" stroke-opacity="0.71" stroke-linecap="round" stroke-linejoin="round"/><polyline points="95.1,94.3 97.5,95.8 99.9,99.4" fill="none" stroke="var(--s-ctrl)" stroke-width="3.9" stroke-opacity="0.71" stroke-linecap="round" stroke-linejoin="round"/><polyline points="110.9,118.6 112.8,121.2" fill="none" stroke="var(--s-ctrl)" stroke-width="3.9" stroke-opacity="0.71" stroke-linecap="round" stroke-linejoin="round"/><polyline points="130.6,92.3 132.9,92.7 135.6,95.2" fill="none" stroke="var(--s-ctrl)" stroke-width="3.9" stroke-opacity="0.71" stroke-linecap="round" stroke-linejoin="round"/><polyline points="147.8,112.5 150.1,113.4 152.0,113.3" fill="none" stroke="var(--s-ctrl)" stroke-width="3.9" stroke-opacity="0.71" stroke-linecap="round" stroke-linejoin="round"/><polyline points="113.1,56.7 129.2,62.1" fill="none" stroke="var(--accent)" stroke-width="2.8" stroke-opacity="0.68" stroke-linecap="round" stroke-linejoin="round"/><polyline points="46.7,53.2 49.7,54.9 54.1,57.5 59.2,60.3 64.4,62.4 69.1,63.0 73.3,61.3 77.2,58.0 81.2,54.2 85.2,50.8 89.5,49.0 94.1,49.4 99.2,51.4 104.2,53.9" fill="none" stroke="var(--accent)" stroke-width="4.3" stroke-opacity="0.79" stroke-linecap="round" stroke-linejoin="round"/><polyline points="109.0,56.0 113.1,56.7 116.2,55.5 118.7,53.1" fill="none" stroke="var(--accent)" stroke-width="4.3" stroke-opacity="0.79" stroke-linecap="round" stroke-linejoin="round"/><polyline points="147.0,45.7 147.4,44.5" fill="none" stroke="var(--accent)" stroke-width="4.3" stroke-opacity="0.79" stroke-linecap="round" stroke-linejoin="round"/><polyline points="57.5,100.0 60.8,100.3 64.1,101.2" fill="none" stroke="var(--s-ctrl)" stroke-width="4.3" stroke-opacity="0.79" stroke-linecap="round" stroke-linejoin="round"/><polyline points="72.9,116.9 74.6,121.3 76.3,123.6" fill="none" stroke="var(--s-ctrl)" stroke-width="4.3" stroke-opacity="0.79" stroke-linecap="round" stroke-linejoin="round"/><polyline points="99.9,99.4 102.3,104.0 104.6,108.6" fill="none" stroke="var(--s-ctrl)" stroke-width="4.3" stroke-opacity="0.79" stroke-linecap="round" stroke-linejoin="round"/><polyline points="106.8,112.3 108.9,115.4 110.9,118.6" fill="none" stroke="var(--s-ctrl)" stroke-width="4.3" stroke-opacity="0.79" stroke-linecap="round" stroke-linejoin="round"/><polyline points="135.6,95.2 138.7,99.7 142.0,104.9 145.1,109.6 147.8,112.5" fill="none" stroke="var(--s-ctrl)" stroke-width="4.3" stroke-opacity="0.79" stroke-linecap="round" stroke-linejoin="round"/><polyline points="118.7,53.1 120.8,50.1" fill="none" stroke="var(--accent)" stroke-width="4.7" stroke-opacity="0.88" stroke-linecap="round" stroke-linejoin="round"/><polyline points="140.4,45.7 144.5,46.0 147.0,45.7" fill="none" stroke="var(--accent)" stroke-width="4.7" stroke-opacity="0.88" stroke-linecap="round" stroke-linejoin="round"/><polyline points="64.1,101.2 66.9,103.0 69.2,106.5 71.1,111.6 72.9,116.9" fill="none" stroke="var(--s-ctrl)" stroke-width="4.7" stroke-opacity="0.88" stroke-linecap="round" stroke-linejoin="round"/><polyline points="104.6,108.6 106.8,112.3" fill="none" stroke="var(--s-ctrl)" stroke-width="4.7" stroke-opacity="0.88" stroke-linecap="round" stroke-linejoin="round"/><polyline points="120.8,50.1 123.2,47.3 126.1,45.5 130.3,45.0 135.3,45.2 140.4,45.7" fill="none" stroke="var(--accent)" stroke-width="5.0" stroke-opacity="0.96" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <text class="sub" x="194" y="270" style="fill:var(--ink);font-size:10.5px" font-weight="650">Real structure &middot; SALL4 zinc finger</text>
+        <text class="sub" x="194" y="288" style="font-size:9.5px">C2H2 zinc finger co-crystallised with CRBN, <tspan style="fill:var(--ink)" font-weight="650">24 residues</tspan></text>
+        <text class="sub" x="194" y="306" style="font-size:9.5px"><tspan style="fill:var(--accent)" font-weight="700">■</tspan> &beta; hairpin 409&ndash;420&#12288;<tspan style="fill:var(--s-ctrl)" font-weight="700">■</tspan> &alpha; helix 421&ndash;432</text>
+        <text class="sub" x="194" y="322" style="font-size:9.5px"><tspan style="fill:var(--s-cross)" font-weight="700">●</tspan> Zn&sup2;&#8314; clamped by Cys412/415 and His428/432</text>
+
+        <path d="M530 240 L1006 240" stroke="var(--hair)" stroke-width="1"/>
+        <rect x="528" y="246" width="178" height="113" rx="3" fill="var(--panel)"/>
+        <svg x="528" y="246" width="178" height="113" viewBox="0 0 234 152" preserveAspectRatio="xMidYMid meet"><polyline points="116.3,27.1 120.0,29.3 123.7,31.5 126.4,34.9 125.3,39.2 127.7,43.3 125.5,46.6 124.3,51.0 123.9,54.2 122.7,58.7 123.0,62.9 124.2,66.1 126.3,70.2 128.9,72.8 132.4,74.9 136.2,77.1 140.4,78.9 144.1,80.3 147.7,83.0 150.2,85.3 152.8,88.5 154.3,91.1 154.2,94.4 155.8,97.1" fill="none" stroke="var(--muted)" stroke-width="1.3" stroke-opacity="0.13" stroke-linecap="round" stroke-linejoin="round"/><polyline points="103.0,26.9 104.7,26.8 106.7,25.6 109.6,25.0 113.3,24.6 116.3,27.1" fill="none" stroke="var(--muted)" stroke-width="1.4" stroke-opacity="0.16" stroke-linecap="round" stroke-linejoin="round"/><polyline points="155.8,97.1 155.5,100.0 155.4,102.1 155.7,104.6 156.2,105.8 157.9,107.5" fill="none" stroke="var(--muted)" stroke-width="1.4" stroke-opacity="0.16" stroke-linecap="round" stroke-linejoin="round"/><polyline points="170.8,74.5 171.5,74.3 172.4,73.7 173.4,72.9 174.4,72.0 175.1,71.4" fill="none" stroke="var(--s-dom2)" stroke-width="2.8" stroke-opacity="0.55" stroke-linecap="round" stroke-linejoin="round"/><polyline points="130.5,78.5 130.8,79.1 131.1,75.6 126.5,76.7 125.3,75.3 126.8,71.0 124.1,70.7 120.3,69.9 122.2,66.4 123.6,64.1 119.1,64.2 117.7,61.8 120.8,58.3 119.1,57.5 115.0,56.1 115.1,51.4 113.0,49.3 108.7,48.4 108.5,44.0 108.2,41.3 106.4,37.2 103.7,35.7 104.1,31.1 103.5,28.3 103.0,26.9" fill="none" stroke="var(--muted)" stroke-width="1.6" stroke-opacity="0.19" stroke-linecap="round" stroke-linejoin="round"/><polyline points="157.9,107.5 156.7,108.5 158.2,110.1 156.6,111.0 156.6,111.6" fill="none" stroke="var(--muted)" stroke-width="1.6" stroke-opacity="0.19" stroke-linecap="round" stroke-linejoin="round"/><polyline points="71.9,66.2 72.6,65.7 73.6,65.0 74.5,64.1 75.3,63.2 75.7,62.3 75.9,61.2 76.1,60.1 76.5,59.2 77.3,58.4 78.4,57.9 79.5,57.3 80.4,56.8 80.9,56.3 81.4,55.7 81.7,55.2 82.2,54.6 82.9,53.7 83.6,52.8 84.4,51.9 85.1,51.2 85.8,51.0 86.6,51.0 87.3,51.0 88.1,50.8 88.9,50.1 89.9,49.1 90.8,48.2 91.7,47.9 92.6,48.4 93.5,49.4 94.2,50.6 94.5,51.5 94.4,52.0 93.8,52.4 93.0,52.7 92.2,53.1 91.3,53.6 90.2,54.0 89.2,54.6 88.3,55.3 87.8,56.1 87.3,57.1 86.9,58.1 86.4,59.0 85.6,59.7 84.8,60.4 83.9,61.0 83.1,61.5 82.3,62.1 81.6,62.6 80.9,63.1 80.2,63.8 79.5,64.6 78.8,65.6 78.1,66.5 77.3,67.1 76.4,67.3 75.4,67.2 74.3,67.1 73.4,67.3 72.8,68.2 72.3,69.4 71.9,70.5 71.2,71.2 70.2,71.0 69.1,70.2 68.0,69.5 67.0,69.3 66.2,70.0 65.6,71.2 65.1,72.5 64.8,73.5 65.0,74.1 65.6,74.7 66.2,75.0 66.6,74.8 66.8,74.1 66.9,73.0 66.8,71.7 66.6,70.6 65.9,69.9 64.9,69.3 64.0,68.7 63.2,68.1 62.8,67.4 62.4,66.6" fill="none" stroke="var(--s-ctrl)" stroke-width="3.1" stroke-opacity="0.63" stroke-linecap="round" stroke-linejoin="round"/><polyline points="68.0,64.2 68.1,64.1 67.9,63.9 67.2,63.3 66.0,62.6 64.9,61.8 64.2,61.1 64.2,60.4 64.5,59.6 65.0,59.0" fill="none" stroke="var(--s-ctrl)" stroke-width="3.1" stroke-opacity="0.63" stroke-linecap="round" stroke-linejoin="round"/><polyline points="69.3,58.3 70.0,58.2 70.1,58.1 69.8,58.0 69.3,57.8 68.7,57.4 67.9,56.7 66.9,55.8 66.0,54.9 65.6,54.1 66.0,53.4 66.8,52.9 67.9,52.4 68.8,52.1 69.7,52.0 70.7,52.1 71.4,52.2 71.7,52.1 71.3,51.8 70.3,51.4 69.1,50.9 68.3,50.3 67.8,49.4 67.4,48.4 67.3,47.4 67.6,46.7 68.5,46.3 69.9,46.1 71.3,46.1 72.2,46.1 72.5,46.2 72.3,46.4 72.1,46.6 72.3,47.0" fill="none" stroke="var(--s-ctrl)" stroke-width="3.1" stroke-opacity="0.63" stroke-linecap="round" stroke-linejoin="round"/><polyline points="76.5,48.9 77.1,48.4 77.5,47.4 77.9,46.3 78.4,45.4 79.3,44.7 80.4,44.1 81.4,43.8 82.1,43.7" fill="none" stroke="var(--s-ctrl)" stroke-width="3.1" stroke-opacity="0.63" stroke-linecap="round" stroke-linejoin="round"/><polyline points="89.3,71.1 88.7,70.1 87.8,69.3 86.9,68.8 86.0,69.0 85.0,69.5 83.9,70.1" fill="none" stroke="var(--s-ctrl)" stroke-width="3.1" stroke-opacity="0.63" stroke-linecap="round" stroke-linejoin="round"/><polyline points="73.6,68.6 74.4,68.5 75.4,68.6 76.5,68.6 77.5,68.9 78.7,69.2 79.8,69.4 80.8,69.4 81.8,68.9 82.8,68.1 83.6,67.3 84.2,66.8 84.4,67.0 84.5,67.6 84.5,68.1 84.7,68.2 85.3,67.7 86.0,66.8 86.9,65.8 87.7,64.9 88.4,64.0 89.2,63.0 89.9,62.3 90.6,62.0 91.0,62.5 91.4,63.6 91.8,64.7 92.4,65.3 93.4,65.1 94.7,64.6 95.8,63.9 96.5,63.1 96.4,62.1 95.9,60.8 95.1,59.7 94.5,59.2 94.0,59.4 93.3,60.1 92.8,60.9 92.9,61.6 93.6,62.2 94.9,62.8 96.2,63.1 97.3,63.1 98.0,62.3 98.5,61.0 98.8,59.7 98.8,58.7 98.3,58.0 97.2,57.6" fill="none" stroke="var(--s-ctrl)" stroke-width="3.1" stroke-opacity="0.63" stroke-linecap="round" stroke-linejoin="round"/><polyline points="86.5,47.9 85.5,48.5 84.7,49.1 84.1,49.2 84.0,48.6 84.1,47.5 84.2,46.3 84.0,45.7 83.3,45.7 82.4,46.1 81.3,46.6 80.4,47.3 79.7,48.1 78.9,49.2 78.2,50.2 77.7,51.0 77.3,51.5 77.0,51.7 76.8,51.9 76.3,52.4 75.5,53.0 74.5,53.9 73.6,54.8 73.0,55.6 73.1,56.3 73.5,57.0 73.9,57.7 73.9,58.3 73.3,59.1 72.3,59.8 71.1,60.5 70.0,60.9 69.1,60.8 68.1,60.4 67.2,60.1 66.3,60.1 65.5,60.9 64.7,62.0 64.0,63.1 63.2,63.7 62.5,63.5 61.8,63.0 61.1,62.2 60.4,61.5 59.5,60.8 58.5,60.0 57.7,59.2 57.1,58.4 57.0,57.3 57.4,56.2 57.7,55.1 57.7,54.2 57.2,53.8 56.4,53.7 55.6,53.6 54.8,53.2 54.0,52.5 53.1,51.6 52.4,50.6 52.0,49.7 52.0,48.8 52.3,48.0 52.8,47.3 53.5,46.8 54.5,46.8 55.7,47.2 57.0,47.5 58.0,47.3 58.6,46.5 59.0,45.2 59.4,44.0 59.9,43.2 60.7,43.1 61.6,43.6 62.6,44.0 63.5,44.1 64.2,43.4 65.0,42.3 65.7,41.2 66.3,40.4 66.6,39.9 66.8,39.6 67.0,39.4 67.5,39.2 68.4,38.9 69.6,38.7 70.8,38.5 71.8,38.5 72.7,38.8 73.5,39.4 74.2,40.0 74.6,40.1 74.7,39.7 74.4,39.0 74.1,38.1 74.2,37.3 74.8,36.5 75.8,35.7 76.9,34.9 77.8,34.6 78.6,34.8 79.4,35.4 80.0,36.0 80.4,36.2" fill="none" stroke="var(--s-ctrl)" stroke-width="3.1" stroke-opacity="0.63" stroke-linecap="round" stroke-linejoin="round"/><polyline points="95.1,42.6 97.0,39.7 100.7,38.6 104.5,40.2 107.0,42.3" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-opacity="0.21" stroke-linecap="round" stroke-linejoin="round"/><polyline points="125.5,40.6 126.7,40.7 128.0,40.9 129.0,41.2 129.7,41.7 130.3,42.4" fill="none" stroke="var(--s-dom2)" stroke-width="3.1" stroke-opacity="0.63" stroke-linecap="round" stroke-linejoin="round"/><polyline points="126.4,46.8 126.7,46.8 127.2,46.9 128.2,47.1 129.6,47.2 130.9,47.5 131.7,47.9 131.9,48.6 131.8,49.5 131.3,50.4" fill="none" stroke="var(--s-dom2)" stroke-width="3.1" stroke-opacity="0.63" stroke-linecap="round" stroke-linejoin="round"/><polyline points="128.9,52.3 127.9,52.7 127.4,53.0 127.7,53.1 128.5,53.0 129.4,52.9 130.3,53.0 131.3,53.3 132.4,53.8 133.4,54.3 133.8,54.9 133.5,55.7 132.6,56.6 131.6,57.5 130.9,58.2 130.2,58.6 129.6,58.9 129.2,59.0 129.3,59.2 130.1,59.2 131.3,59.1 132.7,59.1 133.7,59.2 134.3,59.8 134.9,60.5 135.1,61.3 135.1,62.1 134.4,62.9 133.3,63.7 132.2,64.5 131.5,65.0 131.4,65.1 131.6,65.0 132.0,64.8 132.6,64.8 133.6,64.9 135.0,65.1 136.3,65.5 137.0,66.0 137.1,66.8 136.7,67.7 136.1,68.7 135.5,69.5 134.8,70.1 134.0,70.4 133.3,70.7 132.8,70.9" fill="none" stroke="var(--s-dom2)" stroke-width="3.1" stroke-opacity="0.63" stroke-linecap="round" stroke-linejoin="round"/><polyline points="132.8,70.9 136.5,70.5" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-opacity="0.21" stroke-linecap="round" stroke-linejoin="round"/><polyline points="136.5,70.5 137.0,71.0 137.7,71.8 138.4,72.6 138.9,73.1" fill="none" stroke="var(--s-dom2)" stroke-width="3.1" stroke-opacity="0.63" stroke-linecap="round" stroke-linejoin="round"/><polyline points="138.9,73.1 142.3,69.9 141.1,69.5 140.1,73.2 136.9,70.7" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-opacity="0.21" stroke-linecap="round" stroke-linejoin="round"/><polyline points="165.4,55.6 165.8,55.2 165.9,54.9 166.0,54.6 166.3,54.3 166.9,53.7 167.7,52.9 168.6,52.3 169.5,52.0 170.3,52.4 171.1,53.2 171.9,54.0 172.8,54.6 173.9,54.8 175.1,54.7 176.2,54.6 177.0,54.9 177.3,55.7 177.3,56.9 177.3,58.2 177.6,59.0 178.4,59.4 179.6,59.5 180.8,59.5 181.4,59.5 181.1,59.4 180.4,59.1 179.6,59.0 178.9,59.2 178.7,60.0 178.7,61.1 178.7,62.3 178.4,63.3 177.6,63.9" fill="none" stroke="var(--s-dom2)" stroke-width="3.1" stroke-opacity="0.63" stroke-linecap="round" stroke-linejoin="round"/><polyline points="169.6,66.1 170.1,65.4 170.3,65.0 169.9,65.1 169.1,65.5 168.3,65.9 168.0,66.4 168.4,66.8 169.2,67.2 170.1,67.6 170.6,68.0 170.7,68.2 170.4,68.4 170.0,68.7 169.7,69.3 169.4,70.3 169.2,71.6 169.1,72.9 169.1,73.9 169.5,74.3 170.1,74.5 170.8,74.5" fill="none" stroke="var(--s-dom2)" stroke-width="3.1" stroke-opacity="0.63" stroke-linecap="round" stroke-linejoin="round"/><polyline points="175.1,71.4 175.4,71.3 175.5,71.4 175.4,71.5 175.4,71.2 175.5,70.3 175.7,69.0 175.8,67.7 175.7,66.6 175.4,65.8 175.0,65.1 174.4,64.5 173.7,64.0 172.7,63.5 171.5,63.1 170.4,62.8 169.7,62.2 169.7,61.3 170.2,60.2 170.7,59.2 170.8,58.5 170.2,58.4 169.2,58.5 168.1,58.8 167.4,59.2 167.1,59.7 167.1,60.3 167.2,60.9 167.0,61.4 166.3,61.9 165.3,62.2" fill="none" stroke="var(--s-dom2)" stroke-width="3.1" stroke-opacity="0.63" stroke-linecap="round" stroke-linejoin="round"/><polyline points="179.0,50.7 180.0,51.1 181.0,51.3 181.6,51.1 181.9,50.4 182.0,49.1 181.8,47.9 181.3,47.0 180.5,46.9 179.2,47.2 177.9,47.5 176.7,47.6 175.7,47.2 174.8,46.5 173.9,45.9 173.1,45.7 172.4,46.3 171.8,47.3 171.1,48.4 170.3,49.1 169.2,49.2 168.0,49.0 166.7,48.7 165.7,48.7 165.0,49.1 164.6,49.7" fill="none" stroke="var(--s-dom2)" stroke-width="3.1" stroke-opacity="0.63" stroke-linecap="round" stroke-linejoin="round"/><polyline points="151.4,58.9 151.3,59.8 151.5,61.1 151.9,62.4 152.2,63.3" fill="none" stroke="var(--s-dom2)" stroke-width="3.1" stroke-opacity="0.63" stroke-linecap="round" stroke-linejoin="round"/><polyline points="152.2,63.3 149.8,66.9 152.5,69.8 154.4,71.9" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-opacity="0.21" stroke-linecap="round" stroke-linejoin="round"/><polyline points="150.6,77.7 146.5,78.3 146.3,82.6 143.5,81.6 139.8,84.3 138.5,84.5 135.8,81.3 131.2,81.8 130.5,78.5" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-opacity="0.21" stroke-linecap="round" stroke-linejoin="round"/><polyline points="156.6,111.6 153.7,112.3 152.9,113.6 151.0,114.0 148.8,113.8" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-opacity="0.21" stroke-linecap="round" stroke-linejoin="round"/><polyline points="62.4,66.6 62.3,65.8 62.6,65.3 63.4,64.9 64.7,64.7 66.1,64.5 67.1,64.4 67.6,64.3 68.0,64.2" fill="none" stroke="var(--s-ctrl)" stroke-width="3.5" stroke-opacity="0.71" stroke-linecap="round" stroke-linejoin="round"/><polyline points="65.0,59.0 65.7,58.5 66.7,58.3 68.0,58.3 69.3,58.3" fill="none" stroke="var(--s-ctrl)" stroke-width="3.5" stroke-opacity="0.71" stroke-linecap="round" stroke-linejoin="round"/><polyline points="72.3,47.0 73.1,47.5 74.2,48.2 75.5,48.8 76.5,48.9" fill="none" stroke="var(--s-ctrl)" stroke-width="3.5" stroke-opacity="0.71" stroke-linecap="round" stroke-linejoin="round"/><polyline points="82.1,43.7 82.1,44.3 81.8,45.2 81.4,46.2 81.5,47.0 82.2,47.3 83.3,47.4 84.5,47.5 85.4,47.9 86.1,48.9 86.6,50.1 87.0,51.3 87.3,52.1 87.4,52.2 87.4,51.8 87.3,51.4 87.4,51.5 87.7,52.3 88.0,53.4 88.5,54.7 89.0,55.7 89.8,56.4 90.7,57.0 91.6,57.6 92.3,58.2 92.8,59.2 93.0,60.2 93.3,61.2 93.8,62.1 94.7,62.6 95.7,63.0 96.7,63.4 97.3,64.0 97.5,65.0 97.3,66.2 96.9,67.4 96.3,68.2 95.4,68.5 94.3,68.6 93.2,68.4 92.1,68.0 91.2,67.4 90.3,66.6 89.6,65.7 89.0,64.7 88.7,63.7 88.7,62.6 88.7,61.5 88.4,60.6 87.6,60.0 86.6,59.5 85.6,59.0 84.7,58.4 84.0,57.5 83.6,56.6 83.1,55.6 82.4,54.8 81.4,54.3 80.1,54.0 79.0,53.7 78.1,53.2 77.8,52.6 77.7,51.8 77.8,51.0 77.8,50.1 77.6,49.1 77.4,47.9 77.2,46.7 77.2,45.8 77.3,45.1 77.5,44.5 77.8,44.1 78.3,44.0 79.3,44.3 80.5,44.9 81.7,45.6 82.5,46.2 82.7,46.4 82.5,46.5 82.2,46.7 82.0,47.2 81.9,48.2 81.8,49.6 81.6,50.9 81.2,51.7 80.4,52.0 79.3,51.9" fill="none" stroke="var(--s-ctrl)" stroke-width="3.5" stroke-opacity="0.71" stroke-linecap="round" stroke-linejoin="round"/><polyline points="75.8,50.1 75.1,49.5 74.5,49.2 74.0,49.3 73.5,49.8 73.0,50.3 72.3,50.7 71.3,50.9 70.1,50.9 68.9,51.0 67.8,51.3 67.1,52.0 66.6,52.9 66.2,53.7 65.7,54.2 65.1,54.1 64.6,53.6 64.0,53.0 63.3,52.7 62.3,53.0 61.1,53.5 60.1,54.0 59.4,54.0 59.3,53.5 59.5,52.6 59.9,51.5 60.1,50.6 60.1,49.7 60.1,48.7 60.0,47.9 59.6,47.5 58.9,47.7 57.9,48.4 56.9,49.1 56.0,49.7 55.2,50.2 54.4,50.6 53.8,50.8 53.5,50.8 53.7,50.3 54.1,49.4 54.7,48.5 55.4,47.9 56.1,47.7 57.1,47.7 57.9,47.9 58.3,48.3 58.1,49.1 57.5,50.2 56.8,51.3 56.4,52.3 56.5,53.0 56.8,53.7 57.4,54.2 58.0,54.4 59.0,54.1 60.3,53.4 61.5,52.8 62.4,52.7 63.0,53.4 63.4,54.6 63.6,56.0 63.7,57.2 63.5,58.2 63.0,59.2 62.6,60.1 62.3,61.1 62.1,62.3 62.0,63.4 62.1,64.6 62.4,65.6 63.1,66.4 64.2,67.0 65.2,67.7 65.9,68.3 65.9,69.1 65.5,69.8 65.1,70.6 64.9,71.5 65.2,72.4 65.7,73.5 66.2,74.5 66.5,75.5 66.4,76.3 66.0,77.1 65.6,77.8 65.5,78.4 65.8,78.9 66.3,79.3 67.0,79.6 67.7,79.8 68.6,80.1 69.6,80.2 70.6,80.3 71.5,80.2 72.4,79.8 73.1,79.2 73.9,78.6 74.8,78.2 75.8,78.2 76.9,78.4 78.0,78.6 79.0,78.6 80.0,77.9 81.0,77.0 81.9,76.1 82.7,75.7 83.5,76.2 84.2,77.3 84.8,78.4 85.5,78.9 86.0,78.7 86.6,78.0 87.1,77.1 87.6,76.2 88.3,75.3 89.0,74.2 89.5,73.1 89.7,72.1 89.3,71.1" fill="none" stroke="var(--s-ctrl)" stroke-width="3.5" stroke-opacity="0.71" stroke-linecap="round" stroke-linejoin="round"/><polyline points="83.9,70.1 83.0,70.2 82.2,69.6 81.5,68.5 80.8,67.4 80.1,66.6 79.4,66.5 78.7,66.6 78.1,66.8 77.4,66.7 76.6,66.2 75.7,65.4 75.0,64.6 74.6,63.9 74.7,63.4 75.3,62.9 75.9,62.6 76.1,62.5 75.6,62.7 74.8,63.2 74.0,63.7 73.3,63.7 72.9,63.0 72.7,61.8" fill="none" stroke="var(--s-ctrl)" stroke-width="3.5" stroke-opacity="0.71" stroke-linecap="round" stroke-linejoin="round"/><polyline points="67.1,66.4 66.8,65.3 66.5,64.0 66.5,62.9 66.9,62.4 67.5,62.1 68.1,61.7 68.6,61.1 68.8,60.1 68.8,58.9 68.8,57.7 69.1,56.7 69.6,56.0 70.2,55.6 71.0,55.3 71.9,55.2 72.8,55.3 73.9,55.6 75.0,56.1 75.9,56.7 76.5,57.5 77.0,58.4 77.4,59.3 78.0,60.2 78.9,60.8 80.0,61.4 81.1,61.9 82.0,62.4 82.8,62.9 83.5,63.3 84.2,63.8 84.8,64.4 85.4,65.2 86.0,66.3 86.6,67.3 87.4,68.0 88.5,68.1 89.8,67.9 91.1,67.7 92.0,67.8 92.5,68.5 92.7,69.5 92.7,70.7 92.7,71.8 92.5,72.9 92.3,74.0 92.0,75.1 91.6,76.1 91.0,77.1 90.2,78.1 89.4,78.8 88.8,79.0 88.3,78.5 87.9,77.5 87.5,76.4 86.9,75.9 86.2,76.3 85.3,77.4 84.5,78.4 83.9,79.0 83.6,78.7 83.5,78.0 83.4,77.2 83.2,76.3 82.8,75.4 82.3,74.3 81.7,73.4 81.1,73.1 80.4,73.5 79.7,74.5 79.0,75.6 78.1,76.3 77.0,76.5 75.7,76.5 74.5,76.2 73.8,75.7 73.7,74.9 74.0,73.7 74.5,72.6 74.9,71.6 75.2,70.8 75.5,70.2 75.7,69.7 75.6,69.3 75.0,69.3 74.1,69.4 73.2,69.7 72.8,69.9 73.2,70.2 74.0,70.5 74.9,70.7 75.3,70.8 75.0,70.4 74.2,69.8 73.4,69.2 73.1,68.8 73.6,68.6" fill="none" stroke="var(--s-ctrl)" stroke-width="3.5" stroke-opacity="0.71" stroke-linecap="round" stroke-linejoin="round"/><polyline points="97.2,57.6 96.2,57.3 95.6,57.4 95.5,58.1 95.7,59.3 96.1,60.4 96.8,61.1 97.8,61.2 99.2,60.9 100.5,60.4 101.3,59.8 101.4,58.8 101.0,57.6 100.6,56.4 100.4,55.4 100.8,54.8 101.4,54.3 102.0,54.0 102.2,53.7 101.6,53.6 100.7,53.7 99.7,53.7 99.0,53.6 98.7,53.1 98.7,52.5 98.8,51.9 98.8,51.7" fill="none" stroke="var(--s-ctrl)" stroke-width="3.5" stroke-opacity="0.71" stroke-linecap="round" stroke-linejoin="round"/><polyline points="93.8,55.5 94.0,55.6 93.8,55.0 93.4,53.9 93.1,52.6 93.1,51.7 93.5,51.3 94.2,51.3 95.1,51.2 95.8,50.9 96.7,50.1 97.6,49.1 98.3,48.1 98.8,47.3 98.9,46.8 98.8,46.5 98.4,46.3 97.8,46.1 96.9,45.8 95.7,45.5 94.4,45.4 93.4,45.5 92.8,46.2 92.5,47.2 92.1,48.2 91.6,48.8 90.7,48.7 89.6,48.3 88.5,47.8 87.4,47.6 86.5,47.9" fill="none" stroke="var(--s-ctrl)" stroke-width="3.5" stroke-opacity="0.71" stroke-linecap="round" stroke-linejoin="round"/><polyline points="80.4,36.2 80.3,35.9 79.8,35.4 79.4,34.7 79.4,34.0 80.1,33.3 81.2,32.6 82.3,32.0 83.0,31.8 83.2,32.1 83.0,32.9 82.8,33.8 82.6,34.7 82.6,35.7 82.5,36.8 82.5,37.8 82.9,38.3 83.6,38.3 84.7,37.8 85.8,37.2 86.8,36.7 87.4,36.2 88.0,35.7 88.4,35.3 88.8,35.3 89.1,36.0 89.4,37.2 89.6,38.4 89.8,39.3" fill="none" stroke="var(--s-ctrl)" stroke-width="3.5" stroke-opacity="0.71" stroke-linecap="round" stroke-linejoin="round"/><polyline points="89.8,39.3 93.5,37.3 96.0,40.6 98.7,40.7 96.0,39.5 95.1,42.6" fill="none" stroke="var(--muted)" stroke-width="2.0" stroke-opacity="0.24" stroke-linecap="round" stroke-linejoin="round"/><polyline points="107.0,42.3 111.1,40.6 114.1,43.2 117.2,39.7 114.4,36.2 116.5,34.2 120.6,36.3 124.3,33.8" fill="none" stroke="var(--muted)" stroke-width="2.0" stroke-opacity="0.24" stroke-linecap="round" stroke-linejoin="round"/><polyline points="124.3,33.8 124.6,33.9 125.0,33.9 125.5,34.1 126.1,34.3 127.0,34.7 128.2,35.2 129.2,35.8 129.7,36.4 129.5,37.2 128.8,38.0 127.9,38.9 127.1,39.5 126.3,39.9 125.6,40.2 125.0,40.3 124.9,40.5 125.5,40.6" fill="none" stroke="var(--s-dom2)" stroke-width="3.5" stroke-opacity="0.71" stroke-linecap="round" stroke-linejoin="round"/><polyline points="130.3,42.4 130.6,43.1 130.5,43.8 129.8,44.5 128.7,45.3 127.4,46.0 126.7,46.5 126.4,46.7 126.4,46.8" fill="none" stroke="var(--s-dom2)" stroke-width="3.5" stroke-opacity="0.71" stroke-linecap="round" stroke-linejoin="round"/><polyline points="131.3,50.4 130.8,51.1 130.0,51.7 128.9,52.3" fill="none" stroke="var(--s-dom2)" stroke-width="3.5" stroke-opacity="0.71" stroke-linecap="round" stroke-linejoin="round"/><polyline points="136.9,70.7 135.5,66.2 136.6,65.3" fill="none" stroke="var(--muted)" stroke-width="2.0" stroke-opacity="0.24" stroke-linecap="round" stroke-linejoin="round"/><polyline points="136.6,65.3 137.5,65.6 138.7,66.1 140.1,66.4 141.2,66.4 142.0,65.7 142.8,64.7 143.4,63.6 143.9,62.8" fill="none" stroke="var(--s-dom2)" stroke-width="3.5" stroke-opacity="0.71" stroke-linecap="round" stroke-linejoin="round"/><polyline points="143.9,62.8 148.4,62.5" fill="none" stroke="var(--muted)" stroke-width="2.0" stroke-opacity="0.24" stroke-linecap="round" stroke-linejoin="round"/><polyline points="148.4,62.5 149.0,62.7 149.8,63.1 150.7,63.3 151.3,63.1 151.6,62.3 151.7,61.1 151.9,59.8 152.3,59.1 153.1,59.1 154.3,59.6 155.5,60.3 156.4,60.7 157.0,61.0 157.5,61.2 157.8,61.2 158.3,61.0 158.9,60.4 159.5,59.4 160.1,58.4 160.6,57.7 160.8,57.4 160.8,57.5 160.9,57.6 161.3,57.5 162.1,57.1 163.3,56.6 164.5,56.0 165.4,55.6" fill="none" stroke="var(--s-dom2)" stroke-width="3.5" stroke-opacity="0.71" stroke-linecap="round" stroke-linejoin="round"/><polyline points="177.6,63.9 176.5,64.4 175.6,64.8 175.1,65.0 175.6,65.2 176.5,65.4 177.6,65.3 178.4,64.9 178.9,64.0 179.3,62.7 179.4,61.4 179.2,60.4 178.4,59.8 177.0,59.5 175.7,59.4 174.7,59.5 174.2,60.0 174.0,60.9 174.0,61.7 174.2,62.1 175.0,61.9 176.1,61.3 177.2,60.6 177.8,59.7 177.7,58.7 177.3,57.5 176.7,56.4 175.9,55.6 174.9,55.5 173.6,55.7 172.3,56.1 171.5,56.6 171.4,57.3 171.7,58.2 172.1,58.9 172.5,59.1 172.9,58.5 173.3,57.3 173.6,56.0" fill="none" stroke="var(--s-dom2)" stroke-width="3.5" stroke-opacity="0.71" stroke-linecap="round" stroke-linejoin="round"/><polyline points="167.9,63.8 167.7,63.9 167.4,64.4 166.9,65.3 166.2,66.4 165.5,67.5 165.1,68.3 165.1,68.7 165.4,68.8 165.8,68.8 166.3,68.5 166.9,68.0 167.6,67.1 168.3,66.3 168.7,65.9 168.8,66.0 168.7,66.5 168.5,67.0 168.5,67.2 168.9,66.8 169.6,66.1" fill="none" stroke="var(--s-dom2)" stroke-width="3.5" stroke-opacity="0.71" stroke-linecap="round" stroke-linejoin="round"/><polyline points="165.3,62.2 164.4,62.5 163.9,62.7 163.9,62.6 164.3,62.3 164.7,62.1 164.8,62.1 164.3,62.5 163.5,63.1 162.6,63.8 162.1,64.1 161.9,63.8 162.1,63.2 162.3,62.6 162.3,62.4 162.1,62.8 161.8,63.6 161.4,64.4" fill="none" stroke="var(--s-dom2)" stroke-width="3.5" stroke-opacity="0.71" stroke-linecap="round" stroke-linejoin="round"/><polyline points="162.2,55.4 161.8,55.7 161.2,55.7 160.6,55.5 160.1,54.7 159.4,53.4 159.0,52.1 158.9,51.1 159.5,50.4 160.6,49.9 161.8,49.6 162.9,49.5 163.7,49.8 164.5,50.5 165.1,51.1 165.3,51.4 164.9,51.3 164.0,51.0 163.0,50.4 162.4,49.7 162.2,48.7 162.1,47.4 162.3,46.2 162.7,45.3 163.6,45.0 165.0,44.9 166.3,45.1 167.4,45.4 168.0,46.0 168.5,46.8 168.7,47.6 168.7,48.0 168.2,47.8 167.3,47.2 166.5,46.5 166.2,45.9 166.5,45.2 167.2,44.5 168.1,43.9 169.0,43.6 169.9,43.7 170.8,44.2 171.9,44.7 172.9,45.1 173.9,45.2 174.9,45.1 175.9,45.2 176.7,45.6 177.2,46.5 177.5,47.8 177.7,49.1 178.1,50.0 179.0,50.7" fill="none" stroke="var(--s-dom2)" stroke-width="3.5" stroke-opacity="0.71" stroke-linecap="round" stroke-linejoin="round"/><polyline points="164.6,49.7 164.1,50.4 163.5,50.9 162.5,51.2 161.2,51.3 160.0,51.5 158.9,51.8 158.0,52.4 157.2,53.1 156.5,53.9 156.0,54.7 155.7,55.7 155.8,56.9 155.7,58.0 155.4,58.8 154.5,59.0 153.3,58.8 152.1,58.6 151.4,58.9" fill="none" stroke="var(--s-dom2)" stroke-width="3.5" stroke-opacity="0.71" stroke-linecap="round" stroke-linejoin="round"/><polyline points="154.4,71.9 150.1,73.5 150.6,77.7" fill="none" stroke="var(--muted)" stroke-width="2.0" stroke-opacity="0.24" stroke-linecap="round" stroke-linejoin="round"/><polyline points="148.8,113.8 145.5,113.6 142.8,112.5 139.1,111.0 135.9,109.0 131.9,107.0 129.1,103.5 127.0,99.9 125.1,96.3 122.3,93.3 121.0,89.0 120.4,86.0 122.1,82.1" fill="none" stroke="var(--muted)" stroke-width="2.0" stroke-opacity="0.24" stroke-linecap="round" stroke-linejoin="round"/><polyline points="107.1,137.5 109.5,138.1 112.7,136.3 115.0,135.9 116.1,134.5 115.4,132.9" fill="none" stroke="var(--muted)" stroke-width="2.0" stroke-opacity="0.24" stroke-linecap="round" stroke-linejoin="round"/><polyline points="79.3,51.9 78.2,51.6 77.2,51.2 76.4,50.8 75.8,50.1" fill="none" stroke="var(--s-ctrl)" stroke-width="3.8" stroke-opacity="0.79" stroke-linecap="round" stroke-linejoin="round"/><polyline points="72.7,61.8 72.5,60.6 72.2,60.1 71.9,60.3 71.6,61.1 71.2,62.1 70.6,63.0 69.7,63.6 68.5,64.2 67.4,64.8 66.7,65.4 66.5,66.0 66.8,66.7 67.1,67.1 67.3,67.1 67.1,66.4" fill="none" stroke="var(--s-ctrl)" stroke-width="3.8" stroke-opacity="0.79" stroke-linecap="round" stroke-linejoin="round"/><polyline points="98.8,51.7 98.7,52.0 98.6,52.7 98.4,53.4 97.9,53.9 96.9,53.9 95.5,53.7 94.2,53.5 93.3,53.5 93.2,54.0 93.5,54.8 93.8,55.5" fill="none" stroke="var(--s-ctrl)" stroke-width="3.8" stroke-opacity="0.79" stroke-linecap="round" stroke-linejoin="round"/><polyline points="173.6,56.0 173.4,55.1 172.6,54.5 171.2,54.2 169.9,54.1 168.8,54.3 168.2,55.0 167.9,56.0 167.7,57.3 167.5,58.5 167.5,59.7 167.7,61.0 167.9,62.1 167.9,63.1 167.9,63.6 167.9,63.8" fill="none" stroke="var(--s-dom2)" stroke-width="3.8" stroke-opacity="0.79" stroke-linecap="round" stroke-linejoin="round"/><polyline points="161.4,64.4 160.9,64.6 160.4,64.1 159.9,63.0 159.3,61.8 158.7,60.7 158.0,59.9 157.1,59.2 156.4,58.4 156.1,57.6 156.2,56.7 156.6,55.6 157.2,54.6 157.9,54.1 158.9,54.0 160.3,54.4 161.5,54.8 162.2,55.2 162.2,55.4" fill="none" stroke="var(--s-dom2)" stroke-width="3.8" stroke-opacity="0.79" stroke-linecap="round" stroke-linejoin="round"/><polyline points="122.1,82.1 119.3,79.4 121.0,76.2 123.7,72.5 123.7,68.3 123.6,66.8 127.8,65.0 130.2,61.9 130.3,58.0 133.4,54.6 134.2,50.9 133.7,46.7 133.6,42.4 131.8,39.2 128.8,35.9 124.7,34.6 123.2,36.3" fill="none" stroke="var(--muted)" stroke-width="2.2" stroke-opacity="0.27" stroke-linecap="round" stroke-linejoin="round"/><polyline points="78.2,132.1 82.6,132.8 85.1,135.7 88.1,136.6 92.7,136.8 95.5,138.5 99.7,138.5 103.4,138.9 107.1,137.5" fill="none" stroke="var(--muted)" stroke-width="2.2" stroke-opacity="0.27" stroke-linecap="round" stroke-linejoin="round"/><polyline points="123.2,36.3 120.4,33.7 116.2,34.8 114.6,38.0 114.8,40.0 115.5,38.0 112.4,38.0" fill="none" stroke="var(--muted)" stroke-width="2.4" stroke-opacity="0.30" stroke-linecap="round" stroke-linejoin="round"/><polyline points="67.4,113.0 69.5,116.8 68.0,119.6 70.1,122.9 70.4,124.8 73.6,128.0 74.8,130.2 78.2,132.1" fill="none" stroke="var(--muted)" stroke-width="2.4" stroke-opacity="0.30" stroke-linecap="round" stroke-linejoin="round"/><polyline points="112.4,38.0 110.6,41.5 111.0,40.6 112.1,37.3 110.3,34.4 107.0,32.9 105.9,28.6 104.3,24.7 100.2,23.3 98.0,19.3 95.1,16.5 92.5,14.7 87.9,15.1 84.4,13.1 80.0,13.9 76.3,15.1 72.9,18.1 69.0,19.7 66.6,23.2 64.8,27.2 64.0,30.5 61.9,34.6 62.4,38.3 59.4,41.8 60.2,46.0 57.3,49.4 56.6,53.9 53.8,56.8 54.0,61.0 52.7,65.2 52.9,69.0 53.8,73.4 55.0,76.6 55.6,80.6 58.3,84.3 59.1,88.5 62.0,91.8 65.0,95.1 64.9,99.2 68.2,102.4 68.2,106.9 69.7,109.8 67.4,113.0" fill="none" stroke="var(--muted)" stroke-width="2.6" stroke-opacity="0.33" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <text class="sub" x="718" y="270" style="fill:var(--ink);font-size:10.5px" font-weight="650">Real structure &middot; PPIL4</text>
+        <text class="sub" x="718" y="288" style="font-size:9.5px">AlphaFold model (Q8WUA2), <tspan style="fill:var(--ink)" font-weight="650">492 residues</tspan></text>
+        <text class="sub" x="718" y="306" style="font-size:9.5px"><tspan style="fill:var(--s-ctrl)" font-weight="700">■</tspan> cyclophilin 1&ndash;187&#12288;<tspan style="fill:var(--s-dom2)" font-weight="700">■</tspan> RRM 204&ndash;317</text>
+        <text class="sub" x="718" y="322" style="font-size:9.5px"><tspan style="fill:var(--muted)" font-weight="700">■</tspan> low confidence, pLDDT &lt; 70 &mdash; 199 residues, 40%</text>
+        <text class="sub" x="718" y="340" style="font-size:9px">each panel scaled independently</text>
+      </svg></div>
+      </figure>
+
+
       <div class="sec-head" style="padding-top:14px">
         <h2 class="serif">The calibration set, and the structure it is all scored against</h2>
         <p class="caption">
@@ -782,6 +994,30 @@
           is the ground truth the whole method is checked against.
         </p>
       </div>
+
+      <figure class="mechfig sm">
+        <h3>The corner both known molecules miss</h3>
+        <p class="caption">FPFT-2216 degrades PPIL4 but also IKZF1/3, CK1&alpha;, PDE6D and DTWD1. Z6466608628 is selective but barely degrades. Selective <em>and</em> potent is empty.</p>
+        <div class="fw"><svg class="fx" viewBox="0 0 380 250" role="img" aria-label="Potency against selectivity: the potent-and-selective corner is empty">
+            <line x1="56" y1="216" x2="360" y2="216" stroke="var(--rule)" stroke-width="1.2"/>
+            <line x1="56" y1="216" x2="56" y2="14" stroke="var(--rule)" stroke-width="1.2"/>
+            <line x1="208" y1="14" x2="208" y2="216" stroke="var(--hair)" stroke-dasharray="3 3"/>
+            <line x1="56" y1="115" x2="360" y2="115" stroke="var(--hair)" stroke-dasharray="3 3"/>
+            <rect x="208" y="14" width="152" height="101" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="5 4"/>
+            <text class="lbl" x="284" y="52" text-anchor="middle" style="fill:var(--accent);font-size:12.5px">Empty</text>
+            <text class="sub" x="284" y="72" text-anchor="middle" style="fill:var(--accent);font-size:10.5px">selective AND potent</text>
+            <text class="sub" x="284" y="88" text-anchor="middle" style="font-size:10px">&larr; what we aim to fill</text>
+            <circle cx="118" cy="52" r="6" fill="var(--s-ctrl)"/>
+            <text class="sub" x="132" y="50" style="fill:var(--ink);font-size:10.5px">FPFT-2216</text>
+            <text class="sub" x="132" y="64" style="font-size:9.5px">not selective</text>
+            <circle cx="272" cy="178" r="6" fill="var(--s-ctrl)"/>
+            <text class="sub" x="286" y="176" style="fill:var(--ink);font-size:10.5px">Z6466608628</text>
+            <text class="sub" x="286" y="190" style="font-size:9.5px">selective, weak</text>
+            <text class="sub" x="208" y="238" text-anchor="middle" style="font-size:10.5px">selectivity &rarr;</text>
+            <text class="sub" x="18" y="115" style="font-size:10.5px" transform="rotate(-90 18 115)" text-anchor="middle">potency &rarr;</text>
+          </svg></div>
+      </figure>
+
       <div class="panels">
 <!-- CONTROL-PANELS:START (generated by 14_build_candidate_panels) -->
 <details class="cand ref" id="c-9DWV_reference">
@@ -2628,6 +2864,64 @@ L 75.2 51.5
           restraint file identical for every molecule, a fixed random seed, fixed input structures, a
           pinned HADDOCK3 version, and a fixed output schema.
         </p>
+      </div>
+
+      <figure class="mechfig md">
+        <h3>Without the ligand, molecules are invisible to the score</h3>
+        <p class="caption">Sharing one warhead, they collapse onto a single number &mdash; two pairs agreed to three decimals. Only the ligand-inclusive stage separates them.</p>
+        <div class="fw"><svg class="fx" viewBox="0 0 470 92" role="img" aria-label="Without the ligand different molecules collapse to one score; with it the scores separate">
+          <text class="sub" x="0" y="16" style="font-size:10.5px">Earlier stage (no ligand):</text>
+          <circle cx="118" cy="36" r="7" fill="var(--muted)"/><circle cx="130" cy="36" r="7" fill="var(--muted)"/>
+          <circle cx="142" cy="36" r="7" fill="var(--muted)"/><circle cx="154" cy="36" r="7" fill="var(--muted)"/>
+          <text class="sub mono" x="174" y="40" style="fill:var(--ink);font-size:10.5px">all &minus;144.986</text>
+          <text class="sub" x="300" y="40" style="fill:var(--s-cross);font-size:10px" font-weight="650">identical to 3 decimals</text>
+          <text class="sub" x="0" y="76" style="font-size:10.5px">Final stage (ligand in):</text>
+          <circle cx="118" cy="72" r="7" fill="var(--s-cand)"/><circle cx="186" cy="72" r="7" fill="var(--s-cand)"/>
+          <circle cx="258" cy="72" r="7" fill="var(--s-cand)"/><circle cx="330" cy="72" r="7" fill="var(--s-cand)"/>
+          <line x1="112" y1="86" x2="360" y2="86" stroke="var(--rule)"/>
+          <text class="sub" x="372" y="76" style="fill:var(--accent);font-size:10px">scores separate</text>
+        </svg></div>
+      </figure>
+
+      <figure class="mechfig md">
+        <h3>The interface has to be earned, not imposed</h3>
+        <p class="caption">No restraint is written between CRBN and PPIL4. The complex can only close through the ligand &mdash; otherwise every molecule would &ldquo;fit&rdquo; and the ranking would mean nothing.</p>
+        <div class="fw"><svg class="fx" viewBox="0 0 470 106" role="img" aria-label="No restraint is written between CRBN and PPIL4 - the only link is the designed molecule">
+          <ellipse cx="88" cy="52" rx="62" ry="38" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
+          <text class="lbl" x="88" y="57" text-anchor="middle" style="fill:var(--accent)">CRBN</text>
+          <ellipse cx="336" cy="52" rx="62" ry="38" fill="none" stroke="var(--s-ctrl)" stroke-width="1.4" stroke-dasharray="5 4"/>
+          <text class="lbl" x="336" y="57" text-anchor="middle" style="fill:var(--s-ctrl)">PPIL4</text>
+          <path d="M232 52 l-11 -17 h-20 l-11 17 l11 17 h20 z" fill="var(--s-cand)"/>
+          <path d="M150 52 L190 52 M232 52 L274 52" stroke="var(--s-cand)" stroke-width="2"/>
+          <path d="M150 18 C200 2 262 2 274 18" fill="none" stroke="var(--s-cross)" stroke-width="1.4" stroke-dasharray="4 3"/>
+          <line x1="200" y1="4" x2="224" y2="24" stroke="var(--s-cross)" stroke-width="2"/>
+          <line x1="224" y1="4" x2="200" y2="24" stroke="var(--s-cross)" stroke-width="2"/>
+          <text class="sub" x="212" y="92" text-anchor="middle" style="fill:var(--accent);font-size:10px">the only link: the designed molecule</text>
+          <text class="sub" x="412" y="20" text-anchor="middle" style="fill:var(--s-cross);font-size:10px">no such link</text>
+        </svg></div>
+      </figure>
+
+      <figure class="mechfig md">
+        <h3>All 27 runs execute one pinned protocol</h3>
+        <p class="caption">Same restraint file, same seed, same ligand topology, same versions &mdash; so the same molecule gives the same number on any machine.</p>
+        <div class="fw"><svg class="fx" viewBox="0 0 470 62" role="img" aria-label="Four pinned inputs: interface hints, random seed, ligand build, and versions">
+          <rect x="0" y="4" width="112" height="40" rx="3" fill="var(--panel)" stroke="var(--accent)" stroke-width="1.2"/>
+          <text class="sub" x="56" y="21" text-anchor="middle" style="fill:var(--ink);font-size:9px">same interface hints</text>
+          <text class="sub mono" x="56" y="35" text-anchor="middle" style="font-size:9px">23, shared by all</text>
+          <rect x="120" y="4" width="104" height="40" rx="3" fill="var(--panel)" stroke="var(--accent)" stroke-width="1.2"/>
+          <text class="sub" x="172" y="21" text-anchor="middle" style="fill:var(--ink);font-size:9px">same random seed</text>
+          <text class="sub mono" x="172" y="35" text-anchor="middle" style="font-size:9px">iniseed = 42</text>
+          <rect x="232" y="4" width="110" height="40" rx="3" fill="var(--panel)" stroke="var(--accent)" stroke-width="1.2"/>
+          <text class="sub" x="287" y="21" text-anchor="middle" style="fill:var(--ink);font-size:9px">same ligand build</text>
+          <text class="sub mono" x="287" y="35" text-anchor="middle" style="font-size:9px">PRODRG, autobuild off</text>
+          <rect x="350" y="4" width="120" height="40" rx="3" fill="var(--panel)" stroke="var(--accent)" stroke-width="1.2"/>
+          <text class="sub" x="410" y="21" text-anchor="middle" style="fill:var(--ink);font-size:9px">same inputs &amp; versions</text>
+          <text class="sub" x="410" y="35" text-anchor="middle" style="font-size:9px">all pinned</text>
+          <text class="sub" x="235" y="58" text-anchor="middle" style="fill:var(--accent);font-size:10px" font-weight="650">same molecule &rarr; same number, on any machine, by anyone</text>
+        </svg></div>
+      </figure>
+
+      <div class="col stack">
         <p>
           The restraints deserve specific mention. Earlier versions derived the CRBN-side contact
           residues from <em>each candidate's own</em> docked pose, which quietly leaked pose noise into
@@ -2700,6 +2994,54 @@ L 75.2 51.5
         </p>
         <p>This section will be filled in once wet lab work begins.</p>
       </div>
+
+      <figure class="mechfig">
+        <h3>What validation would have to establish</h3>
+        <p class="caption">Three gates in order, each harder than the last &mdash; plus two controls still owed on the computational side.</p>
+        <div class="fw"><svg class="fx" viewBox="0 0 1030 152" role="img" aria-label="Three wet-lab stages - degradation, selectivity, RAS dependence - and two outstanding computational controls">
+        <defs>
+          <marker id="a6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0 0 L10 5 L0 10 z" fill="var(--accent)"/>
+          </marker>
+        </defs>
+        <line x1="16" y1="70" x2="812" y2="70" stroke="var(--hair)" stroke-width="2"/>
+        <g>
+          <circle cx="130" cy="70" r="15" fill="var(--accent)"/>
+          <text class="lbl" x="130" y="75" text-anchor="middle" style="fill:#fff;font-size:13px">1</text>
+          <text class="lbl" x="130" y="36" text-anchor="middle">Degradation in cells</text>
+          <text class="sub" x="130" y="104" text-anchor="middle" style="font-size:10.5px">HiBiT / Western</text>
+          <text class="sub" x="130" y="120" text-anchor="middle" style="font-size:10.5px">measure DC&#8325;&#8320; and D<tspan baseline-shift="sub" font-size="8">max</tspan></text>
+          <text class="sub" x="130" y="140" text-anchor="middle" style="fill:var(--s-cross);font-size:10px" font-weight="650">the first pass/fail gate</text>
+        </g>
+        <path d="M160 70 L400 70" stroke="var(--accent)" stroke-width="1.4" marker-end="url(#a6)"/>
+        <g>
+          <circle cx="430" cy="70" r="15" fill="var(--accent)"/>
+          <text class="lbl" x="430" y="75" text-anchor="middle" style="fill:#fff;font-size:13px">2</text>
+          <text class="lbl" x="430" y="36" text-anchor="middle">Selectivity</text>
+          <text class="sub" x="430" y="104" text-anchor="middle" style="font-size:10.5px">whole-proteome, focused controls</text>
+          <text class="sub" x="430" y="120" text-anchor="middle" style="font-size:10.5px">IKZF1/3 · CK1α · PDE6D · DTWD1</text>
+          <text class="sub" x="430" y="140" text-anchor="middle" style="fill:var(--accent);font-size:10px" font-weight="650">what the whole project is for</text>
+        </g>
+        <path d="M460 70 L700 70" stroke="var(--accent)" stroke-width="1.4" marker-end="url(#a6)"/>
+        <g>
+          <circle cx="730" cy="70" r="15" fill="var(--accent)"/>
+          <text class="lbl" x="730" y="75" text-anchor="middle" style="fill:#fff;font-size:13px">3</text>
+          <text class="lbl" x="730" y="36" text-anchor="middle">RAS-dependence hypothesis</text>
+          <text class="sub" x="730" y="104" text-anchor="middle" style="font-size:10.5px">RAS on/off isogenic lines</text>
+          <text class="sub" x="730" y="120" text-anchor="middle" style="font-size:10.5px">+ splicing readout at a <tspan font-weight="650" fill="var(--ink)">sublethal dose</tspan></text>
+          <text class="sub" x="730" y="140" text-anchor="middle" style="fill:var(--s-cross);font-size:10px" font-weight="650">the least evidenced step of all</text>
+        </g>
+        <line x1="838" y1="20" x2="838" y2="140" stroke="var(--hair)"/>
+        <text class="sub" x="854" y="40" style="fill:var(--ink);font-size:11px" font-weight="650">Still outstanding</text>
+        <text class="sub" x="854" y="62" style="font-size:10.5px">&middot; a neutral-restraint control:</text>
+        <text class="sub" x="854" y="78" style="font-size:10.5px">&#12288;can it find the interface</text>
+        <text class="sub" x="854" y="94" style="font-size:10.5px">&#12288;without being told by 9DWV</text>
+        <text class="sub" x="854" y="116" style="font-size:10.5px">&middot; re-run the other screen&rsquo;s</text>
+        <text class="sub" x="854" y="132" style="font-size:10.5px">&#12288;molecules under v1</text>
+      </svg></div>
+      </figure>
+
+
     </section>
 
     <section id="results">
@@ -2856,6 +3198,26 @@ L 75.2 51.5
           CAPRI &ldquo;acceptable&rdquo; threshold of 0.23, with an interface RMSD of
           2.07&nbsp;&Aring; and 64.7% of native contacts recovered.
         </p>
+      </div>
+
+      <figure class="mechfig md">
+        <h3>Agreement with the experimental structure</h3>
+        <p class="caption">0.23 is the CAPRI &ldquo;acceptable&rdquo; threshold. FPFT-2216 reaches 0.376 &mdash; the highest of the 24 molecules docked. It validates the <em>method</em>, not any candidate.</p>
+        <div class="fw"><svg class="fx" viewBox="0 0 470 88" role="img" aria-label="Agreement with the real structure: 0.23 is the pass mark, FPFT-2216 reaches 0.376">
+          <rect x="0" y="18" width="470" height="20" rx="3" fill="var(--sunk)"/>
+          <rect x="0" y="18" width="108" height="20" rx="3" fill="var(--warn-bg)"/>
+          <line x1="108" y1="12" x2="108" y2="44" stroke="var(--ink)" stroke-width="1.3" stroke-dasharray="4 3"/>
+          <text class="sub mono" x="108" y="10" text-anchor="middle" style="fill:var(--ink);font-size:9px">0.23 pass mark</text>
+          <text class="sub" x="54" y="32" text-anchor="middle" style="fill:var(--s-cross);font-size:9px">fail</text>
+          <text class="sub" x="300" y="32" text-anchor="middle" style="fill:var(--accent);font-size:9px">counts as reproducing the real structure</text>
+          <circle cx="177" cy="28" r="8" fill="var(--accent)"/>
+          <line x1="177" y1="38" x2="177" y2="50" stroke="var(--accent)" stroke-width="1.2"/>
+          <text class="lbl mono" x="177" y="66" text-anchor="middle" style="fill:var(--accent);font-size:14px">0.376</text>
+          <text class="sub" x="0" y="84" style="font-size:10px">How closely FPFT-2216 reproduces 9DWV &mdash; <tspan style="fill:var(--ink)" font-weight="650">highest</tspan> of the 24 docked</text>
+        </svg></div>
+      </figure>
+
+      <div class="col stack">
         <p>
           That validates the <em>method</em>, and only the method. It is one data point, and it says
           nothing about whether any individual candidate is a real degrader. It is also partly circular:
