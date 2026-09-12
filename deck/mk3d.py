@@ -88,10 +88,17 @@ print("ZF: %d residues %d-%d, %d Zn, clamped by %s"
 
 P = np.array([c[1] for c in ca]); R = frame(P); mu = P.mean(0)
 pj = lambda X_: (np.atleast_2d(X_) - mu) @ R.T
-strands = [(catmull(pj(P), 5), "--s-ctrl", 1.0, 1.0)]
+nums = np.array([c[0] for c in ca]); Q = pj(P)
+# ββα: CA(i)-CA(i+4) is ~12 A through 420 and ~6.3 A from 421 on, so the helix starts at 421.
+# The two Cys sit in the hairpin, the two His in the helix - that is what makes it C2H2.
+HELIX = 421
+strands = [(catmull(Q[nums <= HELIX], 5), "--accent",  1.0, 1.0),   # beta hairpin: what CRBN reads
+           (catmull(Q[nums >= HELIX], 5), "--s-ctrl", 1.0, 1.0)]    # alpha helix
 for rn, res, xyz in coord:
     b = [c[1] for c in ca if c[0] == rn]
-    if b: strands.append((pj(np.vstack([b[0], xyz])), "--muted", .95, .62))
+    col = "--accent" if res == "CYS" else "--s-ctrl"                 # colour each side chain like its element
+    if b: strands.append((pj(np.vstack([b[0], xyz])), col, .95, .70))
+print("  hairpin %d-%d, helix %d-%d" % (nums.min(), HELIX-1, HELIX, nums.max()))
 zf_body, Xf, scf = emit(strands, [(pj(z)[0], 1.5, "--s-cross") for z in zn], 214, 152, 15, (2.3, 5.2))
 ZNXY = Xf(pj(zn[0])[0])
 zf = zf_body
@@ -103,15 +110,23 @@ P4 = np.array([c[1] for c in ca4]); B4 = np.array([c[2] for c in ca4])
 core = P4[B4 >= 70]
 R4 = frame(core); mu4 = core.mean(0)
 Q = (P4 - mu4) @ R4.T
-runs, cur, curc = [], [0], bool(B4[0] >= 70)
+# two folded modules, 67 A apart by 2-means on the confident CAs:
+# the N-terminal cyclophilin/PPIase domain and an RRM. Everything else is low-confidence.
+N4 = np.array([c[0] for c in ca4])
+def label(i):
+    if B4[i] < 70: return "dis"
+    return "cyp" if N4[i] <= 187 else ("rrm" if N4[i] >= 204 else "dis")
+STYLE = {"cyp": ("--s-ctrl", 1.0, 1.0), "rrm": ("--s-dom2", 1.0, 1.0), "dis": ("--muted", .34, .58)}
+runs, cur, curl = [], [0], label(0)
 for i in range(1, len(Q)):
-    c = bool(B4[i] >= 70)
-    if c != curc: cur.append(i); runs.append((cur, curc)); cur, curc = [i], c
+    l = label(i)
+    if l != curl: cur.append(i); runs.append((cur, curl)); cur, curl = [i], l
     else: cur.append(i)
-runs.append((cur, curc))
-s4 = [(catmull(Q[idx], 4 if conf else 1), "--s-ctrl" if conf else "--muted",
-       1.0 if conf else .34, 1.0 if conf else .58)
-      for idx, conf in runs if len(idx) > 1]
+runs.append((cur, curl))
+s4 = [(catmull(Q[idx], 4 if lab != "dis" else 1), *STYLE[lab]) for idx, lab in runs if len(idx) > 1]
+for lab in ("cyp", "rrm", "dis"):
+    k = [N4[i] for i in range(len(N4)) if label(i) == lab]
+    print("  %-4s %d residues (%d-%d)" % (lab, len(k), min(k), max(k)))
 p4_body, _, _ = emit(s4, [], 234, 152, 11, (2.0, 4.6))
 p4 = p4_body
 print("PPIL4: %d residues, %d confident (%.0f%%), %d disordered"

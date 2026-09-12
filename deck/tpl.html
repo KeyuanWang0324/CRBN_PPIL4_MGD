@@ -9,7 +9,7 @@
   --ink:#141A19; --body:#3A4442; --muted:#626D6B;
   --rule:#D8DEDC; --hair:#E6EAE9;
   --accent:#12695E; --accent-soft:#12695E1A;
-  --s-cand:#0d8a76; --s-ctrl:#4a3aa7; --s-cross:#9C6B15;
+  --s-cand:#0d8a76; --s-ctrl:#4a3aa7; --s-cross:#9C6B15; --s-dom2:#A8365C;
   --warn-bg:#9C6B1514;
   --shadow:0 1px 2px rgba(20,26,25,.05), 0 8px 24px rgba(20,26,25,.06);
 }
@@ -19,7 +19,7 @@
     --ink:#EAF0EE; --body:#B9C4C1; --muted:#8B9794;
     --rule:#26312F; --hair:#1D2725;
     --accent:#5FBCAE; --accent-soft:#5FBCAE1A;
-    --s-cand:#32a08e; --s-ctrl:#9085e9; --s-cross:#b58a33;
+    --s-cand:#32a08e; --s-ctrl:#9085e9; --s-cross:#b58a33; --s-dom2:#E58CA8;
     --warn-bg:#b58a3316;
     --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
   }
@@ -29,7 +29,7 @@
   --ink:#EAF0EE; --body:#B9C4C1; --muted:#8B9794;
   --rule:#26312F; --hair:#1D2725;
   --accent:#5FBCAE; --accent-soft:#5FBCAE1A;
-  --s-cand:#32a08e; --s-ctrl:#9085e9; --s-cross:#b58a33;
+  --s-cand:#32a08e; --s-ctrl:#9085e9; --s-cross:#b58a33; --s-dom2:#E58CA8;
   --warn-bg:#b58a3316;
   --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
 }
@@ -572,7 +572,6 @@ svg.mol{width:100%; height:auto; display:block; color:var(--ink)}
   <section class="slide" data-act="背景">
     <div class="eyebrow"><span class="num mn">06</span><span>背景 · 缺口与假设</span></div>
     <h2 class="sf">已知的两个分子,恰好各缺一半</h2>
-    <p class="lede sm" style="margin-top:6px; max-width:none">这一页的"强"和"专"讲的都是<strong>细胞里的药理表现</strong> —— 不是本项目算出来的对接分数。两根轴在<span class="mn">第 11 页</span>会明确分开。</p>
 
     <div style="display:grid; grid-template-columns:.31fr .31fr .38fr; gap:16px; margin-top:12px; align-items:start">
       <div class="panel stack" style="gap:6px">
@@ -590,7 +589,7 @@ svg.mol{width:100%; height:auto; display:block; color:var(--ink)}
         </div>
         <figure class="molbox" style="padding:2px 6px">__FIG_z646__</figure>
         <p class="sm">已报道的 PPIL4 <strong>选择性</strong>分子胶（Enamine）:招募 PPIL4 的 EC<sub>50</sub> 为 <span class="mn">0.34 µM</span>,但降解程度有限,论文自己把它定位成<strong>待优化的先导物</strong>。</p>
-        <p class="xs"><strong>30 个重原子</strong>,和我们候选分子(30–34)完全同量级 —— 所以<span class="mn">第 11 页</span>的门槛画在它身上,而不是画在 FPFT-2216 身上。</p>
+        <p class="xs"><strong>30 个重原子</strong>,和我们候选分子(30–34)完全同量级 —— 所以门槛画在它身上,而不是画在 FPFT-2216 身上。</p>
       </div>
 
       <div class="stack" style="gap:10px">
@@ -688,18 +687,17 @@ svg.mol{width:100%; height:auto; display:block; color:var(--ink)}
         <svg x="22" y="246" width="160" height="113" viewBox="0 0 214 152" preserveAspectRatio="xMidYMid meet">__FIG_zf3d__</svg>
         <text class="sub" x="194" y="270" style="fill:var(--ink);font-size:10.5px" font-weight="650">真实结构 · SALL4 锌指</text>
         <text class="sub" x="194" y="288" style="font-size:9.5px">与 CRBN 共结晶的 C2H2 锌指,<tspan style="fill:var(--ink)" font-weight="650">24 个残基</tspan></text>
-        <text class="sub" x="194" y="304" style="font-size:9.5px">Cys412 · Cys415 · His428 · His432 四条侧链</text>
-        <text class="sub" x="194" y="320" style="font-size:9.5px">夹住一个 <tspan style="fill:var(--s-cross)" font-weight="650">Zn²⁺</tspan>(琥珀色球),折叠才立得住</text>
-        <text class="sub" x="194" y="340" style="font-size:9px">紫色 = 主链走向,深浅表示远近</text>
+        <text class="sub" x="194" y="306" style="font-size:9.5px"><tspan style="fill:var(--accent)" font-weight="700">■</tspan> β 发夹 409–420　<tspan style="fill:var(--s-ctrl)" font-weight="700">■</tspan> α 螺旋 421–432</text>
+        <text class="sub" x="194" y="322" style="font-size:9.5px"><tspan style="fill:var(--s-cross)" font-weight="700">●</tspan> Zn²⁺ 由 Cys412/415 与 His428/432 夹住</text>
 
         <path d="M530 240 L1006 240" stroke="var(--hair)" stroke-width="1"/>
         <rect x="528" y="246" width="178" height="113" rx="3" fill="var(--panel)"/>
         <svg x="528" y="246" width="178" height="113" viewBox="0 0 234 152" preserveAspectRatio="xMidYMid meet">__FIG_ppil43d__</svg>
         <text class="sub" x="718" y="270" style="fill:var(--ink);font-size:10.5px" font-weight="650">真实结构 · PPIL4</text>
         <text class="sub" x="718" y="288" style="font-size:9.5px">AlphaFold 模型 (Q8WUA2),<tspan style="fill:var(--ink)" font-weight="650">492 个残基</tspan></text>
-        <text class="sub" x="718" y="304" style="font-size:9.5px">灰色 = AlphaFold 低置信区(pLDDT &lt; 70),占 40%</text>
-        <text class="sub" x="718" y="320" style="font-size:9.5px">没有锌、没有 β 发夹 —— 折叠域外还挂着一大段无序区</text>
-        <text class="sub" x="718" y="340" style="font-size:9px">两图各自缩放,不是同一比例</text>
+        <text class="sub" x="718" y="306" style="font-size:9.5px"><tspan style="fill:var(--s-ctrl)" font-weight="700">■</tspan> 亲环蛋白域 1–187　<tspan style="fill:var(--s-dom2)" font-weight="700">■</tspan> RRM 204–317</text>
+        <text class="sub" x="718" y="322" style="font-size:9.5px"><tspan style="fill:var(--muted)" font-weight="700">■</tspan> 低置信区 pLDDT &lt; 70 —— 199 个残基,占 40%</text>
+        <text class="sub" x="718" y="340" style="font-size:9px">两图各自缩放,非同一比例</text>
       </svg>
     </figure>
 
@@ -1014,10 +1012,6 @@ svg.mol{width:100%; height:auto; display:block; color:var(--ink)}
       </div>
       <div class="stack" style="gap:9px">
         <div class="panel stack" style="gap:5px; padding:11px 13px">
-          <h3>关键来源<span class="tag soft" style="margin-left:8px">完整列表见下一页</span></h3>
-          <p class="sm">PDB <span class="mn">9DWV</span> — CRBN–FPFT-2216–PPIL4 三元复合物<br>Petzold, Gainza 等,<em style="color:var(--body)">Science</em> 2025 — CRBN 底物空间与 PPIL4<br>Sievers 等,<em style="color:var(--body)">Science</em> 2018 — 人类 6,572 个锌指的降解组<br>Nature 2015 — MYC 的剪接体成瘾　·　DepMap — 共依赖分析</p>
-        </div>
-        <div class="panel stack" style="gap:5px; padding:11px 13px">
           <h3>工具</h3>
           <p class="sm mn" style="line-height:1.75">RDKit · scikit-learn · ChEMBL · AutoDock Vina · Meeko<br>HADDOCK3 2026.7.0 · PRODRG · CNS · PyMOL · AlphaFold</p>
         </div>
@@ -1028,12 +1022,11 @@ svg.mol{width:100%; height:auto; display:block; color:var(--ink)}
   <section class="slide" data-act="">
     <div class="eyebrow"><span class="num mn">14</span><span>参考文献 · 来源与工具</span></div>
     <h2 class="sf">这个项目建立在什么之上</h2>
-    <p class="lede sm" style="margin-top:5px; max-width:none">哈佛格式,带 <span class="mn">doi</span> 的可直接检索原文。其中 4 条(SALL4 共结晶、Sievers 2018、CNS、Meeko)是幻灯片引用、但网站参考文献页尚未收录的来源。</p>
     <div class="refs">
       <div class="g">
         <h4>靶点、前人工作与依据<span class="en"> · Target, prior art and rationale</span></h4>
         <p>Baek, K., Metivier, R.J., Roy Burman, S.S., Bushman, J.W., Yoon, H., Lumpkin, R.J., Abeja, D.M., Lakshminarayan, M., Yue, H., Ojeda, S., Verano, A.L., Gray, N.S., Donovan, K.A. and Fischer, E.S. (2025) &lsquo;Unveiling the hidden interactome of CRBN molecular glues&rsquo;, <em>Nature Communications</em>, 16, 6831. doi:&nbsp;10.1038/s41467-025-62099-w.</p>
-        <p><em>CRBN&ndash;thalidomide&ndash;SALL4 ternary co-crystal</em> (ligand EF2). Project input structure; the fixed CRBN degron-pocket residues were derived from it, and it is the zinc-finger backbone shown on slide&nbsp;07. (PDB accession not recorded in this repository.)</p>
+        <p><em>CRBN&ndash;thalidomide&ndash;SALL4 ternary co-crystal</em> (ligand EF2). Project structure file; no accession recorded.</p>
         <p>Hsu, T.Y. et&nbsp;al. (2015) &lsquo;The spliceosome is a therapeutic vulnerability in MYC-driven cancer&rsquo;, <em>Nature</em>, 525(7569), pp.&nbsp;384&ndash;388. doi:&nbsp;10.1038/nature14985.</p>
         <p>Petzold, G., Gainza, P. et&nbsp;al. (2025) &lsquo;Mining the CRBN target space redefines rules for molecular glue&ndash;induced neosubstrate recognition&rsquo;, <em>Science</em>, 389(6755). doi:&nbsp;10.1126/science.adt6736.</p>
         <p>RCSB Protein Data Bank (2025) <em>Entry 9DWV: cereblon&ndash;FPFT-2216&ndash;PPIL4 ternary complex</em>. Available at: https://www.rcsb.org/structure/9DWV (Accessed: 2 September 2026).</p>
