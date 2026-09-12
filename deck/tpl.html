@@ -133,6 +133,11 @@ svg.mol{width:100%; height:auto; display:block; color:var(--ink)}
 .fbar .fill{position:absolute; left:0; top:0; bottom:0; background:var(--accent); opacity:.16}
 .fbar .n{position:relative; font-size:15px; color:var(--ink); font-weight:600; min-width:54px}
 .fbar .d{position:relative; font-size:12px; color:var(--body)}
+.funnel.big{gap:7px}
+.funnel.big .fbar{height:46px}
+.funnel.big .fbar .n{font-size:17px; min-width:64px}
+.funnel.big .fbar .d{font-size:13.5px}
+.funnel.big .fstep .stg{font-size:12px}
 
 /* matrix */
 .mx{display:grid; grid-template-columns:18px 1fr 54px repeat(3,20px); gap:0 9px; align-items:center;
@@ -425,14 +430,13 @@ svg.mol{width:100%; height:auto; display:block; color:var(--ink)}
 
     <div class="grid2" style="margin-top:12px; align-items:start; grid-template-columns:.92fr 1.08fr">
       <div class="stack" style="gap:10px">
-        <p class="sm">CRBN 是那台"贴标签机"上负责<strong>认人</strong>的零件。沙利度胺类小分子插进 CRBN 的<em>降解子口袋</em>(degron pocket —— 专门识别"该被降解"信号的那个凹陷)后,自己一半埋进 CRBN,另一半露在外面 —— 露出来的那半,和 CRBN 表面一起,组成了一块<strong>原来不存在的新界面</strong>。</p>
-        <p class="sm">本来互不相识的两个蛋白因此贴在一起,被贴上标签、被送去粉碎。</p>
+        <p class="sm">沙利度胺类小分子插进 CRBN 的<strong>降解子口袋</strong>后,一半埋进去、一半露在外面 —— 露出来的那半和 CRBN 表面一起,组成一块<strong>原来不存在的新界面</strong>。</p>
         <div class="panel stack" style="gap:9px">
           <div class="kv"><dt>不需要口袋</dt><dd class="sm">只要"粘得住",就能打传统上不可成药的靶点。</dd></div>
           <hr class="hair">
           <div class="kv"><dt>成败在几何</dt><dd class="sm">三个东西必须<strong>同时</strong>严丝合缝地贴在一起。差一点,整件事就不成立。</dd></div>
           <hr class="hair">
-          <div class="kv"><dt>所以我们算什么</dt><dd class="sm">不是算"这个分子和 CRBN 结合得牢不牢",而是算 <strong>CRBN + 配体 + PPIL4 三个一起</strong>的形状(配体 ligand,就是我们设计的那个小分子) —— 三个东西拼成的这一整坨,专业上叫<em>三元复合物</em>,是本项目从头到尾的计算对象。</dd></div>
+          <div class="kv"><dt>所以我们算什么</dt><dd class="sm">不是算分子和 CRBN 结合得牢不牢,而是算 <strong>CRBN + 分子 + PPIL4 三个一起</strong>的形状 —— 这一整坨叫<em>三元复合物</em>,是本项目的计算对象。</dd></div>
         </div>
       </div>
 
@@ -483,7 +487,7 @@ svg.mol{width:100%; height:auto; display:block; color:var(--ink)}
           <path d="M62 186 C110 150 130 120 176 108" fill="none" stroke="var(--muted)" stroke-width="1.1" stroke-dasharray="3 3"/>
           <text class="sub" x="280" y="362" text-anchor="middle" style="font-size:11.5px">配体把两边粘住 → 形成三元复合物 → 泛素化 → 蛋白酶体降解</text>
         </svg>
-        <figcaption>三元复合物 = CRBN(实线) + 分子胶(绿) + PPIL4(虚线)。<strong>虚线</strong>表示 PPIL4 本来不属于这台机器,是被胶硬拉进来的。</figcaption>
+        <figcaption>三元复合物 = CRBN(实线) + 分子胶(绿) + PPIL4(虚线) —— 虚线表示 PPIL4 是被硬拉进来的。</figcaption>
       </figure>
     </div>
   </section>
@@ -492,7 +496,7 @@ svg.mol{width:100%; height:auto; display:block; color:var(--ink)}
   <section class="slide" data-act="背景">
     <div class="eyebrow"><span class="num mn">05</span><span>背景 · 我们想扔掉的是谁</span></div>
     <h2 class="sf">PPIL4 <strong>扔得掉</strong> —— 而且它守着 RAS 癌细胞最吃紧的那台机器:剪接</h2>
-    <p class="lede sm" style="margin-top:5px; max-width:none">选 PPIL4 有三条理由,但<strong>可靠程度差很多</strong> —— 分开摆,是因为把强弱证据混着讲最容易骗到自己。</p>
+    <p class="lede sm" style="margin-top:5px; max-width:none">选 PPIL4 有三条理由,<strong>可靠程度差很多</strong>。</p>
 
     <figure style="margin-top:10px; max-width:880px">
       <svg class="fx" viewBox="0 0 900 268" role="img"
@@ -545,24 +549,24 @@ svg.mol{width:100%; height:auto; display:block; color:var(--ink)}
       <div class="stack" style="gap:6px">
         <div class="panel" style="display:grid; grid-template-columns:72px 1fr; gap:12px; align-items:start; padding:7px 12px">
           <span class="tag">已确立</span>
-          <p class="sm">PPIL4 <strong>确实能被 CRBN 抓住、然后被降解</strong> —— 三个抱在一起的样子已经解出来(<span class="mn">PDB 9DWV</span>)。不是推测,是一张结构"照片";<strong>本项目全部计算都以它为尺子</strong>。</p>
+          <p class="sm">PPIL4 <strong>能被 CRBN 降解</strong>,三元结构已解出(<span class="mn">PDB 9DWV</span>)—— 本项目全部计算的尺子。</p>
         </div>
         <div class="panel" style="display:grid; grid-template-columns:72px 1fr; gap:12px; align-items:start; padding:7px 12px">
           <span class="tag warn">我们的分析</span>
-          <p class="sm">公开 DepMap 数据:离不开 PPIL4 的细胞,和离不开剪接体零件的细胞,<strong>几乎是同一批</strong>。这是<strong>我们自己的分析结论</strong>,不是教科书结论。</p>
+          <p class="sm">DepMap:离不开 PPIL4 的细胞,和离不开剪接体零件的细胞,<strong>几乎是同一批</strong>。</p>
         </div>
         <div class="panel" style="display:grid; grid-template-columns:72px 1fr; gap:12px; align-items:start; padding:7px 12px">
           <span class="tag warn">新兴证据</span>
-          <p class="sm">"剪接体成瘾"在癌基因 <strong>MYC</strong> 上<strong>已确立</strong>;在 <strong>RAS</strong> 上还只是<strong>新证据 + 类比推理</strong>。这是整个项目最不牢的一环。</p>
+          <p class="sm">"剪接体成瘾"在 <strong>MYC</strong> 上已确立,在 <strong>RAS</strong> 上<strong>还只是新证据 + 类比</strong>。</p>
         </div>
       </div>
       <div class="stack" style="gap:9px">
         <div class="plain">
           <span class="who">类比</span>
-          <p>正常细胞的剪接车间每天做 100 单,产能 200 单 —— 很宽裕。RAS 癌细胞被逼着做 190 单,产能还是 200 单。<strong>同样地砍掉 20% 产能,前者没感觉,后者直接停摆</strong>。这就是我们赌的那条缝。</p>
+          <p>正常细胞的剪接车间产能宽裕,RAS 癌细胞被逼到接近满载。<strong>同样砍掉 20% 产能,前者没感觉,后者停摆</strong>。</p>
         </div>
         <div class="note">
-          <p class="sm"><strong>说清楚边界:</strong>PPIL4 是几乎所有细胞都需要的基因,现有数据<strong>并没有</strong>显示它对 RAS 肿瘤特别重要。"只杀癌细胞"是我们的<strong>假设</strong>,要靠实验去检验 —— <strong>本项目没有检验它</strong>。</p>
+          <p class="sm"><strong>边界:</strong>PPIL4 几乎所有细胞都需要。"只杀癌细胞"是<strong>假设</strong>,本项目没有检验。</p>
         </div>
       </div>
     </div>
@@ -579,8 +583,8 @@ svg.mol{width:100%; height:auto; display:block; color:var(--ink)}
           <h3 class="mn">FPFT-2216</h3><span class="tag soft">够强,不够专</span>
         </div>
         <figure class="molbox" style="padding:2px 6px">__FIG_fpft__</figure>
-        <p class="sm">确实能降解 PPIL4,也是 9DWV 里的那个分子。但它<strong>同时降解 IKZF1/3、CK1α、PDE6D、DTWD1</strong> —— 用它做实验,分不清表型来自哪个底物。</p>
-        <p class="xs">而且商业不可得,只能定制合成 —— 所以它被反复对接、当金标准,却<strong>刻意不在采购单上</strong>。它<strong>只有 20 个重原子</strong>,比我们的候选分子小一圈。</p>
+        <p class="sm">9DWV 里的那个分子,确实能降解 PPIL4。但它<strong>同时降解 IKZF1/3、CK1α、PDE6D、DTWD1</strong> —— 分不清表型来自哪个底物。</p>
+        <p class="xs">商业不可得,只当金标准,<strong>不在采购单上</strong>。<strong>20 个重原子</strong>,比候选小一圈。</p>
       </div>
 
       <div class="panel stack" style="gap:6px">
@@ -588,8 +592,8 @@ svg.mol{width:100%; height:auto; display:block; color:var(--ink)}
           <h3 class="mn">Z6466608628</h3><span class="tag soft">够专,不够强</span>
         </div>
         <figure class="molbox" style="padding:2px 6px">__FIG_z646__</figure>
-        <p class="sm">已报道的 PPIL4 <strong>选择性</strong>分子胶（Enamine）:招募 PPIL4 的 EC<sub>50</sub> 为 <span class="mn">0.34 µM</span>,但降解程度有限,论文自己把它定位成<strong>待优化的先导物</strong>。</p>
-        <p class="xs"><strong>30 个重原子</strong>,和我们候选分子(30–34)完全同量级 —— 所以门槛画在它身上,而不是画在 FPFT-2216 身上。</p>
+        <p class="sm">已报道的 PPIL4 <strong>选择性</strong>分子胶:EC<sub>50</sub> <span class="mn">0.34 µM</span>,但降解程度有限 —— 论文自己定位成<strong>待优化的先导物</strong>。</p>
+        <p class="xs"><strong>30 个重原子</strong>,和候选(30–34)同量级 —— 门槛画在它身上。</p>
       </div>
 
       <div class="stack" style="gap:10px">
@@ -616,7 +620,7 @@ svg.mol{width:100%; height:auto; display:block; color:var(--ink)}
         </figure>
         <div class="panel" style="border-color:var(--accent); background:var(--accent-soft); padding:11px 14px">
           <p class="sm"><strong>假设:</strong>一个<em>选择性</em>的 PPIL4 降解剂,能以 RAS 驱动肿瘤特别脆弱的方式削弱剪接。</p>
-          <p class="sm" style="margin-top:5px"><strong>本项目检验的不是这个假设本身</strong> —— 而是:<strong>能不能设计出可以拿去检验它的分子。</strong></p>
+          <p class="sm" style="margin-top:5px">本项目检验的不是假设本身,而是<strong>能不能设计出拿去检验它的分子</strong>。</p>
         </div>
       </div>
     </div>
@@ -688,7 +692,7 @@ svg.mol{width:100%; height:auto; display:block; color:var(--ink)}
         <text class="sub" x="194" y="270" style="fill:var(--ink);font-size:10.5px" font-weight="650">真实结构 · SALL4 锌指</text>
         <text class="sub" x="194" y="288" style="font-size:9.5px">与 CRBN 共结晶的 C2H2 锌指,<tspan style="fill:var(--ink)" font-weight="650">24 个残基</tspan></text>
         <text class="sub" x="194" y="306" style="font-size:9.5px"><tspan style="fill:var(--accent)" font-weight="700">■</tspan> β 发夹 409–420　<tspan style="fill:var(--s-ctrl)" font-weight="700">■</tspan> α 螺旋 421–432</text>
-        <text class="sub" x="194" y="322" style="font-size:9.5px"><tspan style="fill:var(--s-cross)" font-weight="700">●</tspan> Zn²⁺ 由 Cys412/415 与 His428/432 夹住</text>
+        <text class="sub" x="194" y="322" style="font-size:9.5px"><tspan style="fill:var(--s-cross)" font-weight="700">●</tspan> Zn²⁺ 由 2 个 Cys + 2 个 His 夹住 —— 这就是 C2H2</text>
 
         <path d="M530 240 L1006 240" stroke="var(--hair)" stroke-width="1"/>
         <rect x="528" y="246" width="178" height="113" rx="3" fill="var(--panel)"/>
@@ -696,7 +700,7 @@ svg.mol{width:100%; height:auto; display:block; color:var(--ink)}
         <text class="sub" x="718" y="270" style="fill:var(--ink);font-size:10.5px" font-weight="650">真实结构 · PPIL4</text>
         <text class="sub" x="718" y="288" style="font-size:9.5px">AlphaFold 模型 (Q8WUA2),<tspan style="fill:var(--ink)" font-weight="650">492 个残基</tspan></text>
         <text class="sub" x="718" y="306" style="font-size:9.5px"><tspan style="fill:var(--s-ctrl)" font-weight="700">■</tspan> 亲环蛋白域 1–187　<tspan style="fill:var(--s-dom2)" font-weight="700">■</tspan> RRM 204–317</text>
-        <text class="sub" x="718" y="322" style="font-size:9.5px"><tspan style="fill:var(--muted)" font-weight="700">■</tspan> 低置信区 pLDDT &lt; 70 —— 199 个残基,占 40%</text>
+        <text class="sub" x="718" y="322" style="font-size:9.5px"><tspan style="fill:var(--muted)" font-weight="700">■</tspan> 低置信区(pLDDT &lt; 70)占 <tspan style="fill:var(--ink)" font-weight="650">40%</tspan></text>
         <text class="sub" x="718" y="340" style="font-size:9px">两图各自缩放,非同一比例</text>
       </svg>
     </figure>
@@ -704,15 +708,15 @@ svg.mol{width:100%; height:auto; display:block; color:var(--ink)}
     <div class="grid3" style="margin-top:12px; align-items:start">
       <div class="panel stack" style="gap:5px">
         <h3>所以"现成的规矩"在这里失效</h3>
-        <p class="sm">锌指那套经验能问:"这个蛋白有没有那个发夹?有就有戏。"对 PPIL4 <strong>问不出来</strong> —— 它根本没有那个部件,也没有可以照抄的模板。</p>
+        <p class="sm">锌指那套经验问的是"有没有那个发夹"。对 PPIL4 <strong>问不出来</strong> —— 没有那个部件,也没有模板可抄。</p>
       </div>
       <div class="panel stack" style="gap:5px; border-color:var(--accent)">
         <h3>我们的做法:不找模板,直接算形状</h3>
-        <p class="sm">整条流程<strong>不去匹配任何"该被降解"的标志物</strong>,而是直接计算 <strong>CRBN + 小分子 + PPIL4 三个拼在一起</strong>的形状,再拿已经解出来的真实结构 <span class="mn">9DWV</span> 当尺子校准。</p>
+        <p class="sm">不去匹配任何标志物,直接算 <strong>CRBN + 小分子 + PPIL4 拼在一起</strong>的形状,拿真实结构 <span class="mn">9DWV</span> 当尺子校准。</p>
       </div>
       <div class="plain" style="align-items:flex-start">
         <span class="who">重点</span>
-        <p>这不是我们想标新立异 —— 是因为对 PPIL4 这一类蛋白,<strong>本来就只能这么做</strong>。锌指的捷径在这里没有。</p>
+        <p>对 PPIL4 这一类蛋白,<strong>本来就只能这么做</strong> —— 锌指的捷径在这里没有。</p>
       </div>
     </div>
   </section>
@@ -721,7 +725,7 @@ svg.mol{width:100%; height:auto; display:block; color:var(--ink)}
   <section class="slide" data-act="方法">
     <div class="eyebrow"><span class="num mn">08</span><span>方法 · 分子从哪来</span></div>
     <h2 class="sf">不是乱画分子 —— <strong>戊二酰亚胺弹头焊死,只改一个地方</strong></h2>
-    <p class="lede sm">每个候选分子都由三段拼成。<span style="color:var(--s-cand); font-weight:650">绿色那段</span>负责插进 CRBN,不能动;<span style="color:var(--s-cross); font-weight:650">橙色那段</span>负责伸向 PPIL4;中间苯环上的<strong>取代基</strong>是唯一被 RDKit 遍历改变的部分 —— 于是有了 2,499 个分子。</p>
+    <p class="lede sm">每个分子由三段拼成:<span style="color:var(--s-cand); font-weight:650">绿色</span>插进 CRBN,不能动;<span style="color:var(--s-cross); font-weight:650">橙色</span>伸向 PPIL4;中间苯环上的<strong>取代基</strong>是唯一被遍历改变的地方 —— 于是有了 2,499 个分子。</p>
 
     <div style="display:grid; grid-template-columns:.36fr .28fr .36fr; gap:18px; margin-top:12px; align-items:start">
       <figure class="molbox" style="padding:8px 10px">
@@ -735,7 +739,7 @@ svg.mol{width:100%; height:auto; display:block; color:var(--ink)}
           <p class="sm" style="text-align:center"><strong>2,499</strong> 个类似物</p>
         </div>
         <div class="panel" style="padding:10px 12px">
-          <div class="kv" style="margin-bottom:6px"><dt style="color:var(--s-cand); min-width:56px">绿色</dt><dd class="sm"><strong>戊二酰亚胺弹头 glutarimide</strong> —— 插进 CRBN 的那一段,所有已知 CRBN 分子胶共用的那把"钥匙"。改它 = 整个分子失效。</dd></div>
+          <div class="kv" style="margin-bottom:6px"><dt style="color:var(--s-cand); min-width:56px">绿色</dt><dd class="sm"><strong>戊二酰亚胺弹头</strong> —— 所有 CRBN 分子胶共用的那把"钥匙"。改它 = 整个分子失效。</dd></div>
           <div class="kv"><dt style="color:var(--s-cross); min-width:56px">橙色</dt><dd class="sm"><strong>苯基哌嗪臂</strong> —— 伸出去够 PPIL4 的那只手。</dd></div>
         </div>
       </div>
@@ -747,7 +751,7 @@ svg.mol{width:100%; height:auto; display:block; color:var(--ink)}
 
     <div class="plain" style="margin-top:12px">
       <span class="who">类比</span>
-      <p>像配钥匙:<strong>钥匙齿(绿色)必须一模一样</strong>,否则开不了 CRBN 这把锁;我们只是在钥匙柄上换不同的挂饰,看哪个挂饰刚好能勾住 PPIL4。</p>
+      <p>像配钥匙:<strong>钥匙齿必须一模一样</strong>,我们只在钥匙柄上换挂饰,看哪个刚好能勾住 PPIL4。</p>
     </div>
   </section>
 
@@ -756,35 +760,17 @@ svg.mol{width:100%; height:auto; display:block; color:var(--ink)}
     <div class="eyebrow"><span class="num mn">09</span><span>方法 · 筛选漏斗（一）· 每一层在问什么</span></div>
     <h2 class="sf">2,499 → 18:每一层<strong>问一个不同的问题</strong></h2>
 
-    <div class="funnel" style="margin-top:10px; display:flex; flex-direction:column; gap:4px">
-      <div class="fstep"><div class="stg mn">01</div><div class="fbar" style="height:31px"><span class="fill" style="width:100%"></span><span class="n mn">2,499</span><span class="d"><strong>化学上说得通吗?</strong>弹头焊死,只在苯环那一个位置上把取代基一个个换过去,可能性列全<span style="color:var(--muted)">　· RDKit</span></span></div></div>
-      <div class="fstep"><div class="stg mn">02·03</div><div class="fbar" style="height:31px"><span class="fill" style="width:25%"></span><span class="n mn">625</span><span class="d"><strong>像不像已知的分子胶?</strong>让程序先看过上千个已知的 CRBN 分子胶,再给每个新分子打分<span style="color:var(--muted)">　· 随机森林</span></span></div></div>
-      <div class="fstep"><div class="stg mn">04</div><div class="fbar" style="height:31px"><span class="fill" style="width:25%"></span><span class="n mn">625</span><span class="d"><strong>坐得进 CRBN 的口袋吗?</strong>把每个分子真的塞进口袋试一遍,看坐得稳不稳、位置对不对<span style="color:var(--muted)">　· AutoDock Vina</span></span></div></div>
-      <div class="fstep"><div class="stg mn">05·06</div><div class="fbar" style="height:31px"><span class="fill" style="width:8%"></span><span class="n mn">125 → 20</span><span class="d"><strong>三个能不能凑一起?</strong>第一次把 CRBN 和 PPIL4 同时算进来 —— 快,但<strong>只能晋级,不能排名</strong><span style="color:var(--muted)">　· HADDOCK3</span></span></div></div>
-      <div class="fstep"><div class="stg mn">08</div><div class="fbar" style="height:31px; border-color:var(--accent)"><span class="fill" style="width:3%; opacity:.34"></span><span class="n mn">18</span><span class="d"><strong>哪一个拼得最好?</strong>把分子本身也放进计算 —— <strong>唯一算数的那次排名</strong>　<span class="tag" style="margin-left:2px">下一页</span></span></div></div>
-      <div class="fstep"><div class="stg mn">09·11·12</div><div class="fbar" style="height:31px; background:var(--sunk)"><span class="n mn">+6 +3</span><span class="d">再加 <strong>6 个对照</strong>和 <strong>3 个来自另一套筛选</strong>的分子,跑完全一样的流程 → 合计 <strong>27 次</strong> → 采购单</span></div></div>
+    <div class="funnel big" style="margin-top:14px; display:flex; flex-direction:column">
+      <div class="fstep"><div class="stg mn">01</div><div class="fbar"><span class="fill" style="width:100%"></span><span class="n mn">2,499</span><span class="d"><strong>化学上说得通吗?</strong>弹头焊死,只在苯环那一个位置上把取代基一个个换过去,可能性列全<span style="color:var(--muted)">　· RDKit</span></span></div></div>
+      <div class="fstep"><div class="stg mn">02·03</div><div class="fbar"><span class="fill" style="width:25%"></span><span class="n mn">625</span><span class="d"><strong>像不像已知的分子胶?</strong>让程序先看过上千个已知的 CRBN 分子胶,再给每个新分子打分<span style="color:var(--muted)">　· 随机森林</span></span></div></div>
+      <div class="fstep"><div class="stg mn">04</div><div class="fbar"><span class="fill" style="width:25%"></span><span class="n mn">625</span><span class="d"><strong>坐得进 CRBN 的口袋吗?</strong>把每个分子真的塞进口袋试一遍,看坐得稳不稳、位置对不对<span style="color:var(--muted)">　· AutoDock Vina</span></span></div></div>
+      <div class="fstep"><div class="stg mn">05·06</div><div class="fbar"><span class="fill" style="width:8%"></span><span class="n mn">125 → 20</span><span class="d"><strong>三个能不能凑一起?</strong>第一次把 CRBN 和 PPIL4 同时算进来 —— 快,但<strong>只能晋级,不能排名</strong><span style="color:var(--muted)">　· HADDOCK3</span></span></div></div>
+      <div class="fstep"><div class="stg mn">08</div><div class="fbar" style="border-color:var(--accent)"><span class="fill" style="width:3%; opacity:.34"></span><span class="n mn">18</span><span class="d"><strong>哪一个拼得最好?</strong>把分子本身也放进计算 —— <strong>唯一算数的那次排名</strong>　<span class="tag" style="margin-left:2px">下一页</span></span></div></div>
+      <div class="fstep"><div class="stg mn">09·11·12</div><div class="fbar" style="background:var(--sunk)"><span class="n mn">+6 +3</span><span class="d">再加 <strong>6 个对照</strong>和 <strong>3 个来自另一套筛选</strong>的分子,跑完全一样的流程 → 合计 <strong>27 次</strong> → 采购单</span></div></div>
     </div>
 
-    <div class="grid3" style="margin-top:11px; align-items:start">
-      <div class="panel stack" style="gap:5px; padding:10px 13px">
-        <h3><span class="mn" style="color:var(--accent)">01</span>　为什么只准改一个位置</h3>
-        <p class="sm">绿色那段是插进 CRBN 的<strong>钥匙齿</strong>,一改就开不了这把锁。所以 2,499 个分子彼此只差苯环上那一个挂饰 —— 是<strong>系统性穷举</strong>出来的,不是随手画的。</p>
-        <hr class="hair">
-        <p class="xs">代价:整个库长得太像,后面的分数差别都很小 —— 这是我们自己造成的,所以必须靠对照来判断差别是不是真的。</p>
-      </div>
-      <div class="panel stack" style="gap:5px; padding:10px 13px">
-        <h3><span class="mn" style="color:var(--accent)">02·03·04</span>　先粗看,再真的试一遍</h3>
-        <p class="sm"><strong>先粗看:</strong>程序学过上千个已知的 CRBN 分子胶,认得出"像不像",把明显不像的先扔掉。</p>
-        <p class="sm"><strong>再真试:</strong>剩下的每个分子都被塞进 CRBN 口袋,反复挪位置、转角度,看哪种摆法最贴合。</p>
-        <hr class="hair">
-        <p class="xs">防作弊:考试用的分子骨架不许在训练里出现过,否则模型只是在<strong>背答案</strong>。</p>
-      </div>
-      <div class="panel stack" style="gap:5px; padding:10px 13px">
-        <h3><span class="mn" style="color:var(--accent)">05·06</span>　快,但"看不见"分子</h3>
-        <p class="sm">因为有真实结构 <span class="mn">9DWV</span> 打底,程序<strong>知道界面上该出现哪些残基</strong>,不用瞎猜,所以很快 —— 适合把 125 个压到 20 个。</p>
-        <hr class="hair">
-        <p class="xs"><strong>但它没把分子本身放进计算</strong>,看不见分子之间的差别。所以结果只能用来<strong>晋级</strong>,不能用来<strong>排名</strong> —— 这就是为什么还必须有下一步。</p>
-      </div>
+    <div class="note" style="margin-top:14px">
+      <p class="sm"><strong>防作弊:</strong>考试用的分子骨架不许在训练里出现过 —— 否则模型只是在<strong>背答案</strong>。</p>
     </div>
   </section>
 
@@ -808,8 +794,7 @@ svg.mol{width:100%; height:auto; display:block; color:var(--ink)}
           <line x1="112" y1="86" x2="360" y2="86" stroke="var(--rule)"/>
           <text class="sub" x="372" y="76" style="fill:var(--accent);font-size:10px">分数终于分开</text>
         </svg>
-        <p class="sm">共用同一个弹头的分子,如果不把分子本身放进计算,会算出<strong>一模一样的分数</strong> —— 我们这里有两对分子,数字连小数点后三位都完全相同。最后一步把分子当成<strong>第三个实体</strong>放进去,化学差异才第一次进入排名。</p>
-        <p class="xs">技术上:用 PRODRG 生成配体拓扑,以 <span class="mn">chain C</span> 进入 CNS。</p>
+        <p class="sm">不放分子,共用弹头的分子会算出<strong>一模一样的分数</strong> —— 两对分子连小数点后三位都相同。放进去,差异才第一次进入排名。</p>
       </div>
 
       <div class="panel stack" style="gap:6px; padding:11px 14px">
@@ -827,8 +812,7 @@ svg.mol{width:100%; height:auto; display:block; color:var(--ink)}
           <text class="sub" x="212" y="92" text-anchor="middle" style="fill:var(--accent);font-size:10px">唯一的连接:我们设计的分子</text>
           <text class="sub" x="412" y="20" text-anchor="middle" style="fill:var(--s-cross);font-size:10px">没有这条</text>
         </svg>
-        <p class="sm">我们<strong>没有</strong>告诉程序"CRBN 和 PPIL4 应该贴在一起" —— 两个蛋白之间一条提示都没写。三个能拼上,<strong>只能是因为中间那个分子把它们连住了</strong>。</p>
-        <p class="sm">这是故意的:否则放什么分子都能"拼得上",排名就没有意义了。</p>
+        <p class="sm">两个蛋白之间<strong>一条提示都没写</strong>。能拼上,只能是因为中间那个分子把它们连住了 —— 否则放什么都能"拼得上",排名就没意义。</p>
       </div>
     </div>
 
@@ -850,8 +834,7 @@ svg.mol{width:100%; height:auto; display:block; color:var(--ink)}
           <text class="sub" x="410" y="35" text-anchor="middle" style="font-size:9px">全部钉死</text>
           <text class="sub" x="235" y="58" text-anchor="middle" style="fill:var(--accent);font-size:10px" font-weight="650">同一个分子 → 同一个数字,换台机器、换个人跑也一样</text>
         </svg>
-        <p class="sm">HADDOCK 的分数<strong>只有在同一套设置里才能互相比</strong>。所以候选、对照、交叉检验一共 27 次计算,用的是<strong>同一份锁死的流程</strong>。</p>
-        <p class="xs">每一行结果都盖 <span class="mn">protocol_version</span> 戳(<span class="mn">ppil4_lock_v1</span>)—— 旧流程的数字混不进来。</p>
+        <p class="sm">HADDOCK 分数<strong>只在同一套设置里可比</strong>。27 次计算跑的是<strong>同一份锁死的流程</strong>。</p>
       </div>
 
       <div class="panel stack" style="gap:6px; padding:11px 14px; border-color:var(--accent)">
@@ -868,8 +851,8 @@ svg.mol{width:100%; height:auto; display:block; color:var(--ink)}
           <text class="lbl mono" x="177" y="66" text-anchor="middle" style="fill:var(--accent);font-size:14px">0.376</text>
           <text class="sub" x="0" y="84" style="font-size:10px">真药 FPFT-2216 把 9DWV 算回来的<tspan style="fill:var(--ink)" font-weight="650">吻合度</tspan> —— 24 个被对接分子里最高</text>
         </svg>
-        <p class="sm">规则写在流程里:<strong>先把真药 FPFT-2216 交给这套流程,它得自己把已经知道的真实结构算回来,才允许开始跑候选分子。</strong>它验证的是<strong>方法</strong>,不是任何一个候选分子。</p>
-        <p class="xs">吻合度用 DockQ 衡量(iRMSD 2.073 Å、fnat 0.647)。<strong>而且这个检验部分是循环的,我们自己说出来:</strong>PPIL4 一侧的界面提示本来就取自 9DWV,等于提前告诉了答案。一个"不给提示"的中性对照已列入计划,<strong>尚未完成</strong>。</p>
+        <p class="sm"><strong>真药 FPFT-2216 得先把已知的真实结构算回来,才允许跑候选分子。</strong>验证的是<strong>方法</strong>,不是某个候选。</p>
+        <p class="xs">这一检验部分循环:PPIL4 侧的提示取自 9DWV。中性对照已列入计划,尚未完成。</p>
       </div>
     </div>
   </section>
@@ -989,8 +972,8 @@ svg.mol{width:100%; height:auto; display:block; color:var(--ink)}
     <div class="panel" style="margin-top:12px; border-color:var(--s-cross); border-left-width:3px">
       <h3>所以这个项目<strong>能说什么、不能说什么</strong></h3>
       <div class="grid2" style="margin-top:7px; gap:20px">
-        <p class="sm"><strong style="color:var(--accent)">能说:</strong>在同一套锁死的协议下,这 18 个分子里有一部分在几何上比已知的 PPIL4 分子胶更像样,值得花钱合成、拿去测。采购单是<strong>按"能被证伪"设计的</strong> —— 里面既有全能分子,也有故意挑的"偏科生",实验回来能告诉我们<strong>哪条评分标准才是对的</strong>。</p>
-        <p class="sm"><strong style="color:var(--s-cross)">不能说:</strong>没有任何一个分子被合成过、测试过。<strong>每一个分数都是形状上的代理指标,不是药效</strong>。排名要当作<em>分诊</em>读,不是真理。至于"只杀 RAS 肿瘤"那一层,本项目<strong>完全没有检验</strong>。</p>
+        <p class="sm"><strong style="color:var(--accent)">能说:</strong>同一套锁死的协议下,这 18 个分子里有一部分在几何上比已知的 PPIL4 分子胶更像样,值得合成、拿去测。采购单<strong>按"能被证伪"设计</strong> —— 实验回来能告诉我们<strong>哪条评分标准才是对的</strong>。</p>
+        <p class="sm"><strong style="color:var(--s-cross)">不能说:</strong>没有任何一个分子被合成过、测试过。<strong>分数是形状上的代理指标,不是药效</strong> —— 排名当作<em>分诊</em>读。"只杀 RAS 肿瘤"那一层<strong>完全没有检验</strong>。</p>
       </div>
     </div>
 
@@ -1002,19 +985,15 @@ svg.mol{width:100%; height:auto; display:block; color:var(--ink)}
       <div class="stack" style="gap:9px">
         <div class="panel stack" style="gap:6px; padding:11px 13px">
           <h3>团队</h3>
-          <p class="sm"><strong>Keyuan (Ryan) Wang</strong> —— 分子生成、分类器、Vina 与含配体三体对接流程、协议锁、采购单。</p>
-          <p class="sm"><strong>Zhentai (Tyrone) Zong</strong> —— 独立的 9DWV 引导式 PPIL4 筛选,作为平行交叉检验。</p>
+          <p class="sm"><strong>Keyuan (Ryan) Wang</strong> —— 分子生成、分类器、对接流程、协议锁、采购单。</p>
+          <p class="sm"><strong>Zhentai (Tyrone) Zong</strong> —— 独立的 9DWV 引导式筛选,平行交叉检验。</p>
         </div>
         <div class="panel stack" style="gap:5px; padding:11px 13px">
           <h3>可复现性</h3>
-          <p class="sm">27 次对接每一行结果都带 <span class="mn">protocol_version</span> 戳;金标准提交进仓库;采购单由脚本生成 —— 加一个分子是<strong>重跑</strong>,不是手改表格。</p>
+          <p class="sm">27 次对接都带 <span class="mn">protocol_version</span> 戳,采购单由脚本生成 —— 加一个分子是<strong>重跑</strong>。</p>
         </div>
       </div>
       <div class="stack" style="gap:9px">
-        <div class="panel stack" style="gap:5px; padding:11px 13px">
-          <h3>工具</h3>
-          <p class="sm mn" style="line-height:1.75">RDKit · scikit-learn · ChEMBL · AutoDock Vina · Meeko<br>HADDOCK3 2026.7.0 · PRODRG · CNS · PyMOL · AlphaFold</p>
-        </div>
       </div>
     </div>
   </section>
