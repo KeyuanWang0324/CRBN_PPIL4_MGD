@@ -1,0 +1,1230 @@
+<title>PPIL4 分子胶筛选</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+:root{
+  --paper:#F5F7F6; --panel:#FFFFFF; --sunk:#EDF0EF;
+  --ink:#141A19; --body:#3A4442; --muted:#626D6B;
+  --rule:#D8DEDC; --hair:#E6EAE9;
+  --accent:#12695E; --accent-soft:#12695E1A;
+  --s-cand:#0d8a76; --s-ctrl:#4a3aa7; --s-cross:#9C6B15;
+  --warn-bg:#9C6B1514;
+  --shadow:0 1px 2px rgba(20,26,25,.05), 0 8px 24px rgba(20,26,25,.06);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#0E1413; --panel:#151D1B; --sunk:#111817;
+    --ink:#EAF0EE; --body:#B9C4C1; --muted:#8B9794;
+    --rule:#26312F; --hair:#1D2725;
+    --accent:#5FBCAE; --accent-soft:#5FBCAE1A;
+    --s-cand:#32a08e; --s-ctrl:#9085e9; --s-cross:#b58a33;
+    --warn-bg:#b58a3316;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0E1413; --panel:#151D1B; --sunk:#111817;
+  --ink:#EAF0EE; --body:#B9C4C1; --muted:#8B9794;
+  --rule:#26312F; --hair:#1D2725;
+  --accent:#5FBCAE; --accent-soft:#5FBCAE1A;
+  --s-cand:#32a08e; --s-ctrl:#9085e9; --s-cross:#b58a33;
+  --warn-bg:#b58a3316;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--paper); color:var(--body);
+  font-family:system-ui,-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  font-size:16px; line-height:1.6; letter-spacing:-.002em;
+  overflow:hidden;
+}
+.sf{font-family:"Spectral","Songti SC","Source Han Serif SC",SimSun,Georgia,serif}
+.mn{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-variant-numeric:tabular-nums; letter-spacing:-.01em}
+
+/* ---------- deck chrome ---------- */
+#fit{position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:var(--paper)}
+#stage{width:1280px; height:720px; transform-origin:center center; position:relative;
+       background:var(--paper); overflow:hidden}
+.slide{position:absolute; inset:0; padding:38px 56px 58px 100px; display:none}
+.slide.is-on{display:block}
+@media (prefers-reduced-motion:no-preference){
+  .slide.is-on > *{animation:rise .28s cubic-bezier(.2,.7,.3,1) both}
+}
+@keyframes rise{from{transform:translateY(7px)}to{transform:none}}
+
+#rail{position:absolute; left:0; top:0; bottom:0; width:56px; border-right:1px solid var(--hair);
+      display:flex; flex-direction:column; justify-content:center; gap:22px; align-items:center;
+      background:var(--sunk); z-index:3}
+.act{writing-mode:vertical-rl; white-space:nowrap; font-size:11px; letter-spacing:.24em; color:var(--muted);
+     padding:6px 2px; border-radius:2px; transition:color .2s}
+.act.on{color:var(--accent); font-weight:650}
+
+#foot{position:absolute; left:100px; right:56px; bottom:18px; display:flex; align-items:center;
+      gap:16px; z-index:3}
+#bar{flex:1; display:flex; gap:3px}
+#bar button{flex:1; height:3px; border:0; padding:0; background:var(--rule); cursor:pointer; border-radius:2px}
+#bar button.done{background:var(--muted)}
+#bar button.cur{background:var(--accent); height:5px; margin-top:-1px}
+#bar button:focus-visible{outline:2px solid var(--accent); outline-offset:3px}
+#count{font-size:12px; color:var(--muted); min-width:70px; text-align:right}
+#hint{font-size:11px; color:var(--muted); opacity:.75}
+
+/* ---------- type ---------- */
+.eyebrow{font-size:11.5px; letter-spacing:.18em; color:var(--muted); font-weight:650;
+         display:flex; gap:12px; align-items:baseline; margin-bottom:10px}
+.eyebrow .num{color:var(--accent)}
+h1{margin:0; color:var(--ink); font-size:44px; line-height:1.12; font-weight:600; letter-spacing:-.02em; text-wrap:balance}
+h2{margin:0 0 4px; color:var(--ink); font-size:29px; line-height:1.18; font-weight:600; letter-spacing:-.015em; text-wrap:balance}
+h3{margin:0; color:var(--ink); font-size:14.5px; font-weight:650; line-height:1.35}
+p{margin:0}
+.lede{font-size:16.5px; color:var(--body); max-width:66ch; margin-top:8px}
+.sm{font-size:13px; line-height:1.55}
+.xs{font-size:11.5px; line-height:1.5; color:var(--muted)}
+strong{color:var(--ink); font-weight:640}
+em{font-style:normal; color:var(--accent); font-weight:600}
+.stack{display:flex; flex-direction:column}
+
+/* ---------- pieces ---------- */
+.tag{display:inline-block; font-size:10.5px; letter-spacing:.1em; font-weight:650; padding:2px 7px;
+     border-radius:2px; background:var(--accent-soft); color:var(--accent); white-space:nowrap}
+.tag.soft{background:var(--sunk); color:var(--muted)}
+.tag.warn{background:var(--warn-bg); color:var(--s-cross)}
+.panel{background:var(--panel); border:1px solid var(--hair); border-radius:3px; padding:14px 16px}
+.note{border-left:2px solid var(--s-cross); background:var(--warn-bg); padding:9px 13px; border-radius:0 3px 3px 0}
+.kv{display:flex; gap:10px; align-items:baseline}
+.kv dt{color:var(--muted); font-size:12px; min-width:92px; flex:none}
+hr.hair{border:0; border-top:1px solid var(--hair); margin:0}
+
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:20px}
+.grid3{display:grid; grid-template-columns:repeat(3,1fr); gap:14px}
+.grid4{display:grid; grid-template-columns:repeat(2,1fr); gap:13px}
+
+.big{font-family:"IBM Plex Mono",ui-monospace,monospace; font-variant-numeric:tabular-nums;
+     font-size:36px; line-height:1; color:var(--ink); font-weight:500; letter-spacing:-.03em}
+
+/* ---------- plain-language takeaway strip ---------- */
+.plain{display:flex; gap:11px; align-items:flex-start; background:var(--accent-soft);
+       border-radius:3px; padding:9px 13px; border-left:2px solid var(--accent)}
+.plain .who{font-size:10px; letter-spacing:.12em; font-weight:700; color:var(--accent);
+            flex:none; padding-top:2px; writing-mode:horizontal-tb}
+.plain p{font-size:13.5px; color:var(--ink)}
+
+/* ---------- figures ---------- */
+figure{margin:0}
+figcaption{font-size:11px; color:var(--muted); line-height:1.45; margin-top:6px; text-align:center}
+svg.mol{width:100%; height:auto; display:block; color:var(--ink)}
+.molbox{background:var(--panel); border:1px solid var(--hair); border-radius:3px; padding:6px 8px}
+.molbox .nm{font-size:11px; text-align:center; color:var(--muted); margin-top:-2px}
+.shot{display:block; width:100%; border-radius:3px; border:1px solid var(--hair); background:#fff}
+.fx text{font-family:system-ui,-apple-system,"PingFang SC",sans-serif}
+.fx .lbl{font-size:11.5px; fill:var(--ink); font-weight:600}
+.fx .sub{font-size:10px; fill:var(--muted)}
+.fx .mono{font-family:"IBM Plex Mono",ui-monospace,monospace; font-variant-numeric:tabular-nums}
+
+/* funnel */
+.fstep{display:grid; grid-template-columns:56px 1fr; gap:12px; align-items:center}
+.fstep .stg{font-size:11px; color:var(--muted); text-align:right}
+.fbar{height:34px; border-radius:2px; background:var(--accent-soft); border:1px solid var(--hair);
+      display:flex; align-items:center; padding:0 12px; gap:12px; position:relative; overflow:hidden}
+.fbar .fill{position:absolute; left:0; top:0; bottom:0; background:var(--accent); opacity:.16}
+.fbar .n{position:relative; font-size:15px; color:var(--ink); font-weight:600; min-width:54px}
+.fbar .d{position:relative; font-size:12px; color:var(--body)}
+
+/* matrix */
+.mx{display:grid; grid-template-columns:18px 1fr 54px repeat(3,20px); gap:0 9px; align-items:center;
+    font-size:11.5px; max-width:340px; margin:0 auto}
+.mx .hd{font-size:9.5px; letter-spacing:.1em; color:var(--muted); padding-bottom:4px; text-align:center}
+.mx .hd.l{text-align:left}
+.dot{display:block; width:10px; height:10px; border-radius:50%; margin:0 auto}
+.dot.y{background:var(--s-cand)}
+.dot.n{background:transparent; border:1.5px solid var(--rule)}
+.rname{color:var(--ink)}
+.rname.pass{font-weight:650}
+.rsc{color:var(--muted); text-align:right}
+.mxrow{padding:.5px 0}
+
+/* chart */
+#chartWrap{position:relative}
+#tip{position:absolute; pointer-events:none; opacity:0; transition:opacity .12s;
+     background:var(--ink); color:var(--paper); font-size:11.5px; padding:5px 9px; border-radius:3px;
+     white-space:nowrap; transform:translate(-50%,-140%); z-index:5;
+     font-family:"IBM Plex Mono",ui-monospace,monospace}
+.legend{display:flex; gap:16px; font-size:11.5px; color:var(--body); align-items:center; flex-wrap:wrap}
+.legend i{display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:6px; vertical-align:-1px}
+
+/* title slide */
+.cover{height:100%; display:flex; flex-direction:column; justify-content:center; gap:0}
+.rule-accent{width:52px; height:3px; background:var(--accent); margin-bottom:20px}
+.statrow{display:flex; gap:0; margin-top:28px; border-top:1px solid var(--hair); padding-top:14px}
+.statrow > div{padding-right:30px; margin-right:30px; border-right:1px solid var(--hair)}
+.statrow > div:last-child{border-right:0}
+.statrow .v{font-size:22px; color:var(--ink); font-weight:500}
+.statrow .k{font-size:11px; color:var(--muted); margin-top:2px}
+
+/* references */
+.refs{column-count:2; column-gap:32px; margin-top:11px}
+.refs .g{margin:0 0 11px}
+.refs h4{margin:0 0 6px; font-size:11.5px; letter-spacing:.09em; font-weight:700; color:var(--accent);
+         break-after:avoid; page-break-after:avoid}
+.refs h4 .en{color:var(--muted); font-weight:600; letter-spacing:.04em}
+.refs p{font-size:10.1px; line-height:1.46; color:var(--body); margin:0 0 5px;
+        padding-left:12px; text-indent:-12px; break-inside:avoid; page-break-inside:avoid}
+.refs em{font-style:italic; color:var(--body); font-weight:400}
+
+/* title slide */
+.cover{height:100%; display:flex; flex-direction:column; justify-content:center; gap:0}
+.rule-accent{width:52px; height:3px; background:var(--accent); margin-bottom:20px}
+.statrow{display:flex; gap:0; margin-top:28px; border-top:1px solid var(--hair); padding-top:14px}
+.statrow > div{padding-right:30px; margin-right:30px; border-right:1px solid var(--hair)}
+.statrow > div:last-child{border-right:0}
+.statrow .v{font-size:22px; color:var(--ink); font-weight:500}
+.statrow .k{font-size:11px; color:var(--muted); margin-top:2px}
+</style>
+
+<div id="fit">
+<div id="stage">
+
+  <nav id="rail" aria-label="章节">
+    <span class="act" data-act="背景">背景</span>
+    <span class="act" data-act="创新">创新</span>
+    <span class="act" data-act="方法">方法</span>
+    <span class="act" data-act="结果">结果</span>
+    <span class="act" data-act="展望">展望</span>
+  </nav>
+
+  <!-- 1 COVER -->
+  <section class="slide" data-act="">
+    <div class="cover">
+      <div class="eyebrow"><span>ISEF · 计算结构生物学 / 药物发现</span></div>
+      <div class="rule-accent"></div>
+      <div style="display:grid; grid-template-columns:1.15fr .85fr; gap:36px; align-items:center">
+        <div>
+          <h1 class="sf">能不能造一个<br>只降解 PPIL4 的分子胶?</h1>
+          <p class="lede">不是"堵住"一个坏蛋白,而是<strong>让细胞把它当垃圾扔掉</strong>。<br>
+          从 2,499 个电脑生成的分子,筛到一份可以真正下单的 25 分子采购清单。</p>
+        </div>
+        <figure>
+          <svg class="fx" viewBox="0 0 392 250" role="img"
+               aria-label="上排:没有分子胶时 CRBN 与 PPIL4 各自分开,互不相遇;下排:分子胶夹在两者之间把它们粘住,PPIL4 因此被挂上泛素链">
+            <!-- counterfactual: without the glue, nothing happens -->
+            <g opacity=".55">
+              <ellipse cx="60" cy="32" rx="30" ry="19" fill="none" stroke="var(--rule)" stroke-width="1.3"/>
+              <text class="sub" x="60" y="36" text-anchor="middle" style="font-size:9px">CRBN</text>
+              <ellipse cx="158" cy="32" rx="28" ry="17" fill="none" stroke="var(--rule)" stroke-width="1.3" stroke-dasharray="4 3"/>
+              <text class="sub" x="158" y="36" text-anchor="middle" style="font-size:9px">PPIL4</text>
+            </g>
+            <g stroke="var(--s-cross)" stroke-width="2" stroke-linecap="round">
+              <path d="M105 27 L115 37"/><path d="M115 27 L105 37"/>
+            </g>
+            <text class="sub" x="200" y="28" style="fill:var(--ink);font-size:10px" font-weight="650">没有分子胶</text>
+            <text class="sub" x="200" y="44" style="font-size:9.5px">两个蛋白一辈子不会相遇</text>
+
+            <!-- with the glue: the whole event happens -->
+            <ellipse cx="92" cy="160" rx="62" ry="44" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
+            <text class="lbl" x="92" y="157" text-anchor="middle" style="fill:var(--accent);font-size:14px">CRBN</text>
+            <text class="sub" x="92" y="173" text-anchor="middle" style="font-size:9.5px">E3 的底物受体</text>
+            <ellipse cx="286" cy="160" rx="58" ry="42" fill="none" stroke="var(--s-ctrl)" stroke-width="1.5" stroke-dasharray="5 4"/>
+            <text class="lbl" x="286" y="157" text-anchor="middle" style="fill:var(--s-ctrl);font-size:14px">PPIL4</text>
+            <text class="sub" x="286" y="173" text-anchor="middle" style="font-size:9.5px">要被扔掉的蛋白</text>
+
+            <!-- the hero: the molecule this whole project designs -->
+            <circle cx="191" cy="160" r="34" fill="var(--s-cand)" opacity=".12"/>
+            <circle cx="191" cy="160" r="34" fill="none" stroke="var(--s-cand)" stroke-width="1" opacity=".45"/>
+            <g stroke="var(--s-cand)" stroke-width="2.6" stroke-linecap="round">
+              <path d="M154 160 L165 160"/><path d="M217 160 L228 160"/>
+            </g>
+            <path d="M217 160 l-13 -19 h-26 l-13 19 l13 19 h26 z" fill="var(--s-cand)"/>
+            <path d="M191 194 L191 210" stroke="var(--rule)" stroke-width="1.1" fill="none"/>
+            <text class="lbl" x="191" y="224" text-anchor="middle" style="font-size:12px">分子胶 (MGD)</text>
+            <text class="sub" x="191" y="240" text-anchor="middle" style="font-size:10px">全靠它,两个蛋白才会相遇 —— 本项目要设计的就是它</text>
+
+            <!-- consequence: PPIL4 gets tagged -->
+            <path d="M320 126 L330 112" stroke="var(--muted)" stroke-width="1.1" fill="none"/>
+            <g fill="var(--sunk)" stroke="var(--muted)" stroke-width="1.1">
+              <circle cx="336" cy="106" r="6.5"/><circle cx="352" cy="96" r="6.5"/><circle cx="368" cy="87" r="6.5"/>
+            </g>
+            <text class="sub" x="330" y="72" text-anchor="end" style="font-size:9.5px">泛素链</text>
+            <text class="sub" x="330" y="83" text-anchor="end" style="font-size:8.5px">ubiquitin</text>
+          </svg>
+        </figure>
+      </div>
+      <div class="statrow">
+        <div><div class="v mn">2,499</div><div class="k">生成的候选分子</div></div>
+        <div><div class="v mn">27</div><div class="k">锁定协议下的三体对接</div></div>
+        <div><div class="v mn">4 / 18</div><div class="k">三条独立规则全过</div></div>
+        <div><div class="v mn">25</div><div class="k">采购清单上的分子</div></div>
+      </div>
+      <p class="xs" style="margin-top:18px">Keyuan (Ryan) Wang — 设计与对接流程　·　Zhentai (Tyrone) Zong — 独立引导式筛选与交叉检验</p>
+    </div>
+  </section>
+
+  <!-- 2 细胞里的垃圾处理厂 -->
+  <section class="slide" data-act="背景">
+    <div class="eyebrow"><span class="num mn">02</span><span>背景 · 先讲清楚一件事</span></div>
+    <h2 class="sf">细胞里本来就有一套"垃圾处理厂"</h2>
+    <p class="lede sm">蛋白质坏了、多了、不该在了,细胞不会放着不管 —— 它会给这个蛋白<strong>贴上标签</strong>,然后送进<strong>粉碎机</strong>。整套系统叫<em>泛素–蛋白酶体系统</em>(ubiquitin–proteasome system, UPS)。</p>
+
+    <figure style="margin-top:14px">
+      <svg class="fx" viewBox="0 0 1020 344" role="img"
+           aria-label="流程图:目标蛋白被 E3 连接酶贴上泛素链,随后被蛋白酶体降解为氨基酸碎片">
+        <defs>
+          <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0 0 L10 5 L0 10 z" fill="var(--muted)"/>
+          </marker>
+        </defs>
+        <ellipse cx="112" cy="118" rx="66" ry="54" fill="var(--sunk)" stroke="var(--rule)" stroke-width="1.4"/>
+        <text class="lbl" x="112" y="114" text-anchor="middle" style="font-size:13px">目标蛋白</text>
+        <text class="sub" x="112" y="132" text-anchor="middle" style="font-size:11px">该被清理掉了</text>
+        <text class="sub" x="112" y="206" text-anchor="middle" style="fill:var(--ink);font-size:12px" font-weight="650">① 一个不该留下的蛋白</text>
+        <path d="M186 118 L262 118" stroke="var(--muted)" stroke-width="1.4" marker-end="url(#a1)"/>
+        <path d="M276 118 C276 64 314 36 366 36 C418 36 456 64 456 118 C456 172 418 200 366 200 C314 200 276 172 276 118 Z"
+              fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.6"/>
+        <text class="lbl" x="366" y="108" text-anchor="middle" style="fill:var(--accent);font-size:14px">E3 泛素连接酶</text>
+        <text class="sub" x="366" y="124" text-anchor="middle" style="font-size:10.5px">E3 ubiquitin ligase</text>
+        <text class="sub" x="366" y="140" text-anchor="middle" style="font-size:10.5px">俗称"贴标签的机器"</text>
+        <text class="sub" x="366" y="206" text-anchor="middle" style="fill:var(--ink);font-size:12px" font-weight="650">② 它认出这个蛋白,给它贴"泛素"标签</text>
+        <text class="sub" x="366" y="226" text-anchor="middle" style="fill:var(--accent);font-size:11.5px">CRBN 就是其中一台这样的机器</text>
+        <g fill="var(--panel)" stroke="var(--accent)" stroke-width="1.4">
+          <circle cx="410" cy="46" r="12"/><circle cx="438" cy="30" r="12"/><circle cx="466" cy="16" r="12"/>
+        </g>
+        <text class="sub" x="484" y="14" text-anchor="start" style="fill:var(--accent);font-size:11.5px">泛素链</text>
+        <text class="sub" x="484" y="28" text-anchor="start" style="font-size:10px">ubiquitin</text>
+        <path d="M470 118 L546 118" stroke="var(--muted)" stroke-width="1.4" marker-end="url(#a1)"/>
+        <rect x="562" y="58" width="150" height="120" rx="8" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.6"/>
+        <g stroke="var(--rule)" stroke-width="1.3">
+          <line x1="562" y1="88" x2="712" y2="88"/><line x1="562" y1="118" x2="712" y2="118"/><line x1="562" y1="148" x2="712" y2="148"/>
+        </g>
+        <text class="lbl" x="637" y="38" text-anchor="middle" style="font-size:13px">蛋白酶体 proteasome</text>
+        <text class="sub" x="637" y="52" text-anchor="middle" style="font-size:10px">细胞的蛋白质粉碎机</text>
+        <text class="sub" x="637" y="206" text-anchor="middle" style="fill:var(--ink);font-size:12px" font-weight="650">③ 带泛素链的蛋白被送进蛋白酶体</text>
+        <path d="M726 118 L802 118" stroke="var(--muted)" stroke-width="1.4" marker-end="url(#a1)"/>
+        <g fill="var(--rule)">
+          <rect x="820" y="82" width="17" height="17" rx="3"/><rect x="852" y="106" width="17" height="17" rx="3"/>
+          <rect x="824" y="130" width="17" height="17" rx="3"/><rect x="858" y="70" width="17" height="17" rx="3"/>
+          <rect x="884" y="136" width="17" height="17" rx="3"/><rect x="890" y="98" width="17" height="17" rx="3"/>
+        </g>
+        <text class="sub" x="862" y="206" text-anchor="middle" style="fill:var(--ink);font-size:12px" font-weight="650">④ 拆成氨基酸,回收再用</text>
+
+        <rect x="0" y="248" width="1020" height="92" rx="4" fill="var(--accent-soft)"/>
+        <rect x="0" y="248" width="3" height="92" fill="var(--accent)"/>
+        <text class="lbl" x="28" y="278" style="fill:var(--accent);font-size:14px">关键全在第 ② 步</text>
+        <text class="sub" x="28" y="304" style="fill:var(--ink);font-size:12.5px">E3 认谁,谁就被扔掉。</text>
+        <text class="sub" x="28" y="326" style="font-size:12.5px">如果我们能改变"它认谁",就等于<tspan fill="var(--accent)" font-weight="650">指定了要销毁哪个蛋白</tspan>。</text>
+        <line x1="560" y1="266" x2="560" y2="322" stroke="var(--accent)" opacity=".3"/>
+        <text class="sub" x="592" y="278" style="fill:var(--ink);font-size:12.5px" font-weight="650">这正是"分子胶"干的事</text>
+        <text class="sub" x="592" y="304" style="font-size:12.5px">它不是一把刀,也不是一把锁 ——</text>
+        <text class="sub" x="592" y="326" style="font-size:12.5px">它是一张<tspan fill="var(--accent)" font-weight="650">改写"该扔谁"名单的小纸条</tspan>。</text>
+      </svg>
+    </figure>
+
+    <div class="plain" style="margin-top:14px">
+      <span class="who">一句话</span>
+      <p>细胞自带一台碎纸机,还有一批负责"贴该扔的标签"的机器。我们不去发明碎纸机 —— 我们只想<strong>骗过贴标签的那一步</strong>。</p>
+    </div>
+  </section>
+
+  <!-- 3 抑制剂 vs 降解剂 -->
+  <section class="slide" data-act="背景">
+    <div class="eyebrow"><span class="num mn">03</span><span>背景 · 两种完全不同的做药思路</span></div>
+    <h2 class="sf">传统药"堵住"蛋白;降解剂让细胞"扔掉"蛋白</h2>
+
+    <figure style="margin-top:8px">
+      <svg class="fx" viewBox="0 0 1030 292" role="img"
+           aria-label="左:抑制剂占住口袋。右:分子胶把靶蛋白拉到 E3 连接酶旁,靶蛋白被泛素化后交给蛋白酶体降解,胶随后被释放">
+        <defs>
+          <marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0 0 L10 5 L0 10 z" fill="var(--accent)"/>
+          </marker>
+          <marker id="a3m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0 0 L10 5 L0 10 z" fill="var(--muted)"/>
+          </marker>
+        </defs>
+
+        <rect x="0" y="0" width="496" height="292" rx="4" fill="var(--sunk)" opacity=".55"/>
+        <text class="lbl" x="26" y="30" style="font-size:14.5px">抑制剂 inhibitor <tspan class="sub" style="font-size:11.5px">（今天大多数小分子药）</tspan></text>
+
+        <path d="M52 118 C52 92 74 78 106 78 C146 78 168 95 168 124 L168 134 L151 134 A18 18 0 0 0 151 170 L168 170 L168 180
+                 C168 209 146 226 106 226 C74 226 52 212 52 186 Z"
+              fill="var(--panel)" stroke="var(--rule)" stroke-width="1.6"/>
+        <text class="lbl" x="106" y="146" text-anchor="middle" style="font-size:12.5px">靶蛋白</text>
+        <text class="sub" x="106" y="164" text-anchor="middle" style="font-size:11px">表面有一个口袋</text>
+        <circle cx="180" cy="152" r="16" fill="var(--muted)"/>
+        <text class="sub" x="180" y="192" text-anchor="middle" font-weight="650" style="fill:var(--ink);font-size:11.5px">药</text>
+
+        <text class="sub" x="228" y="112" style="fill:var(--ink);font-size:12.5px" font-weight="650">占位式药理</text>
+        <text class="sub" x="228" y="130" style="font-size:11px">occupancy-driven pharmacology</text>
+        <text class="sub" x="228" y="156" style="font-size:11.5px">药<tspan fill="var(--ink)" font-weight="650">占住口袋</tspan>的那段时间,</text>
+        <text class="sub" x="228" y="174" style="font-size:11.5px">蛋白才失去功能 —— 药一离开,</text>
+        <text class="sub" x="228" y="192" style="font-size:11.5px">蛋白<tspan fill="var(--ink)" font-weight="650">原封不动地恢复工作</tspan>。</text>
+
+        <rect x="26" y="222" width="444" height="56" rx="3" fill="var(--warn-bg)"/>
+        <text class="sub" x="44" y="244" style="fill:var(--ink);font-size:11.5px">Hopkins &amp; Groom 2002 的经典估计:只有约 <tspan font-weight="700">15%</tspan> 的人类蛋白</text>
+        <text class="sub" x="44" y="264" style="font-size:11.5px">被认为能被传统小分子直接结合 —— 其余常被称作"不可成药"。</text>
+
+        <rect x="534" y="0" width="496" height="292" rx="4" fill="var(--accent-soft)"/>
+        <text class="lbl" x="560" y="30" style="fill:var(--accent);font-size:14.5px">降解剂 / 分子胶 degrader <tspan class="sub" style="font-size:11.5px" fill="var(--muted)">（这个项目）</tspan></text>
+
+        <ellipse cx="604" cy="116" rx="44" ry="40" fill="var(--panel)" stroke="var(--rule)" stroke-width="1.6"/>
+        <text class="lbl" x="604" y="112" text-anchor="middle" style="font-size:11.5px">靶蛋白</text>
+        <text class="sub" x="604" y="128" text-anchor="middle" style="font-size:10px">没有口袋</text>
+        <path d="M676 116 l-10 -16 h-18 l-10 16 l10 16 h18 z" fill="var(--s-cand)"/>
+        <text class="sub" x="658" y="158" text-anchor="middle" font-weight="650" style="fill:var(--accent);font-size:11px">胶</text>
+        <path d="M690 74 C690 52 712 40 740 40 C772 40 792 58 792 88 L792 144 C792 174 772 192 740 192 C712 192 690 180 690 158 Z"
+              fill="var(--panel)" stroke="var(--accent)" stroke-width="1.5"/>
+        <text class="lbl" x="744" y="112" text-anchor="middle" style="fill:var(--accent);font-size:12px">E3 连接酶</text>
+        <text class="sub" x="744" y="128" text-anchor="middle" style="font-size:10px">CRBN 在这里</text>
+        <g fill="var(--panel)" stroke="var(--accent)" stroke-width="1.3">
+          <circle cx="828" cy="60" r="10"/><circle cx="852" cy="44" r="10"/><circle cx="876" cy="28" r="10"/>
+        </g>
+        <path d="M800 74 L816 66" stroke="var(--accent)" stroke-width="1.2" marker-end="url(#a3)"/>
+        <text class="sub" x="894" y="30" style="fill:var(--accent);font-size:10.5px">泛素链 ubiquitin</text>
+        <text class="sub" x="836" y="88" style="font-size:10px">靶蛋白被贴上标签</text>
+
+        <path d="M744 196 L744 216" stroke="var(--accent)" stroke-width="1.4" marker-end="url(#a3)"/>
+        <rect x="690" y="220" width="108" height="52" rx="5" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.4"/>
+        <g stroke="var(--rule)" stroke-width="1.1"><line x1="690" y1="238" x2="798" y2="238"/><line x1="690" y1="256" x2="798" y2="256"/></g>
+        <text class="sub" x="812" y="242" style="font-size:10.5px">蛋白酶体 proteasome</text>
+        <text class="sub" x="812" y="258" style="font-size:10px">靶蛋白被整个降解掉</text>
+
+        <path d="M686 228 C620 232 596 200 606 172" fill="none" stroke="var(--muted)"
+              stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#a3m)"/>
+        <text class="sub" x="566" y="206" style="font-size:10.5px">胶被释放,</text>
+        <text class="sub" x="566" y="222" style="font-size:10.5px">再去粘下一个</text>
+        <text class="sub" x="566" y="244" style="fill:var(--ink);font-size:10.5px" font-weight="650">亚化学计量</text>
+        <text class="sub" x="566" y="260" style="font-size:10px">sub-stoichiometric</text>
+      </svg>
+    </figure>
+
+    <div class="grid2" style="margin-top:10px; align-items:start">
+      <div class="panel stack" style="gap:4px; padding:11px 14px">
+        <h3>抑制剂:必须<strong>有口袋</strong>,而且必须<strong>一直占着</strong></h3>
+        <p class="sm">要让大部分靶蛋白在<strong>同一时刻</strong>都被占住,体内就得持续维持足够高的药物浓度。</p>
+        <p class="sm">而"没有口袋"只是<strong>不可成药的原因之一</strong> —— 另一些蛋白是没有酶活性可抑制、靠大面积平坦界面工作、或本身就是无序结构。</p>
+      </div>
+      <div class="panel stack" style="gap:4px; padding:11px 14px; border-color:var(--accent)">
+        <h3>降解剂:<strong>不需要口袋</strong>,而且<strong>可以反复使用</strong></h3>
+        <p class="sm">只要能把靶蛋白和 E3 连接酶拉到一起、拼出稳定的三元复合物就行。一个分子可以推动很多轮降解(亚化学计量)。</p>
+        <p class="sm"><strong>但要讲清楚:胶自己不销毁任何东西。</strong>它只是把靶蛋白交给细胞<strong>本来就有</strong>的泛素–蛋白酶体系统 —— 干活的是细胞,不是药。</p>
+      </div>
+    </div>
+
+    <div class="plain" style="margin-top:10px">
+      <span class="who">类比</span>
+      <p>抑制剂像<strong>用手一直按住一个按钮</strong>;降解剂像<strong>叫来维修工把按钮拆走</strong> —— 拆的是维修工(细胞),药只负责把维修工领到按钮跟前。</p>
+    </div>
+  </section>
+
+  <!-- 4 分子胶机制 -->
+  <section class="slide" data-act="背景">
+    <div class="eyebrow"><span class="num mn">04</span><span>背景 · 分子胶怎么工作</span></div>
+    <h2 class="sf">分子胶不堵任何东西 —— 它在 CRBN 表面<strong>拼出一块新的接触面</strong></h2>
+
+    <div class="grid2" style="margin-top:12px; align-items:start; grid-template-columns:.92fr 1.08fr">
+      <div class="stack" style="gap:10px">
+        <p class="sm">CRBN 是那台"贴标签机"上负责<strong>认人</strong>的零件。沙利度胺类小分子插进 CRBN 的<em>降解子口袋</em>(degron pocket —— 专门识别"该被降解"信号的那个凹陷)后,自己一半埋进 CRBN,另一半露在外面 —— 露出来的那半,和 CRBN 表面一起,组成了一块<strong>原来不存在的新界面</strong>。</p>
+        <p class="sm">本来互不相识的两个蛋白因此贴在一起,被贴上标签、被送去粉碎。</p>
+        <div class="panel stack" style="gap:9px">
+          <div class="kv"><dt>不需要口袋</dt><dd class="sm">只要"粘得住",就能打传统上不可成药的靶点。</dd></div>
+          <hr class="hair">
+          <div class="kv"><dt>成败在几何</dt><dd class="sm">三个东西必须<strong>同时</strong>严丝合缝地贴在一起。差一点,整件事就不成立。</dd></div>
+          <hr class="hair">
+          <div class="kv"><dt>所以我们算什么</dt><dd class="sm">不是算"这个分子和 CRBN 结合得牢不牢",而是算 <strong>CRBN + 配体 + PPIL4 三个一起</strong>的形状(配体 ligand,就是我们设计的那个小分子) —— 三个东西拼成的这一整坨,专业上叫<em>三元复合物</em>,是本项目从头到尾的计算对象。</dd></div>
+        </div>
+      </div>
+
+      <figure>
+        <svg class="fx" viewBox="0 0 560 372" role="img"
+             aria-label="分子胶插入 CRBN 降解子口袋后形成新界面,招募 PPIL4 并使其被泛素化">
+          <defs>
+            <marker id="a4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M0 0 L10 5 L0 10 z" fill="var(--muted)"/>
+            </marker>
+          </defs>
+          <!-- E3 scaffold -->
+          <path d="M40 300 L40 246 C40 232 52 222 66 222 L120 222" fill="none" stroke="var(--rule)" stroke-width="9" stroke-linecap="round"/>
+          <text class="sub" x="46" y="322">CUL4–DDB1 支架</text>
+          <circle cx="40" cy="188" r="21" fill="var(--sunk)" stroke="var(--rule)" stroke-width="1.4"/>
+          <text class="sub" x="40" y="192" text-anchor="middle" style="font-size:9.5px">E2</text>
+          <!-- CRBN -->
+          <path d="M118 208 C118 148 156 116 212 116 C258 116 288 142 292 186 L292 232
+                   C288 276 258 302 212 302 C156 302 118 268 118 208 Z"
+                fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.6"/>
+          <text class="lbl" x="198" y="204" text-anchor="middle" style="fill:var(--accent);font-size:16px">CRBN</text>
+          <text class="sub" x="198" y="222" text-anchor="middle">负责"认人"的零件</text>
+          <!-- degron pocket notch -->
+          <path d="M292 186 A22 22 0 0 0 292 232" fill="var(--paper)" stroke="var(--accent)" stroke-width="1.4"/>
+          <text class="sub" x="248" y="146" text-anchor="middle" style="font-size:9.5px">降解子口袋</text>
+          <path d="M262 152 L282 178" stroke="var(--muted)" stroke-width=".9" fill="none"/>
+          <!-- glue -->
+          <path d="M316 209 l-13 -21 h-23 l-13 21 l13 21 h23 z" fill="var(--s-cand)"/>
+          <path d="M292 272 L292 308" stroke="var(--rule)" stroke-width="1.1" fill="none"/>
+          <text class="lbl" x="292" y="322" text-anchor="middle">分子胶</text>
+          <text class="sub" x="292" y="337" text-anchor="middle">一半埋进口袋,一半露在外面</text>
+          <!-- PPIL4 -->
+          <path d="M292 186 C296 142 326 116 372 116 C428 116 466 148 466 208
+                   C466 268 428 302 372 302 C326 302 296 276 292 232 Z"
+                fill="none" stroke="var(--s-ctrl)" stroke-width="1.6" stroke-dasharray="5 4"/>
+          <text class="lbl" x="388" y="204" text-anchor="middle" style="fill:var(--s-ctrl);font-size:16px">PPIL4</text>
+          <text class="sub" x="388" y="222" text-anchor="middle">要被扔掉的蛋白</text>
+          <!-- new interface bracket -->
+          <path d="M284 100 L284 90 L332 90 L332 100" fill="none" stroke="var(--s-cand)" stroke-width="1.4"/>
+          <text class="sub" x="308" y="80" text-anchor="middle" font-weight="650" style="fill:var(--s-cand);font-size:11px">新界面</text>
+          <text class="sub" x="308" y="64" text-anchor="middle" style="font-size:10px">原本并不存在</text>
+          <!-- ubiquitin -->
+          <g fill="var(--panel)" stroke="var(--muted)" stroke-width="1.2">
+            <circle cx="424" cy="72" r="11"/><circle cx="452" cy="54" r="11"/><circle cx="480" cy="38" r="11"/>
+          </g>
+          <path d="M396 100 L412 84" stroke="var(--muted)" stroke-width="1.2" fill="none" marker-end="url(#a4)"/>
+          <text class="sub" x="498" y="40" text-anchor="start">泛素链</text>
+          <path d="M62 186 C110 150 130 120 176 108" fill="none" stroke="var(--muted)" stroke-width="1.1" stroke-dasharray="3 3"/>
+          <text class="sub" x="280" y="362" text-anchor="middle" style="font-size:11.5px">配体把两边粘住 → 形成三元复合物 → 泛素化 → 蛋白酶体降解</text>
+        </svg>
+        <figcaption>三元复合物 = CRBN(实线) + 分子胶(绿) + PPIL4(虚线)。<strong>虚线</strong>表示 PPIL4 本来不属于这台机器,是被胶硬拉进来的。</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 5 剪接 -->
+  <section class="slide" data-act="背景">
+    <div class="eyebrow"><span class="num mn">05</span><span>背景 · 我们想扔掉的是谁</span></div>
+    <h2 class="sf">PPIL4 <strong>扔得掉</strong> —— 而且它守着 RAS 癌细胞最吃紧的那台机器:剪接</h2>
+    <p class="lede sm" style="margin-top:5px; max-width:none">选 PPIL4 有三条理由,但<strong>可靠程度差很多</strong> —— 分开摆,是因为把强弱证据混着讲最容易骗到自己。</p>
+
+    <figure style="margin-top:10px; max-width:880px">
+      <svg class="fx" viewBox="0 0 900 268" role="img"
+           aria-label="前体 mRNA 中的内含子被剪接体切除、外显子连接成成熟 mRNA 的示意">
+        <defs>
+          <marker id="a5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0 0 L10 5 L0 10 z" fill="var(--muted)"/>
+          </marker>
+        </defs>
+        <text class="sub" x="0" y="20" style="font-size:12px">刚从 DNA 抄下来的 <tspan class="mono" fill="var(--ink)" font-weight="650">前体 mRNA</tspan> —— 有用的段落中间夹着废段落</text>
+        <g>
+          <rect x="0" y="36" width="92" height="34" rx="3" fill="var(--accent)" opacity=".85"/>
+          <rect x="92" y="44" width="104" height="18" fill="var(--rule)"/>
+          <rect x="196" y="36" width="84" height="34" rx="3" fill="var(--accent)" opacity=".85"/>
+          <rect x="280" y="44" width="116" height="18" fill="var(--rule)"/>
+          <rect x="396" y="36" width="100" height="34" rx="3" fill="var(--accent)" opacity=".85"/>
+        </g>
+        <text class="sub" x="46"  y="59" text-anchor="middle" style="fill:#fff;font-size:11.5px" font-weight="650">外显子</text>
+        <text class="sub" x="238" y="59" text-anchor="middle" style="fill:#fff;font-size:11.5px" font-weight="650">外显子</text>
+        <text class="sub" x="446" y="59" text-anchor="middle" style="fill:#fff;font-size:11.5px" font-weight="650">外显子</text>
+        <text class="sub" x="144" y="88" text-anchor="middle" style="font-size:11px">内含子（要剪掉）</text>
+        <text class="sub" x="338" y="88" text-anchor="middle" style="font-size:11px">内含子（要剪掉）</text>
+
+        <path d="M248 104 L248 132" stroke="var(--muted)" stroke-width="1.3" marker-end="url(#a5)"/>
+        <rect x="150" y="140" width="200" height="40" rx="20" fill="var(--s-ctrl)" opacity=".14" stroke="var(--s-ctrl)" stroke-width="1.4"/>
+        <text class="lbl" x="250" y="165" text-anchor="middle" style="fill:var(--s-ctrl);font-size:13px">剪接体 spliceosome</text>
+        <text class="sub" x="250" y="204" text-anchor="middle" style="font-size:11.5px">一台由几十个蛋白组成的"剪刀 + 订书机"</text>
+        <rect x="88" y="218" width="324" height="34" rx="3" fill="var(--s-ctrl)" opacity=".10"/>
+        <text class="sub" x="250" y="240" text-anchor="middle" style="fill:var(--s-ctrl);font-size:12px" font-weight="650">PPIL4 就挂在这台机器的"催化激活"环节上</text>
+
+        <path d="M512 53 L566 53" stroke="var(--muted)" stroke-width="1.4" marker-end="url(#a5)"/>
+        <g>
+          <rect x="582" y="36" width="92" height="34" rx="3" fill="var(--accent)" opacity=".85"/>
+          <rect x="674" y="36" width="84" height="34" fill="var(--accent)" opacity=".85"/>
+          <rect x="758" y="36" width="100" height="34" rx="3" fill="var(--accent)" opacity=".85"/>
+          <line x1="674" y1="36" x2="674" y2="70" stroke="var(--paper)" stroke-width="1.6"/>
+          <line x1="758" y1="36" x2="758" y2="70" stroke="var(--paper)" stroke-width="1.6"/>
+        </g>
+        <text class="sub" x="720" y="20" text-anchor="middle" style="font-size:12px">成熟 <tspan class="mono" fill="var(--ink)" font-weight="650">mRNA</tspan> —— 才能拿去造蛋白</text>
+        <text class="sub" x="720" y="90" text-anchor="middle" style="font-size:11px">剪错一个位点,整个蛋白就废了</text>
+        <rect x="574" y="140" width="292" height="112" rx="4" fill="var(--warn-bg)"/>
+        <text class="sub" x="596" y="166" style="fill:var(--ink);font-size:12.5px" font-weight="650">为什么盯着这里?</text>
+        <text class="sub" x="596" y="192" style="font-size:12px">癌基因 RAS 会把细胞的转录量抬得很高,</text>
+        <text class="sub" x="596" y="212" style="font-size:12px">要剪的东西暴增 —— 剪接机器被<tspan fill="var(--ink)" font-weight="650">用到极限</tspan>。</text>
+        <text class="sub" x="596" y="238" style="font-size:12px">这时稍微拖慢它,癌细胞可能<tspan fill="var(--ink)" font-weight="650">先撑不住</tspan>。</text>
+      </svg>
+    </figure>
+
+    <div style="display:grid; grid-template-columns:1.12fr .88fr; gap:15px; margin-top:14px; align-items:start">
+      <div class="stack" style="gap:6px">
+        <div class="panel" style="display:grid; grid-template-columns:72px 1fr; gap:12px; align-items:start; padding:7px 12px">
+          <span class="tag">已确立</span>
+          <p class="sm">PPIL4 <strong>确实能被 CRBN 抓住、然后被降解</strong> —— 三个抱在一起的样子已经解出来(<span class="mn">PDB 9DWV</span>)。不是推测,是一张结构"照片";<strong>本项目全部计算都以它为尺子</strong>。</p>
+        </div>
+        <div class="panel" style="display:grid; grid-template-columns:72px 1fr; gap:12px; align-items:start; padding:7px 12px">
+          <span class="tag warn">我们的分析</span>
+          <p class="sm">公开 DepMap 数据:离不开 PPIL4 的细胞,和离不开剪接体零件的细胞,<strong>几乎是同一批</strong>。这是<strong>我们自己的分析结论</strong>,不是教科书结论。</p>
+        </div>
+        <div class="panel" style="display:grid; grid-template-columns:72px 1fr; gap:12px; align-items:start; padding:7px 12px">
+          <span class="tag warn">新兴证据</span>
+          <p class="sm">"剪接体成瘾"在癌基因 <strong>MYC</strong> 上<strong>已确立</strong>;在 <strong>RAS</strong> 上还只是<strong>新证据 + 类比推理</strong>。这是整个项目最不牢的一环。</p>
+        </div>
+      </div>
+      <div class="stack" style="gap:9px">
+        <div class="plain">
+          <span class="who">类比</span>
+          <p>正常细胞的剪接车间每天做 100 单,产能 200 单 —— 很宽裕。RAS 癌细胞被逼着做 190 单,产能还是 200 单。<strong>同样地砍掉 20% 产能,前者没感觉,后者直接停摆</strong>。这就是我们赌的那条缝。</p>
+        </div>
+        <div class="note">
+          <p class="sm"><strong>说清楚边界:</strong>PPIL4 是几乎所有细胞都需要的基因,现有数据<strong>并没有</strong>显示它对 RAS 肿瘤特别重要。"只杀癌细胞"是我们的<strong>假设</strong>,要靠实验去检验 —— <strong>本项目没有检验它</strong>。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 缺口 -->
+  <section class="slide" data-act="背景">
+    <div class="eyebrow"><span class="num mn">06</span><span>背景 · 缺口与假设</span></div>
+    <h2 class="sf">已知的两个分子,恰好各缺一半</h2>
+    <p class="lede sm" style="margin-top:6px; max-width:none">这一页的"强"和"专"讲的都是<strong>细胞里的药理表现</strong> —— 不是本项目算出来的对接分数。两根轴在<span class="mn">第 11 页</span>会明确分开。</p>
+
+    <div style="display:grid; grid-template-columns:.31fr .31fr .38fr; gap:16px; margin-top:12px; align-items:start">
+      <div class="panel stack" style="gap:6px">
+        <div style="display:flex; justify-content:space-between; align-items:baseline">
+          <h3 class="mn">FPFT-2216</h3><span class="tag soft">够强,不够专</span>
+        </div>
+        <figure class="molbox" style="padding:2px 6px">__FIG_fpft__</figure>
+        <p class="sm">确实能降解 PPIL4,也是 9DWV 里的那个分子。但它<strong>同时降解 IKZF1/3、CK1α、PDE6D、DTWD1</strong> —— 用它做实验,分不清表型来自哪个底物。</p>
+        <p class="xs">而且商业不可得,只能定制合成 —— 所以它被反复对接、当金标准,却<strong>刻意不在采购单上</strong>。它<strong>只有 20 个重原子</strong>,比我们的候选分子小一圈。</p>
+      </div>
+
+      <div class="panel stack" style="gap:6px">
+        <div style="display:flex; justify-content:space-between; align-items:baseline">
+          <h3 class="mn">Z6466608628</h3><span class="tag soft">够专,不够强</span>
+        </div>
+        <figure class="molbox" style="padding:2px 6px">__FIG_z646__</figure>
+        <p class="sm">已报道的 PPIL4 <strong>选择性</strong>分子胶（Enamine）:招募 PPIL4 的 EC<sub>50</sub> 为 <span class="mn">0.34 µM</span>,但降解程度有限,论文自己把它定位成<strong>待优化的先导物</strong>。</p>
+        <p class="xs"><strong>30 个重原子</strong>,和我们候选分子(30–34)完全同量级 —— 所以<span class="mn">第 11 页</span>的门槛画在它身上,而不是画在 FPFT-2216 身上。</p>
+      </div>
+
+      <div class="stack" style="gap:10px">
+        <figure>
+          <svg class="fx" viewBox="0 0 380 250" role="img" aria-label="强效与选择性的二维象限图,右上角为空">
+            <line x1="56" y1="216" x2="360" y2="216" stroke="var(--rule)" stroke-width="1.2"/>
+            <line x1="56" y1="216" x2="56" y2="14" stroke="var(--rule)" stroke-width="1.2"/>
+            <line x1="208" y1="14" x2="208" y2="216" stroke="var(--hair)" stroke-dasharray="3 3"/>
+            <line x1="56" y1="115" x2="360" y2="115" stroke="var(--hair)" stroke-dasharray="3 3"/>
+            <rect x="208" y="14" width="152" height="101" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="5 4"/>
+            <text class="lbl" x="284" y="52" text-anchor="middle" style="fill:var(--accent);font-size:12.5px">空</text>
+            <text class="sub" x="284" y="72" text-anchor="middle" style="fill:var(--accent);font-size:10.5px">既选择性、又强效</text>
+            <text class="sub" x="284" y="88" text-anchor="middle" style="font-size:10px">← 本项目要填的格子</text>
+            <circle cx="118" cy="52" r="6" fill="var(--s-ctrl)"/>
+            <text class="sub" x="132" y="50" style="fill:var(--ink);font-size:10.5px">FPFT-2216</text>
+            <text class="sub" x="132" y="64" style="font-size:9.5px">强,但见谁降谁</text>
+            <circle cx="272" cy="178" r="6" fill="var(--s-ctrl)"/>
+            <text class="sub" x="286" y="176" style="fill:var(--ink);font-size:10.5px">Z6466608628</text>
+            <text class="sub" x="286" y="190" style="font-size:9.5px">专一,但降不动</text>
+            <text class="sub" x="208" y="238" text-anchor="middle" style="font-size:10.5px">选择性 →</text>
+            <text class="sub" x="18" y="115" style="font-size:10.5px" transform="rotate(-90 18 115)" text-anchor="middle">强效 →</text>
+          </svg>
+          <figcaption>两条轴都是<strong>细胞里的降解表现</strong>,不是本项目的对接分数。</figcaption>
+        </figure>
+        <div class="panel" style="border-color:var(--accent); background:var(--accent-soft); padding:11px 14px">
+          <p class="sm"><strong>假设:</strong>一个<em>选择性</em>的 PPIL4 降解剂,能以 RAS 驱动肿瘤特别脆弱的方式削弱剪接。</p>
+          <p class="sm" style="margin-top:5px"><strong>本项目检验的不是这个假设本身</strong> —— 而是:<strong>能不能设计出可以拿去检验它的分子。</strong></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8 创新·非锌指 -->
+  <section class="slide" data-act="创新">
+    <div class="eyebrow"><span class="num mn">07</span><span>创新性 · 这个项目为什么不一样</span></div>
+    <h2 class="sf">分子胶几乎所有的经验,都来自<strong>锌指蛋白</strong> —— 而 PPIL4 不是锌指</h2>
+
+    <figure style="margin-top:10px">
+      <svg class="fx" viewBox="0 0 1030 364" role="img"
+           aria-label="左侧为 C2H2 锌指用含甘氨酸的 β 发夹插进 CRBN,右侧为不含锌指的 PPIL4;下方为两者由本项目 PDB 文件直接渲染的真实主链结构">
+        <rect x="0" y="0" width="466" height="364" rx="4" fill="var(--sunk)" opacity=".55"/>
+        <text class="lbl" x="24" y="28" style="font-size:13.5px">分子胶熟悉的世界:<tspan style="fill:var(--s-ctrl)">C2H2 锌指蛋白</tspan></text>
+
+        <path d="M92 74 l30 -14 l30 14 l0 40 l-30 14 l-30 -14 z" fill="var(--panel)" stroke="var(--s-ctrl)" stroke-width="1.4"/>
+        <circle cx="122" cy="94" r="9" fill="var(--s-ctrl)"/>
+        <text class="sub" x="122" y="98" text-anchor="middle" style="fill:#fff;font-size:9px" font-weight="700">Zn</text>
+        <g stroke="var(--s-ctrl)" stroke-width="1" fill="none" opacity=".7">
+          <path d="M113 87 L98 76"/><path d="M131 87 L146 76"/><path d="M113 101 L98 112"/><path d="M131 101 L146 112"/>
+        </g>
+        <text class="sub" x="94" y="70" text-anchor="end" style="font-size:9px">Cys</text>
+        <text class="sub" x="150" y="70" style="font-size:9px">Cys</text>
+        <text class="sub" x="94" y="120" text-anchor="end" style="font-size:9px">His</text>
+        <text class="sub" x="150" y="120" style="font-size:9px">His</text>
+        <text class="sub" x="112" y="170" text-anchor="middle" style="font-size:10px">靠一个锌离子撑起形状</text>
+
+        <path d="M152 94 C186 94 196 74 214 74 C232 74 240 94 240 94 C240 94 232 114 214 114 C196 114 186 94 152 94 Z"
+              fill="none" stroke="var(--s-ctrl)" stroke-width="1.6"/>
+        <circle cx="240" cy="94" r="10" fill="var(--s-cand)"/>
+        <text class="sub" x="240" y="98" text-anchor="middle" style="fill:#fff;font-size:10px" font-weight="700">G</text>
+        <text class="sub" x="196" y="52" text-anchor="middle" style="font-size:10px" font-weight="650">β 发夹环</text>
+        <text class="sub" x="201" y="142" text-anchor="middle" style="font-size:10px">环顶上有一个关键的甘氨酸</text>
+
+        <path d="M266 34 C304 34 352 60 352 94 C352 128 304 154 266 154 L266 116 A22 22 0 0 0 266 72 Z"
+              fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
+        <text class="lbl" x="320" y="98" text-anchor="middle" style="fill:var(--accent);font-size:12px">CRBN</text>
+        <text class="sub" x="320" y="172" text-anchor="middle" style="font-size:10px">CRBN 认的其实就是</text>
+        <text class="sub" x="320" y="186" text-anchor="middle" style="font-size:10px" font-weight="650">这个小小的发夹形状</text>
+
+        <rect x="24" y="200" width="418" height="34" rx="3" fill="var(--panel)"/>
+        <text class="sub" x="40" y="214" style="font-size:10.5px">Sievers 等 2018:把人类 <tspan class="mono" style="fill:var(--ink)" font-weight="650">6,572</tspan> 个锌指逐个测过来,</text>
+        <text class="sub" x="40" y="228" style="font-size:10.5px">找到 <tspan class="mono" style="fill:var(--ink)" font-weight="650">11</tspan> 个能被沙利度胺类药降解的,其中 <tspan class="mono" style="fill:var(--ink)" font-weight="650">6</tspan> 个能拖走整条蛋白。</text>
+
+        <text class="lbl" x="484" y="120" text-anchor="middle" style="font-size:22px;fill:var(--muted)">vs</text>
+
+        <rect x="506" y="0" width="524" height="364" rx="4" fill="var(--accent-soft)"/>
+        <text class="lbl" x="530" y="28" style="font-size:13.5px">我们要打的:<tspan style="fill:var(--accent)">PPIL4</tspan></text>
+
+        <path d="M566 78 C566 54 588 42 616 42 C650 42 672 58 672 88 C672 122 650 140 616 140 C588 140 566 124 566 100 Z"
+              fill="var(--panel)" stroke="var(--s-ctrl)" stroke-width="1.5"/>
+        <text class="sub" x="619" y="86" text-anchor="middle" style="font-size:10.5px" font-weight="650">亲环蛋白结构域</text>
+        <text class="sub" x="619" y="102" text-anchor="middle" style="font-size:9.5px">(一个折叠酶)</text>
+        <path d="M688 66 C688 52 700 46 716 46 C736 46 748 56 748 76 C748 96 736 106 716 106 C700 106 688 98 688 84 Z"
+              fill="var(--panel)" stroke="var(--s-ctrl)" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <text class="sub" x="718" y="80" text-anchor="middle" style="font-size:10px" font-weight="650">RRM</text>
+        <path d="M672 92 L688 82" stroke="var(--s-ctrl)" stroke-width="1.4"/>
+        <text class="sub" x="660" y="164" text-anchor="middle" style="font-size:11px" font-weight="650">没有锌,没有锌指,没有那个 β 发夹</text>
+        <text class="sub" x="660" y="180" text-anchor="middle" style="font-size:10px">形状和锌指完全是两回事</text>
+
+        <rect x="530" y="200" width="476" height="34" rx="3" fill="var(--panel)"/>
+        <text class="sub" x="548" y="214" style="font-size:10.5px">已报道的<tspan style="fill:var(--ink)" font-weight="650">非锌指</tspan> CRBN 目标屈指可数:GSPT1、CK1α、PDE6D、RAB28。</text>
+        <text class="sub" x="548" y="228" style="font-size:10.5px">PPIL4 是最近才被确认、并解出复合物结构的一个 —— 属于<tspan style="fill:var(--ink)" font-weight="650">刚被打开的一类</tspan>。</text>
+              <!-- real backbone structures, rendered straight from this project's PDB files -->
+        <path d="M24 240 L442 240" stroke="var(--hair)" stroke-width="1"/>
+        <rect x="22" y="246" width="160" height="113" rx="3" fill="var(--panel)"/>
+        <svg x="22" y="246" width="160" height="113" viewBox="0 0 214 152" preserveAspectRatio="xMidYMid meet">__FIG_zf3d__</svg>
+        <text class="sub" x="194" y="270" style="fill:var(--ink);font-size:10.5px" font-weight="650">真实结构 · SALL4 锌指</text>
+        <text class="sub" x="194" y="288" style="font-size:9.5px">与 CRBN 共结晶的 C2H2 锌指,<tspan style="fill:var(--ink)" font-weight="650">24 个残基</tspan></text>
+        <text class="sub" x="194" y="304" style="font-size:9.5px">Cys412 · Cys415 · His428 · His432 四条侧链</text>
+        <text class="sub" x="194" y="320" style="font-size:9.5px">夹住一个 <tspan style="fill:var(--s-cross)" font-weight="650">Zn²⁺</tspan>(琥珀色球),折叠才立得住</text>
+        <text class="sub" x="194" y="340" style="font-size:9px">紫色 = 主链走向,深浅表示远近</text>
+
+        <path d="M530 240 L1006 240" stroke="var(--hair)" stroke-width="1"/>
+        <rect x="528" y="246" width="178" height="113" rx="3" fill="var(--panel)"/>
+        <svg x="528" y="246" width="178" height="113" viewBox="0 0 234 152" preserveAspectRatio="xMidYMid meet">__FIG_ppil43d__</svg>
+        <text class="sub" x="718" y="270" style="fill:var(--ink);font-size:10.5px" font-weight="650">真实结构 · PPIL4</text>
+        <text class="sub" x="718" y="288" style="font-size:9.5px">AlphaFold 模型 (Q8WUA2),<tspan style="fill:var(--ink)" font-weight="650">492 个残基</tspan></text>
+        <text class="sub" x="718" y="304" style="font-size:9.5px">灰色 = AlphaFold 低置信区(pLDDT &lt; 70),占 40%</text>
+        <text class="sub" x="718" y="320" style="font-size:9.5px">没有锌、没有 β 发夹 —— 折叠域外还挂着一大段无序区</text>
+        <text class="sub" x="718" y="340" style="font-size:9px">两图各自缩放,不是同一比例</text>
+      </svg>
+    </figure>
+
+    <div class="grid3" style="margin-top:12px; align-items:start">
+      <div class="panel stack" style="gap:5px">
+        <h3>所以"现成的规矩"在这里失效</h3>
+        <p class="sm">锌指那套经验能问:"这个蛋白有没有那个发夹?有就有戏。"对 PPIL4 <strong>问不出来</strong> —— 它根本没有那个部件,也没有可以照抄的模板。</p>
+      </div>
+      <div class="panel stack" style="gap:5px; border-color:var(--accent)">
+        <h3>我们的做法:不找模板,直接算形状</h3>
+        <p class="sm">整条流程<strong>不去匹配任何"该被降解"的标志物</strong>,而是直接计算 <strong>CRBN + 小分子 + PPIL4 三个拼在一起</strong>的形状,再拿已经解出来的真实结构 <span class="mn">9DWV</span> 当尺子校准。</p>
+      </div>
+      <div class="plain" style="align-items:flex-start">
+        <span class="who">重点</span>
+        <p>这不是我们想标新立异 —— 是因为对 PPIL4 这一类蛋白,<strong>本来就只能这么做</strong>。锌指的捷径在这里没有。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9 分子怎么设计 -->
+  <section class="slide" data-act="方法">
+    <div class="eyebrow"><span class="num mn">08</span><span>方法 · 分子从哪来</span></div>
+    <h2 class="sf">不是乱画分子 —— <strong>戊二酰亚胺弹头焊死,只改一个地方</strong></h2>
+    <p class="lede sm">每个候选分子都由三段拼成。<span style="color:var(--s-cand); font-weight:650">绿色那段</span>负责插进 CRBN,不能动;<span style="color:var(--s-cross); font-weight:650">橙色那段</span>负责伸向 PPIL4;中间苯环上的<strong>取代基</strong>是唯一被 RDKit 遍历改变的部分 —— 于是有了 2,499 个分子。</p>
+
+    <div style="display:grid; grid-template-columns:.36fr .28fr .36fr; gap:18px; margin-top:12px; align-items:start">
+      <figure class="molbox" style="padding:8px 10px">
+        __FIG_design_72__
+        <div class="nm"><span class="mn">RW_72</span> · 苯环上什么都不加</div>
+      </figure>
+      <div class="stack" style="gap:9px" style="padding-top:26px">
+        <div class="panel" style="padding:10px 12px; background:var(--sunk)">
+          <p class="sm" style="text-align:center">苯环上换一个基团<br><span style="color:var(--muted); font-size:11.5px">—CH₃ · —OH · —Br · —CF₃ · —CN · —NMe₂ …</span></p>
+          <p style="text-align:center; color:var(--accent); font-size:20px; margin-top:4px">↓</p>
+          <p class="sm" style="text-align:center"><strong>2,499</strong> 个类似物</p>
+        </div>
+        <div class="panel" style="padding:10px 12px">
+          <div class="kv" style="margin-bottom:6px"><dt style="color:var(--s-cand); min-width:56px">绿色</dt><dd class="sm"><strong>戊二酰亚胺弹头 glutarimide</strong> —— 插进 CRBN 的那一段,所有已知 CRBN 分子胶共用的那把"钥匙"。改它 = 整个分子失效。</dd></div>
+          <div class="kv"><dt style="color:var(--s-cross); min-width:56px">橙色</dt><dd class="sm"><strong>苯基哌嗪臂</strong> —— 伸出去够 PPIL4 的那只手。</dd></div>
+        </div>
+      </div>
+      <figure class="molbox" style="padding:8px 10px">
+        __FIG_design_1992__
+        <div class="nm"><span class="mn">RW_1992</span> · 换上 —CF₃ 后,进入最终 BUY 名单</div>
+      </figure>
+    </div>
+
+    <div class="plain" style="margin-top:12px">
+      <span class="who">类比</span>
+      <p>像配钥匙:<strong>钥匙齿(绿色)必须一模一样</strong>,否则开不了 CRBN 这把锁;我们只是在钥匙柄上换不同的挂饰,看哪个挂饰刚好能勾住 PPIL4。</p>
+    </div>
+  </section>
+
+  <!-- 09 漏斗一 -->
+  <section class="slide" data-act="方法">
+    <div class="eyebrow"><span class="num mn">09</span><span>方法 · 筛选漏斗（一）· 每一层在问什么</span></div>
+    <h2 class="sf">2,499 → 18:每一层<strong>问一个不同的问题</strong></h2>
+
+    <div class="funnel" style="margin-top:10px; display:flex; flex-direction:column; gap:4px">
+      <div class="fstep"><div class="stg mn">01</div><div class="fbar" style="height:31px"><span class="fill" style="width:100%"></span><span class="n mn">2,499</span><span class="d"><strong>化学上说得通吗?</strong>弹头焊死,只在苯环那一个位置上把取代基一个个换过去,可能性列全<span style="color:var(--muted)">　· RDKit</span></span></div></div>
+      <div class="fstep"><div class="stg mn">02·03</div><div class="fbar" style="height:31px"><span class="fill" style="width:25%"></span><span class="n mn">625</span><span class="d"><strong>像不像已知的分子胶?</strong>让程序先看过上千个已知的 CRBN 分子胶,再给每个新分子打分<span style="color:var(--muted)">　· 随机森林</span></span></div></div>
+      <div class="fstep"><div class="stg mn">04</div><div class="fbar" style="height:31px"><span class="fill" style="width:25%"></span><span class="n mn">625</span><span class="d"><strong>坐得进 CRBN 的口袋吗?</strong>把每个分子真的塞进口袋试一遍,看坐得稳不稳、位置对不对<span style="color:var(--muted)">　· AutoDock Vina</span></span></div></div>
+      <div class="fstep"><div class="stg mn">05·06</div><div class="fbar" style="height:31px"><span class="fill" style="width:8%"></span><span class="n mn">125 → 20</span><span class="d"><strong>三个能不能凑一起?</strong>第一次把 CRBN 和 PPIL4 同时算进来 —— 快,但<strong>只能晋级,不能排名</strong><span style="color:var(--muted)">　· HADDOCK3</span></span></div></div>
+      <div class="fstep"><div class="stg mn">08</div><div class="fbar" style="height:31px; border-color:var(--accent)"><span class="fill" style="width:3%; opacity:.34"></span><span class="n mn">18</span><span class="d"><strong>哪一个拼得最好?</strong>把分子本身也放进计算 —— <strong>唯一算数的那次排名</strong>　<span class="tag" style="margin-left:2px">下一页</span></span></div></div>
+      <div class="fstep"><div class="stg mn">09·11·12</div><div class="fbar" style="height:31px; background:var(--sunk)"><span class="n mn">+6 +3</span><span class="d">再加 <strong>6 个对照</strong>和 <strong>3 个来自另一套筛选</strong>的分子,跑完全一样的流程 → 合计 <strong>27 次</strong> → 采购单</span></div></div>
+    </div>
+
+    <div class="grid3" style="margin-top:11px; align-items:start">
+      <div class="panel stack" style="gap:5px; padding:10px 13px">
+        <h3><span class="mn" style="color:var(--accent)">01</span>　为什么只准改一个位置</h3>
+        <p class="sm">绿色那段是插进 CRBN 的<strong>钥匙齿</strong>,一改就开不了这把锁。所以 2,499 个分子彼此只差苯环上那一个挂饰 —— 是<strong>系统性穷举</strong>出来的,不是随手画的。</p>
+        <hr class="hair">
+        <p class="xs">代价:整个库长得太像,后面的分数差别都很小 —— 这是我们自己造成的,所以必须靠对照来判断差别是不是真的。</p>
+      </div>
+      <div class="panel stack" style="gap:5px; padding:10px 13px">
+        <h3><span class="mn" style="color:var(--accent)">02·03·04</span>　先粗看,再真的试一遍</h3>
+        <p class="sm"><strong>先粗看:</strong>程序学过上千个已知的 CRBN 分子胶,认得出"像不像",把明显不像的先扔掉。</p>
+        <p class="sm"><strong>再真试:</strong>剩下的每个分子都被塞进 CRBN 口袋,反复挪位置、转角度,看哪种摆法最贴合。</p>
+        <hr class="hair">
+        <p class="xs">防作弊:考试用的分子骨架不许在训练里出现过,否则模型只是在<strong>背答案</strong>。</p>
+      </div>
+      <div class="panel stack" style="gap:5px; padding:10px 13px">
+        <h3><span class="mn" style="color:var(--accent)">05·06</span>　快,但"看不见"分子</h3>
+        <p class="sm">因为有真实结构 <span class="mn">9DWV</span> 打底,程序<strong>知道界面上该出现哪些残基</strong>,不用瞎猜,所以很快 —— 适合把 125 个压到 20 个。</p>
+        <hr class="hair">
+        <p class="xs"><strong>但它没把分子本身放进计算</strong>,看不见分子之间的差别。所以结果只能用来<strong>晋级</strong>,不能用来<strong>排名</strong> —— 这就是为什么还必须有下一步。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 最后一层 -->
+  <section class="slide" data-act="方法">
+    <div class="eyebrow"><span class="num mn">10</span><span>方法 · 筛选漏斗（二）· 最后一层</span></div>
+    <h2 class="sf">为什么<strong>只有最后一步的排名算数</strong> —— 以及凭什么相信它</h2>
+
+    <div class="grid2" style="margin-top:10px; align-items:start">
+      <div class="panel stack" style="gap:6px; padding:11px 14px">
+        <h3>① 不把分子放进去,分子之间就是"看不见"的</h3>
+        <svg class="fx" viewBox="0 0 470 92" role="img" aria-label="前一步不同分子算出同一个分数,最后一步分数才分开">
+          <text class="sub" x="0" y="16" style="font-size:10.5px">前一步(不放分子):</text>
+          <circle cx="118" cy="36" r="7" fill="var(--muted)"/><circle cx="130" cy="36" r="7" fill="var(--muted)"/>
+          <circle cx="142" cy="36" r="7" fill="var(--muted)"/><circle cx="154" cy="36" r="7" fill="var(--muted)"/>
+          <text class="sub mono" x="174" y="40" style="fill:var(--ink);font-size:10.5px">全部 −144.986</text>
+          <text class="sub" x="300" y="40" style="fill:var(--s-cross);font-size:10px" font-weight="650">一个小数点都不差</text>
+          <text class="sub" x="0" y="76" style="font-size:10.5px">最后一步(放进分子):</text>
+          <circle cx="118" cy="72" r="7" fill="var(--s-cand)"/><circle cx="186" cy="72" r="7" fill="var(--s-cand)"/>
+          <circle cx="258" cy="72" r="7" fill="var(--s-cand)"/><circle cx="330" cy="72" r="7" fill="var(--s-cand)"/>
+          <line x1="112" y1="86" x2="360" y2="86" stroke="var(--rule)"/>
+          <text class="sub" x="372" y="76" style="fill:var(--accent);font-size:10px">分数终于分开</text>
+        </svg>
+        <p class="sm">共用同一个弹头的分子,如果不把分子本身放进计算,会算出<strong>一模一样的分数</strong> —— 我们这里有两对分子,数字连小数点后三位都完全相同。最后一步把分子当成<strong>第三个实体</strong>放进去,化学差异才第一次进入排名。</p>
+        <p class="xs">技术上:用 PRODRG 生成配体拓扑,以 <span class="mn">chain C</span> 进入 CNS。</p>
+      </div>
+
+      <div class="panel stack" style="gap:6px; padding:11px 14px">
+        <h3>② 两个蛋白必须靠分子自己粘住</h3>
+        <svg class="fx" viewBox="0 0 470 106" role="img" aria-label="CRBN 与 PPIL4 之间没有直接约束,只能通过分子桥接">
+          <ellipse cx="88" cy="52" rx="62" ry="38" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
+          <text class="lbl" x="88" y="57" text-anchor="middle" style="fill:var(--accent)">CRBN</text>
+          <ellipse cx="336" cy="52" rx="62" ry="38" fill="none" stroke="var(--s-ctrl)" stroke-width="1.4" stroke-dasharray="5 4"/>
+          <text class="lbl" x="336" y="57" text-anchor="middle" style="fill:var(--s-ctrl)">PPIL4</text>
+          <path d="M232 52 l-11 -17 h-20 l-11 17 l11 17 h20 z" fill="var(--s-cand)"/>
+          <path d="M150 52 L190 52 M232 52 L274 52" stroke="var(--s-cand)" stroke-width="2"/>
+          <path d="M150 18 C200 2 262 2 274 18" fill="none" stroke="var(--s-cross)" stroke-width="1.4" stroke-dasharray="4 3"/>
+          <line x1="200" y1="4" x2="224" y2="24" stroke="var(--s-cross)" stroke-width="2"/>
+          <line x1="224" y1="4" x2="200" y2="24" stroke="var(--s-cross)" stroke-width="2"/>
+          <text class="sub" x="212" y="92" text-anchor="middle" style="fill:var(--accent);font-size:10px">唯一的连接:我们设计的分子</text>
+          <text class="sub" x="412" y="20" text-anchor="middle" style="fill:var(--s-cross);font-size:10px">没有这条</text>
+        </svg>
+        <p class="sm">我们<strong>没有</strong>告诉程序"CRBN 和 PPIL4 应该贴在一起" —— 两个蛋白之间一条提示都没写。三个能拼上,<strong>只能是因为中间那个分子把它们连住了</strong>。</p>
+        <p class="sm">这是故意的:否则放什么分子都能"拼得上",排名就没有意义了。</p>
+      </div>
+    </div>
+
+    <div class="grid2" style="margin-top:11px; align-items:start">
+      <div class="panel stack" style="gap:6px; padding:11px 14px">
+        <h3>③ 27 次计算,跑的是<strong>同一份</strong>流程</h3>
+        <svg class="fx" viewBox="0 0 470 62" role="img" aria-label="被钉死的四类设置:提示文件、随机种子、分子建模方式、输入与版本">
+          <rect x="0" y="4" width="112" height="40" rx="3" fill="var(--panel)" stroke="var(--accent)" stroke-width="1.2"/>
+          <text class="sub" x="56" y="21" text-anchor="middle" style="fill:var(--ink);font-size:9px">同一份界面提示</text>
+          <text class="sub mono" x="56" y="35" text-anchor="middle" style="font-size:9px">23 条,全员共用</text>
+          <rect x="120" y="4" width="104" height="40" rx="3" fill="var(--panel)" stroke="var(--accent)" stroke-width="1.2"/>
+          <text class="sub" x="172" y="21" text-anchor="middle" style="fill:var(--ink);font-size:9px">同一个随机种子</text>
+          <text class="sub mono" x="172" y="35" text-anchor="middle" style="font-size:9px">iniseed = 42</text>
+          <rect x="232" y="4" width="110" height="40" rx="3" fill="var(--panel)" stroke="var(--accent)" stroke-width="1.2"/>
+          <text class="sub" x="287" y="21" text-anchor="middle" style="fill:var(--ink);font-size:9px">同一套分子建模</text>
+          <text class="sub mono" x="287" y="35" text-anchor="middle" style="font-size:9px">PRODRG,自动建模关闭</text>
+          <rect x="350" y="4" width="120" height="40" rx="3" fill="var(--panel)" stroke="var(--accent)" stroke-width="1.2"/>
+          <text class="sub" x="410" y="21" text-anchor="middle" style="fill:var(--ink);font-size:9px">同样的输入与版本</text>
+          <text class="sub" x="410" y="35" text-anchor="middle" style="font-size:9px">全部钉死</text>
+          <text class="sub" x="235" y="58" text-anchor="middle" style="fill:var(--accent);font-size:10px" font-weight="650">同一个分子 → 同一个数字,换台机器、换个人跑也一样</text>
+        </svg>
+        <p class="sm">HADDOCK 的分数<strong>只有在同一套设置里才能互相比</strong>。所以候选、对照、交叉检验一共 27 次计算,用的是<strong>同一份锁死的流程</strong>。</p>
+        <p class="xs">每一行结果都盖 <span class="mn">protocol_version</span> 戳(<span class="mn">ppil4_lock_v1</span>)—— 旧流程的数字混不进来。</p>
+      </div>
+
+      <div class="panel stack" style="gap:6px; padding:11px 14px; border-color:var(--accent)">
+        <h3>④ 开跑之前,先拿真药考自己</h3>
+        <svg class="fx" viewBox="0 0 470 88" role="img" aria-label="结构吻合度刻度:0.23 为及格线,本项目 FPFT-2216 达到 0.376">
+          <rect x="0" y="18" width="470" height="20" rx="3" fill="var(--sunk)"/>
+          <rect x="0" y="18" width="108" height="20" rx="3" fill="var(--warn-bg)"/>
+          <line x1="108" y1="12" x2="108" y2="44" stroke="var(--ink)" stroke-width="1.3" stroke-dasharray="4 3"/>
+          <text class="sub mono" x="108" y="10" text-anchor="middle" style="fill:var(--ink);font-size:9px">0.23 及格线</text>
+          <text class="sub" x="54" y="32" text-anchor="middle" style="fill:var(--s-cross);font-size:9px">不合格</text>
+          <text class="sub" x="300" y="32" text-anchor="middle" style="fill:var(--accent);font-size:9px">算是把真实结构复现出来了</text>
+          <circle cx="177" cy="28" r="8" fill="var(--accent)"/>
+          <line x1="177" y1="38" x2="177" y2="50" stroke="var(--accent)" stroke-width="1.2"/>
+          <text class="lbl mono" x="177" y="66" text-anchor="middle" style="fill:var(--accent);font-size:14px">0.376</text>
+          <text class="sub" x="0" y="84" style="font-size:10px">真药 FPFT-2216 把 9DWV 算回来的<tspan style="fill:var(--ink)" font-weight="650">吻合度</tspan> —— 24 个被对接分子里最高</text>
+        </svg>
+        <p class="sm">规则写在流程里:<strong>先把真药 FPFT-2216 交给这套流程,它得自己把已经知道的真实结构算回来,才允许开始跑候选分子。</strong>它验证的是<strong>方法</strong>,不是任何一个候选分子。</p>
+        <p class="xs">吻合度用 DockQ 衡量(iRMSD 2.073 Å、fnat 0.647)。<strong>而且这个检验部分是循环的,我们自己说出来:</strong>PPIL4 一侧的界面提示本来就取自 9DWV,等于提前告诉了答案。一个"不给提示"的中性对照已列入计划,<strong>尚未完成</strong>。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11 结果·一根轴 -->
+  <section class="slide" data-act="结果">
+    <div class="eyebrow"><span class="num mn">11</span><span>结果 · 一根轴上的 27 个分子</span></div>
+    <h2 class="sf">候选与对照跑同一套协议,所以能放在同一条刻度上 —— 但这条刻度<strong>偏爱大分子</strong></h2>
+    <div id="chartWrap" style="margin-top:4px">
+      <div id="tip" role="status"></div>
+      <svg id="strip" viewBox="0 0 1100 486" role="img"
+           aria-label="27 个分子的 HADDOCK 三体分数分布,分为候选、对照、交叉检验三条泳道,并标出噪声地板与可用门槛两条线"></svg>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:2px">
+      <div class="legend">
+        <span><i style="background:var(--s-cand)"></i>候选分子 (18)</span>
+        <span><i style="background:var(--s-ctrl)"></i>对照 · 实心=阳性 / 空心=阴性 (6)</span>
+        <span><i style="background:var(--s-cross)"></i>交叉检验 (3)</span>
+      </div>
+      <p class="xs">两条纵向虚线是<strong>唯一</strong>让这些数字有意义的东西 —— 鼠标悬停看数值</p>
+    </div>
+  </section>
+
+  <!-- 22 展望 -->
+  <section class="slide" data-act="展望">
+    <div class="eyebrow"><span class="num mn">12</span><span>展望 · 湿实验验证</span></div>
+    <h2 class="sf">计算部分到此为止 —— 接下来由分子自己回答</h2>
+    <p class="lede sm">采购单已经就绪(25 个分子,含 SDF 与结构表)。<strong>湿实验验证是本项目的下一阶段,不在本仓库中呈现。</strong></p>
+
+    <figure style="margin-top:12px">
+      <svg class="fx" viewBox="0 0 1030 152" role="img" aria-label="湿实验验证路线:细胞内降解、选择性、RAS 依赖性三步,任一步失败即终止">
+        <defs>
+          <marker id="a6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0 0 L10 5 L0 10 z" fill="var(--accent)"/>
+          </marker>
+        </defs>
+        <line x1="16" y1="70" x2="1014" y2="70" stroke="var(--hair)" stroke-width="2"/>
+        <g>
+          <circle cx="130" cy="70" r="15" fill="var(--accent)"/>
+          <text class="lbl" x="130" y="75" text-anchor="middle" style="fill:#fff;font-size:13px">1</text>
+          <text class="lbl" x="130" y="36" text-anchor="middle">细胞内降解</text>
+          <text class="sub" x="130" y="104" text-anchor="middle" style="font-size:10.5px">HiBiT / Western</text>
+          <text class="sub" x="130" y="120" text-anchor="middle" style="font-size:10.5px">测 DC₅₀ 与 D<tspan baseline-shift="sub" font-size="8">max</tspan></text>
+          <text class="sub" x="130" y="140" text-anchor="middle" style="fill:var(--s-cross);font-size:10px" font-weight="650">第一道生死线</text>
+        </g>
+        <path d="M160 70 L400 70" stroke="var(--accent)" stroke-width="1.4" marker-end="url(#a6)"/>
+        <g>
+          <circle cx="430" cy="70" r="15" fill="var(--accent)"/>
+          <text class="lbl" x="430" y="75" text-anchor="middle" style="fill:#fff;font-size:13px">2</text>
+          <text class="lbl" x="430" y="36" text-anchor="middle">选择性</text>
+          <text class="sub" x="430" y="104" text-anchor="middle" style="font-size:10.5px">全蛋白质组学,重点对照</text>
+          <text class="sub" x="430" y="120" text-anchor="middle" style="font-size:10.5px">IKZF1/3 · CK1α · PDE6D · DTWD1</text>
+          <text class="sub" x="430" y="140" text-anchor="middle" style="fill:var(--accent);font-size:10px" font-weight="650">整个项目要争取的东西</text>
+        </g>
+        <path d="M460 70 L700 70" stroke="var(--accent)" stroke-width="1.4" marker-end="url(#a6)"/>
+        <g>
+          <circle cx="730" cy="70" r="15" fill="var(--accent)"/>
+          <text class="lbl" x="730" y="75" text-anchor="middle" style="fill:#fff;font-size:13px">3</text>
+          <text class="lbl" x="730" y="36" text-anchor="middle">RAS 依赖性假设</text>
+          <text class="sub" x="730" y="104" text-anchor="middle" style="font-size:10.5px">RAS on/off 同源细胞系</text>
+          <text class="sub" x="730" y="120" text-anchor="middle" style="font-size:10.5px">+ <tspan font-weight="650" fill="var(--ink)">亚致死剂量</tspan>下的剪接读出</text>
+          <text class="sub" x="730" y="140" text-anchor="middle" style="fill:var(--s-cross);font-size:10px" font-weight="650">全项目最没被证实的一环</text>
+        </g>
+        <line x1="880" y1="20" x2="880" y2="140" stroke="var(--hair)"/>
+        <text class="sub" x="900" y="40" style="fill:var(--ink);font-size:11px" font-weight="650">计算侧欠的两笔账</text>
+        <text class="sub" x="900" y="62" style="font-size:10.5px">· 中性约束对照 ——</text>
+        <text class="sub" x="900" y="78" style="font-size:10.5px">　测协议能否不靠 9DWV</text>
+        <text class="sub" x="900" y="94" style="font-size:10.5px">　自己找到界面</text>
+        <text class="sub" x="900" y="116" style="font-size:10.5px">· 把另一套筛选的分子</text>
+        <text class="sub" x="900" y="132" style="font-size:10.5px">　在 v1 下重跑后并入</text>
+      </svg>
+    </figure>
+
+    <div class="panel" style="margin-top:14px; border-color:var(--accent); background:var(--accent-soft)">
+      <p class="sm"><strong>采购单是按"能被证伪"设计的:</strong>4 个全能分子 + 6 个单轴极端值 + 5 个对照。湿实验结果一回来,不只是告诉我们哪个分子能用 —— 它会直接告诉我们,<strong>分数轴和结构轴,哪一条才配用来排序</strong>。</p>
+    </div>
+  </section>
+
+  <!-- 13 结尾 -->
+  <section class="slide" data-act="展望">
+    <div class="eyebrow"><span class="num mn">13</span><span>总结 · 这个项目处在什么位置</span></div>
+    <h2 class="sf">我们没有找到药 —— 我们做出了一批<strong>值得拿去做实验的分子</strong></h2>
+
+    <figure style="margin-top:12px">
+      <svg class="fx" viewBox="0 0 1030 118" role="img"
+           aria-label="项目进度:设计与计算筛选已完成,采购清单就绪,湿实验尚未开始,结论要等实验结果">
+        <line x1="70" y1="46" x2="960" y2="46" stroke="var(--hair)" stroke-width="2"/>
+        <line x1="70" y1="46" x2="366" y2="46" stroke="var(--accent)" stroke-width="2.5"/>
+        <g>
+          <circle cx="70" cy="46" r="13" fill="var(--accent)"/>
+          <text class="sub" x="70" y="51" text-anchor="middle" style="fill:#fff;font-size:11px" font-weight="700">✓</text>
+          <text class="lbl" x="70" y="20" text-anchor="middle" style="font-size:12px">设计 + 计算筛选</text>
+          <text class="sub" x="70" y="76" text-anchor="middle" style="fill:var(--accent);font-size:10.5px" font-weight="650">已完成</text>
+          <text class="sub" x="70" y="92" text-anchor="middle" style="font-size:10px">2,499 → 18,27 次对接</text>
+        </g>
+        <g>
+          <circle cx="366" cy="46" r="13" fill="var(--accent)"/>
+          <text class="sub" x="366" y="51" text-anchor="middle" style="fill:#fff;font-size:11px" font-weight="700">✓</text>
+          <text class="lbl" x="366" y="20" text-anchor="middle" style="font-size:12px">采购清单</text>
+          <text class="sub" x="366" y="76" text-anchor="middle" style="fill:var(--accent);font-size:10.5px" font-weight="650">就绪</text>
+          <text class="sub" x="366" y="92" text-anchor="middle" style="font-size:10px">25 个分子,含结构式与规格</text>
+        </g>
+        <g>
+          <circle cx="662" cy="46" r="13" fill="var(--paper)" stroke="var(--s-cross)" stroke-width="2.5"/>
+          <text class="lbl" x="662" y="20" text-anchor="middle" style="font-size:12px">湿实验验证</text>
+          <text class="sub" x="662" y="76" text-anchor="middle" style="fill:var(--s-cross);font-size:10.5px" font-weight="650">下一步 · 尚未开始</text>
+          <text class="sub" x="662" y="92" text-anchor="middle" style="font-size:10px">降解 → 选择性 → RAS 依赖性</text>
+        </g>
+        <g>
+          <circle cx="960" cy="46" r="13" fill="var(--paper)" stroke="var(--rule)" stroke-width="2.5"/>
+          <text class="lbl" x="960" y="20" text-anchor="middle" style="font-size:12px">结论</text>
+          <text class="sub" x="960" y="76" text-anchor="middle" style="font-size:10.5px">要等实验回来</text>
+        </g>
+      </svg>
+    </figure>
+
+    <div class="panel" style="margin-top:12px; border-color:var(--s-cross); border-left-width:3px">
+      <h3>所以这个项目<strong>能说什么、不能说什么</strong></h3>
+      <div class="grid2" style="margin-top:7px; gap:20px">
+        <p class="sm"><strong style="color:var(--accent)">能说:</strong>在同一套锁死的协议下,这 18 个分子里有一部分在几何上比已知的 PPIL4 分子胶更像样,值得花钱合成、拿去测。采购单是<strong>按"能被证伪"设计的</strong> —— 里面既有全能分子,也有故意挑的"偏科生",实验回来能告诉我们<strong>哪条评分标准才是对的</strong>。</p>
+        <p class="sm"><strong style="color:var(--s-cross)">不能说:</strong>没有任何一个分子被合成过、测试过。<strong>每一个分数都是形状上的代理指标,不是药效</strong>。排名要当作<em>分诊</em>读,不是真理。至于"只杀 RAS 肿瘤"那一层,本项目<strong>完全没有检验</strong>。</p>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:.30fr .34fr .36fr; gap:14px; margin-top:12px; align-items:start">
+      <figure class="panel" style="padding:7px">
+        <img class="shot" src="__PNG_RW_1987__" alt="RW_1987 与 CRBN、PPIL4 组成的三元复合物计算模型">
+        <figcaption style="margin-top:5px">我们算出来的三元复合物之一 —— <span class="mn">RW_1987</span>。<strong>深蓝</strong> = CRBN,<strong>灰</strong> = PPIL4,<strong>中间橙色</strong>的就是设计出来的胶。</figcaption>
+      </figure>
+      <div class="stack" style="gap:9px">
+        <div class="panel stack" style="gap:6px; padding:11px 13px">
+          <h3>团队</h3>
+          <p class="sm"><strong>Keyuan (Ryan) Wang</strong> —— 分子生成、分类器、Vina 与含配体三体对接流程、协议锁、采购单。</p>
+          <p class="sm"><strong>Zhentai (Tyrone) Zong</strong> —— 独立的 9DWV 引导式 PPIL4 筛选,作为平行交叉检验。</p>
+        </div>
+        <div class="panel stack" style="gap:5px; padding:11px 13px">
+          <h3>可复现性</h3>
+          <p class="sm">27 次对接每一行结果都带 <span class="mn">protocol_version</span> 戳;金标准提交进仓库;采购单由脚本生成 —— 加一个分子是<strong>重跑</strong>,不是手改表格。</p>
+        </div>
+      </div>
+      <div class="stack" style="gap:9px">
+        <div class="panel stack" style="gap:5px; padding:11px 13px">
+          <h3>关键来源<span class="tag soft" style="margin-left:8px">完整列表见下一页</span></h3>
+          <p class="sm">PDB <span class="mn">9DWV</span> — CRBN–FPFT-2216–PPIL4 三元复合物<br>Petzold, Gainza 等,<em style="color:var(--body)">Science</em> 2025 — CRBN 底物空间与 PPIL4<br>Sievers 等,<em style="color:var(--body)">Science</em> 2018 — 人类 6,572 个锌指的降解组<br>Nature 2015 — MYC 的剪接体成瘾　·　DepMap — 共依赖分析</p>
+        </div>
+        <div class="panel stack" style="gap:5px; padding:11px 13px">
+          <h3>工具</h3>
+          <p class="sm mn" style="line-height:1.75">RDKit · scikit-learn · ChEMBL · AutoDock Vina · Meeko<br>HADDOCK3 2026.7.0 · PRODRG · CNS · PyMOL · AlphaFold</p>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- 14 参考文献 -->
+  <section class="slide" data-act="">
+    <div class="eyebrow"><span class="num mn">14</span><span>参考文献 · 来源与工具</span></div>
+    <h2 class="sf">这个项目建立在什么之上</h2>
+    <p class="lede sm" style="margin-top:5px; max-width:none">哈佛格式,带 <span class="mn">doi</span> 的可直接检索原文。其中 4 条(SALL4 共结晶、Sievers 2018、CNS、Meeko)是幻灯片引用、但网站参考文献页尚未收录的来源。</p>
+    <div class="refs">
+      <div class="g">
+        <h4>靶点、前人工作与依据<span class="en"> · Target, prior art and rationale</span></h4>
+        <p>Baek, K., Metivier, R.J., Roy Burman, S.S., Bushman, J.W., Yoon, H., Lumpkin, R.J., Abeja, D.M., Lakshminarayan, M., Yue, H., Ojeda, S., Verano, A.L., Gray, N.S., Donovan, K.A. and Fischer, E.S. (2025) &lsquo;Unveiling the hidden interactome of CRBN molecular glues&rsquo;, <em>Nature Communications</em>, 16, 6831. doi:&nbsp;10.1038/s41467-025-62099-w.</p>
+        <p><em>CRBN&ndash;thalidomide&ndash;SALL4 ternary co-crystal</em> (ligand EF2). Project input structure; the fixed CRBN degron-pocket residues were derived from it, and it is the zinc-finger backbone shown on slide&nbsp;07. (PDB accession not recorded in this repository.)</p>
+        <p>Hsu, T.Y. et&nbsp;al. (2015) &lsquo;The spliceosome is a therapeutic vulnerability in MYC-driven cancer&rsquo;, <em>Nature</em>, 525(7569), pp.&nbsp;384&ndash;388. doi:&nbsp;10.1038/nature14985.</p>
+        <p>Petzold, G., Gainza, P. et&nbsp;al. (2025) &lsquo;Mining the CRBN target space redefines rules for molecular glue&ndash;induced neosubstrate recognition&rsquo;, <em>Science</em>, 389(6755). doi:&nbsp;10.1126/science.adt6736.</p>
+        <p>RCSB Protein Data Bank (2025) <em>Entry 9DWV: cereblon&ndash;FPFT-2216&ndash;PPIL4 ternary complex</em>. Available at: https://www.rcsb.org/structure/9DWV (Accessed: 2 September 2026).</p>
+        <p>Sievers, Q.L. et&nbsp;al. (2018) &lsquo;Defining the human C2H2 zinc finger degrome targeted by thalidomide analogs through CRBN&rsquo;, <em>Science</em>, 362(6414), eaat0572. doi:&nbsp;10.1126/science.aat0572.</p>
+      </div>
+      <div class="g">
+        <h4>方法与软件<span class="en"> · Methods and software</span></h4>
+        <p>Basu, S. and Wallner, B. (2016) &lsquo;DockQ: a quality measure for protein&ndash;protein docking models&rsquo;, <em>PLOS ONE</em>, 11(8), e0161879. doi:&nbsp;10.1371/journal.pone.0161879.</p>
+        <p>Br&uuml;nger, A.T. et&nbsp;al. (1998) &lsquo;Crystallography &amp; NMR system: a new software suite for macromolecular structure determination&rsquo;, <em>Acta Crystallographica Section D</em>, 54(5), pp.&nbsp;905&ndash;921. doi:&nbsp;10.1107/S0907444998003254.</p>
+        <p>Dominguez, C., Boelens, R. and Bonvin, A.M.J.J. (2003) &lsquo;HADDOCK: a protein&ndash;protein docking approach based on biochemical or biophysical information&rsquo;, <em>Journal of the American Chemical Society</em>, 125(7), pp.&nbsp;1731&ndash;1737. doi:&nbsp;10.1021/ja026939x.</p>
+        <p>Eberhardt, J., Santos-Martins, D., Tillack, A.F. and Forli, S. (2021) &lsquo;AutoDock Vina 1.2.0: new docking methods, expanded force field, and Python bindings&rsquo;, <em>Journal of Chemical Information and Modeling</em>, 61(8), pp.&nbsp;3891&ndash;3898. doi:&nbsp;10.1021/acs.jcim.1c00203.</p>
+        <p>Forli Lab (2026) <em>Meeko: small-molecule preparation for AutoDock</em>. Available at: https://github.com/forlilab/Meeko (Accessed: 2 September 2026).</p>
+        <p>Jumper, J. et&nbsp;al. (2021) &lsquo;Highly accurate protein structure prediction with AlphaFold&rsquo;, <em>Nature</em>, 596(7873), pp.&nbsp;583&ndash;589. doi:&nbsp;10.1038/s41586-021-03819-2.</p>
+        <p>Pedregosa, F. et&nbsp;al. (2011) &lsquo;Scikit-learn: machine learning in Python&rsquo;, <em>Journal of Machine Learning Research</em>, 12, pp.&nbsp;2825&ndash;2830.</p>
+        <p>RDKit (2026) <em>RDKit: open-source cheminformatics</em>. Available at: https://www.rdkit.org/ (Accessed: 2 September 2026).</p>
+        <p>Schr&ouml;dinger, LLC (2026) <em>The PyMOL molecular graphics system</em>, version 3.1.6. Available at: https://pymol.org/ (Accessed: 2 September 2026).</p>
+        <p>Sch&uuml;ttelkopf, A.W. and van Aalten, D.M.F. (2004) &lsquo;PRODRG: a tool for high-throughput crystallography of protein&ndash;ligand complexes&rsquo;, <em>Acta Crystallographica Section D</em>, 60(8), pp.&nbsp;1355&ndash;1363. doi:&nbsp;10.1107/S0907444904011679.</p>
+        <p>three.js (2026) <em>three.js JavaScript 3D library</em>, r140. Available at: https://threejs.org/ (Accessed: 2 September 2026).</p>
+        <p>Trott, O. and Olson, A.J. (2010) &lsquo;AutoDock Vina: improving the speed and accuracy of docking with a new scoring function, efficient optimization, and multithreading&rsquo;, <em>Journal of Computational Chemistry</em>, 31(2), pp.&nbsp;455&ndash;461. doi:&nbsp;10.1002/jcc.21334.</p>
+        <p>van Zundert, G.C.P. et&nbsp;al. (2016) &lsquo;The HADDOCK2.2 web server: user-friendly integrative modeling of biomolecular complexes&rsquo;, <em>Journal of Molecular Biology</em>, 428(4), pp.&nbsp;720&ndash;725. doi:&nbsp;10.1016/j.jmb.2015.09.014.</p>
+      </div>
+      <div class="g">
+        <h4>数据库与化合物来源<span class="en"> · Databases and compound sources</span></h4>
+        <p>Broad Institute (2026) <em>DepMap portal</em>. Available at: https://depmap.org/ (Accessed: 2 September 2026).</p>
+        <p>European Bioinformatics Institute (2026) <em>ChEMBL database</em>. Available at: https://www.ebi.ac.uk/chembl/ (Accessed: 2 September 2026).</p>
+        <p>MedChemExpress (2026) <em>Z6466608628 (HY-175599)</em>. Available at: https://www.medchemexpress.com/ (Accessed: 2 September 2026).</p>
+        <p>National Center for Biotechnology Information (2026) <em>PubChem</em>. Available at: https://pubchem.ncbi.nlm.nih.gov/ (Accessed: 2 September 2026).</p>
+      </div>
+    </div>
+  </section>
+
+  <div id="foot">
+    <div id="bar" role="tablist" aria-label="幻灯片"></div>
+    <span id="count" class="mn"></span>
+    <span id="hint">← → 翻页</span>
+  </div>
+
+</div>
+</div>
+
+<script>
+(function(){
+  /* ---------- deck ---------- */
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var acts   = Array.prototype.slice.call(document.querySelectorAll('.act'));
+  var bar = document.getElementById('bar');
+  var count = document.getElementById('count');
+  var i = 0;
+
+  slides.forEach(function(s, n){
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.setAttribute('aria-label', '第 ' + (n+1) + ' 页');
+    b.addEventListener('click', function(){ go(n); });
+    bar.appendChild(b);
+  });
+  var dots = Array.prototype.slice.call(bar.children);
+
+  function go(n){
+    i = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach(function(s, k){ s.classList.toggle('is-on', k === i); });
+    dots.forEach(function(d, k){
+      d.classList.toggle('cur', k === i);
+      d.classList.toggle('done', k < i);
+    });
+    var act = slides[i].getAttribute('data-act');
+    acts.forEach(function(a){ a.classList.toggle('on', a.getAttribute('data-act') === act); });
+    count.textContent = (i+1) + ' / ' + slides.length;
+  }
+
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { go(i+1); e.preventDefault(); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { go(i-1); e.preventDefault(); }
+    else if (e.key === 'Home') { go(0); }
+    else if (e.key === 'End') { go(slides.length-1); }
+  });
+  document.getElementById('stage').addEventListener('click', function(e){
+    if (e.target.closest('#foot') || e.target.closest('#rail') || e.target.closest('#chartWrap')) return;
+    go(e.clientX > window.innerWidth/2 ? i+1 : i-1);
+  });
+
+  /* ---------- fit to viewport ---------- */
+  var stage = document.getElementById('stage');
+  function fit(){
+    var s = Math.min(window.innerWidth/1280, window.innerHeight/720);
+    stage.style.transform = 'scale(' + s + ')';
+  }
+  window.addEventListener('resize', fit);
+  fit();
+
+  var ns = 'http://www.w3.org/2000/svg';
+  function el(t, a){ var e = document.createElementNS(ns, t); for (var k in a) e.setAttribute(k, a[k]); return e; }
+  function txt(e, s){ e.textContent = s; return e; }
+
+  /* ---------- data (generated from the locked-protocol CSVs) ---------- */
+  var DATA = __DATA__;
+
+  var LABELS = {
+    'Z6466608628_positive_control':  {lab:'Z6466608628 · 已知 PPIL4 胶 · 30 重原子', dy:-20},
+    'negctrl_no_glutarimide':        {lab:'脱降解子阴性对照 (−)',        dy:54},
+    'FPFT_2216_positive_control':    {lab:'FPFT-2216 · 真药 · 20 重原子', dy:-46},
+    'TM-04-064-02_positive_control': {lab:'TM-04-064-02',                dy:32},
+    'negctrl_no_ppil4_arm':          {lab:'无 PPIL4 臂 (−)',             dy:-20},
+    'negctrl_no_crbn_ppil4_arm':     {lab:'双臂全剥 · 地板 (−)',         dy:-20}
+  };
+  var NEG = {'negctrl_no_glutarimide':1,'negctrl_no_ppil4_arm':1,'negctrl_no_crbn_ppil4_arm':1};
+  var COL = {cand:'var(--s-cand)', ctrl:'var(--s-ctrl)', cross:'var(--s-cross)'};
+
+  /* ---------- strip chart ---------- */
+  (function(){
+    var W = 1100, H = 486, L = 118, R = 26, T = 30, B = 58;
+    var PW = W - L - R, LO = -135, HI = -90;
+    function x(v){ return L + (v - LO) / (HI - LO) * PW; }
+    var LANES = [
+      {k:'cand',  y:132, t:'候选分子',  s:'18 个,08 终排'},
+      {k:'ctrl',  y:288, t:'对照',      s:'6 个,定标用'},
+      {k:'cross', y:392, t:'交叉检验',  s:'3 个,另一套筛选'}
+    ];
+    var svg = document.getElementById('strip'), out = [];
+    LANES.forEach(function(ln){
+      out.push(el('line', {x1:L, x2:L+PW, y1:ln.y, y2:ln.y, stroke:'var(--hair)', 'stroke-width':1}));
+      out.push(txt(el('text', {x:L-14, y:ln.y-3, 'text-anchor':'end', fill:'var(--ink)', 'font-size':12.5,
+                               'font-weight':650, 'font-family':'system-ui'}), ln.t));
+      out.push(txt(el('text', {x:L-14, y:ln.y+12, 'text-anchor':'end', fill:'var(--muted)', 'font-size':10.5,
+                               'font-family':'system-ui'}), ln.s));
+    });
+    [{v:-125.61, t:'可用门槛 −125.61', s:'同量级(30 重原子)最强对照'},
+     {v:-112.20, t:'噪声地板 −112.20', s:'脱降解子的阴性对照'}].forEach(function(th){
+      out.push(el('line', {x1:x(th.v), x2:x(th.v), y1:T+4, y2:H-B, stroke:'var(--ink)',
+                           'stroke-width':1, 'stroke-dasharray':'4 4', opacity:.5}));
+      out.push(txt(el('text', {x:x(th.v)+7, y:T+13, fill:'var(--ink)', 'font-size':11, 'font-weight':650,
+                               'font-family':'IBM Plex Mono, ui-monospace, monospace'}), th.t));
+      out.push(txt(el('text', {x:x(th.v)+7, y:T+26, fill:'var(--muted)', 'font-size':10,
+                               'font-family':'system-ui'}), th.s));
+    });
+    out.push(el('line', {x1:L, x2:L+PW, y1:H-B+6, y2:H-B+6, stroke:'var(--rule)', 'stroke-width':1}));
+    [-135,-130,-125,-120,-115,-110,-105,-100,-95,-90].forEach(function(v){
+      out.push(el('line', {x1:x(v), x2:x(v), y1:H-B+6, y2:H-B+10, stroke:'var(--rule)', 'stroke-width':1}));
+      out.push(txt(el('text', {x:x(v), y:H-B+24, 'text-anchor':'middle', fill:'var(--muted)', 'font-size':10.5,
+                               'font-family':'IBM Plex Mono, ui-monospace, monospace'}), v));
+    });
+    out.push(txt(el('text', {x:L, y:H-4, fill:'var(--muted)', 'font-size':10.5, 'font-family':'system-ui'}),
+                 '← 更好　　HADDOCK 分数（每次运行前 10 个最优模型的均值）　·　分数随分子体积增大而变好,只能在同量级之间比较'));
+
+    var laneY = {}; LANES.forEach(function(l){ laneY[l.k] = l.y; });
+    DATA.forEach(function(m){
+      var cx = x(m.v), cy = laneY[m.role], hollow = !!NEG[m.n];
+      var g = el('g', {});
+      g.appendChild(el('circle', {cx:cx, cy:cy, r:7.4, fill:'var(--paper)'}));
+      g.appendChild(el('circle', {cx:cx, cy:cy, r:5.6, fill: hollow ? 'var(--paper)' : COL[m.role],
+                                  stroke: COL[m.role], 'stroke-width': hollow ? 2 : 1.2}));
+      g.appendChild(el('circle', {cx:cx, cy:cy, r:13, fill:'transparent'}));
+      g.addEventListener('mouseenter', function(){ show(m, cx, cy); });
+      g.addEventListener('mouseleave', hide);
+      out.push(g);
+      var L2 = LABELS[m.n];
+      if (L2){
+        var dy = L2.dy;
+        if (Math.abs(dy) > 24){
+          out.push(el('line', {x1:cx, x2:cx, y1:cy + (dy<0 ? -9 : 9), y2:cy + dy + (dy<0 ? 6 : -11),
+                               stroke:'var(--rule)', 'stroke-width':1}));
+        }
+        out.push(txt(el('text', {x:cx, y:cy + dy, 'text-anchor':'middle', fill:'var(--ink)', 'font-size':10.5,
+                                 'font-family':'system-ui', 'font-weight':600,
+                                 stroke:'var(--paper)', 'stroke-width':3.4, 'paint-order':'stroke'}), L2.lab));
+      }
+    });
+    [{n:'RW_708 −132.1', v:-132.101, dy:-20}, {n:'RW_672 −112.1', v:-112.108, dy:26}].forEach(function(k){
+      out.push(txt(el('text', {x:x(k.v), y:132 + k.dy, 'text-anchor':'middle', fill:'var(--ink)',
+                               'font-size':10.5, 'font-family':'system-ui', 'font-weight':600,
+                               stroke:'var(--paper)', 'stroke-width':3.4, 'paint-order':'stroke'}), k.n));
+    });
+    out.forEach(function(n){ svg.appendChild(n); });
+
+    var tip = document.getElementById('tip');
+    function show(m, cx, cy){
+      var r = svg.getBoundingClientRect(), sx = r.width / W;
+      tip.textContent = m.n + '　' + m.v.toFixed(3) + '　' + m.ha + ' 重原子';
+      tip.style.left = (cx * sx) + 'px';
+      tip.style.top  = (cy * sx) + 'px';
+      tip.style.opacity = 1;
+    }
+    function hide(){ tip.style.opacity = 0; }
+  })();
+
+  
+
+  
+
+  
+
+  go(0);
+})();
+</script>
