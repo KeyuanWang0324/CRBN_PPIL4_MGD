@@ -67,7 +67,7 @@
   };
 
   var SKIP_TAGS = /^(SCRIPT|STYLE|CODE|PRE|TEXTAREA|SVG|CANVAS|NOSCRIPT|BUTTON)$/;
-  var SKIP_CLOSEST = '.chart, .c-smiles, .gl, .side, table, .mol2d, summary';
+  var SKIP_CLOSEST = '.chart, .c-smiles, .gl, .side, table, .mol2d, figure.fig svg, summary';
 
   function esc(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 
@@ -99,6 +99,10 @@
         if (!node.nodeValue || node.nodeValue.length < 3) return NodeFilter.FILTER_REJECT;
         var p = node.parentElement;
         if (!p || SKIP_TAGS.test(p.tagName)) return NodeFilter.FILTER_REJECT;
+        // Never annotate inside an SVG: wrapping a term in an HTML <span> there makes the
+        // text vanish, because SVG will not render it. SKIP_TAGS cannot catch this on its
+        // own - SVG elements report lower-case tagNames ('text', 'tspan'), not 'SVG'.
+        if (p.ownerSVGElement || p.tagName === 'svg') return NodeFilter.FILTER_REJECT;
         if (p.closest(SKIP_CLOSEST)) return NodeFilter.FILTER_REJECT;
         return NodeFilter.FILTER_ACCEPT;
       }

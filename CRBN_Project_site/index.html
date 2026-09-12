@@ -134,6 +134,22 @@
   }
   .link p{font-size:.89rem; color:var(--muted); margin-top:4px}
 
+  /* ---------- mechanism figures (ported from the deck) ---------- */
+  .mechfig{display:flex; flex-direction:column; gap:0; margin:6px 0 0}
+  .mechfig h3{margin-bottom:5px}
+  .mechfig .caption{margin-bottom:13px}
+  .mechfig .fw{overflow-x:auto}
+  .mechfig .fw svg{display:block; width:100%; min-width:830px; height:auto}
+  .mechfig{--s-cand:#0d8a76; --s-ctrl:#4a3aa7; --warn-bg:#9C6B1514}
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]) .mechfig{--s-cand:#32a08e; --s-ctrl:#9085e9; --warn-bg:#b58a3316}
+  }
+  :root[data-theme="dark"] .mechfig{--s-cand:#32a08e; --s-ctrl:#9085e9; --warn-bg:#b58a3316}
+  .mechfig .fx text{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .mechfig .fx .lbl{font-size:11.5px; fill:var(--ink); font-weight:600}
+  .mechfig .fx .sub{font-size:10px; fill:var(--muted)}
+  .mechfig .fx .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+
   /* ---------- score axis ---------- */
   .panel{background:var(--panel); border:1px solid var(--rule); border-radius:3px; padding:26px 22px 20px; overflow-x:auto}
   .chart{min-width:520px}
@@ -293,6 +309,19 @@
   .ctrl[open]{border-color:var(--posc)}
   .ref .c-id{color:var(--cross)}
   .ref[open]{border-color:var(--cross)}
+  /* Background figures. Hand-drawn inline SVG: strokes and text are
+     currentColor so both themes work untouched, with the page accent carrying
+     the one part of each drawing the caption is actually about. */
+  figure.fig{margin:30px 0 4px; max-width:780px; color:var(--ink)}
+  figure.fig svg{display:block; width:100%; height:auto}
+  figure.fig svg.fig-mol{max-width:440px}
+  figure.fig figcaption{margin-top:12px; font-size:.8rem; color:var(--faint); line-height:1.55; max-width:68ch}
+  figure.fig figcaption b{color:var(--body); font-weight:640}
+  .fig-hi{stroke:var(--accent)}
+  .fig-hi-t{fill:var(--accent)}
+  .sw-fix,.sw-var{display:inline-block; width:8px; height:8px; border-radius:2px; vertical-align:middle}
+  .sw-fix{background:#1B6F65}
+  .sw-var{background:#CD8345}
   .sw-c,.sw-p,.sw-l{display:inline-block; width:8px; height:8px; border-radius:2px; vertical-align:middle}
   .sw-c{background:#7C8583}
   .sw-p{background:#46688C}
@@ -349,10 +378,6 @@
   }
   .ref-item em{font-style:italic}
   .ref-item a{word-break:break-word}
-  .ref-item .used{
-    display:block; padding-left:0; text-indent:0; padding-top:4px;
-    font-size:.79rem; color:var(--faint); line-height:1.5;
-  }
   /* ---------- method detail ---------- */
   .method{display:flex; flex-direction:column; gap:0; border-top:1px solid var(--hair)}
   .mrow{display:grid; grid-template-columns:150px minmax(0,1fr); gap:0 20px; padding:15px 0; border-bottom:1px solid var(--hair)}
@@ -495,6 +520,126 @@
         </p>
       </div>
 
+      <figure class="mechfig">
+        <h3>The cell already runs a disposal service</h3>
+        <p class="caption">Every cell continuously tags proteins it no longer wants and feeds them to a shredder. Nothing here needs to be invented &mdash; the only question is what gets onto the list.</p>
+        <div class="fw"><svg class="fx" viewBox="0 0 1020 344" role="img"
+           aria-label="Flow diagram: a target protein is tagged with a ubiquitin chain by an E3 ligase, then broken down by the proteasome">
+        <defs>
+          <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0 0 L10 5 L0 10 z" fill="var(--muted)"/>
+          </marker>
+        </defs>
+        <ellipse cx="112" cy="118" rx="66" ry="54" fill="var(--sunk)" stroke="var(--rule)" stroke-width="1.4"/>
+        <text class="lbl" x="112" y="114" text-anchor="middle" style="font-size:13px">Target protein</text>
+        <text class="sub" x="112" y="132" text-anchor="middle" style="font-size:11px">due for disposal</text>
+        <text class="sub" x="112" y="216" text-anchor="middle" style="fill:var(--ink);font-size:12px" font-weight="650">1 &middot; An unwanted protein</text>
+        <path d="M186 118 L262 118" stroke="var(--muted)" stroke-width="1.4" marker-end="url(#a1)"/>
+        <path d="M276 118 C276 64 314 36 366 36 C418 36 456 64 456 118 C456 172 418 200 366 200 C314 200 276 172 276 118 Z"
+              fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.6"/>
+        <text class="lbl" x="366" y="108" text-anchor="middle" style="fill:var(--accent);font-size:14px">E3 ubiquitin ligase</text>
+        <text class="sub" x="366" y="124" text-anchor="middle" style="font-size:10.5px">the cell&rsquo;s tagging machine</text>
+        <text class="sub" x="366" y="140" text-anchor="middle" style="font-size:10.5px">it decides what gets thrown away</text>
+        <text class="sub" x="366" y="216" text-anchor="middle" style="fill:var(--ink);font-size:12px" font-weight="650">2 &middot; It tags the protein with ubiquitin</text>
+        <text class="sub" x="366" y="234" text-anchor="middle" style="fill:var(--accent);font-size:11.5px">CRBN is one of these machines</text>
+        <g fill="var(--panel)" stroke="var(--accent)" stroke-width="1.4">
+          <circle cx="410" cy="46" r="12"/><circle cx="438" cy="30" r="12"/><circle cx="466" cy="16" r="12"/>
+        </g>
+        <text class="sub" x="484" y="14" text-anchor="start" style="fill:var(--accent);font-size:11.5px">ubiquitin</text>
+        <text class="sub" x="484" y="28" text-anchor="start" style="font-size:10px">chain</text>
+        <path d="M470 118 L546 118" stroke="var(--muted)" stroke-width="1.4" marker-end="url(#a1)"/>
+        <rect x="562" y="58" width="150" height="120" rx="8" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.6"/>
+        <g stroke="var(--rule)" stroke-width="1.3">
+          <line x1="562" y1="88" x2="712" y2="88"/><line x1="562" y1="118" x2="712" y2="118"/><line x1="562" y1="148" x2="712" y2="148"/>
+        </g>
+        <text class="lbl" x="637" y="38" text-anchor="middle" style="font-size:13px">Proteasome</text>
+        <text class="sub" x="637" y="52" text-anchor="middle" style="font-size:10px">the cell&rsquo;s protein shredder</text>
+        <text class="sub" x="637" y="216" text-anchor="middle" style="fill:var(--ink);font-size:12px" font-weight="650">3 &middot; Tagged, it enters the proteasome</text>
+        <path d="M726 118 L802 118" stroke="var(--muted)" stroke-width="1.4" marker-end="url(#a1)"/>
+        <g fill="var(--rule)">
+          <rect x="820" y="82" width="17" height="17" rx="3"/><rect x="852" y="106" width="17" height="17" rx="3"/>
+          <rect x="824" y="130" width="17" height="17" rx="3"/><rect x="858" y="70" width="17" height="17" rx="3"/>
+          <rect x="884" y="136" width="17" height="17" rx="3"/><rect x="890" y="98" width="17" height="17" rx="3"/>
+        </g>
+        <text class="sub" x="862" y="216" text-anchor="middle" style="fill:var(--ink);font-size:12px" font-weight="650">4 &middot; Broken down to amino acids</text>
+
+        <rect x="0" y="248" width="1020" height="92" rx="4" fill="var(--accent-soft)"/>
+        <rect x="0" y="248" width="3" height="92" fill="var(--accent)"/>
+        <text class="lbl" x="28" y="278" style="fill:var(--accent);font-size:14px">Everything turns on step 2</text>
+        <text class="sub" x="28" y="304" style="fill:var(--ink);font-size:12.5px">Whatever the E3 recognises is what gets destroyed.</text>
+        <text class="sub" x="28" y="326" style="font-size:12.5px">Change what it recognises and you <tspan fill="var(--accent)" font-weight="650">choose which protein dies</tspan>.</text>
+        <line x1="560" y1="266" x2="560" y2="322" stroke="var(--accent)" opacity=".3"/>
+        <text class="sub" x="592" y="278" style="fill:var(--ink);font-size:12.5px" font-weight="650">That is exactly what a molecular glue does</text>
+        <text class="sub" x="592" y="304" style="font-size:12.5px">It is not a knife and not a lock &mdash;</text>
+        <text class="sub" x="592" y="326" style="font-size:12.5px">it is a note that <tspan fill="var(--accent)" font-weight="650">rewrites the disposal list</tspan>.</text>
+      </svg></div>
+      </figure>
+
+      <figure class="mechfig">
+        <h3>Block it, or throw it away</h3>
+        <p class="caption">An inhibitor has to keep sitting in a pocket to do anything, and roughly 85% of human proteins offer no such pocket. A degrader needs no pocket, and is not used up in the process.</p>
+        <div class="fw"><svg class="fx" viewBox="0 0 1030 292" role="img"
+           aria-label="Left: an inhibitor occupies a pocket. Right: a molecular glue holds the target against an E3 ligase, the target is ubiquitinated and degraded, and the glue is released">
+        <defs>
+          <marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0 0 L10 5 L0 10 z" fill="var(--accent)"/>
+          </marker>
+          <marker id="a3m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0 0 L10 5 L0 10 z" fill="var(--muted)"/>
+          </marker>
+        </defs>
+
+        <rect x="0" y="0" width="496" height="292" rx="4" fill="var(--sunk)" opacity=".55"/>
+        <text class="lbl" x="26" y="30" style="font-size:14.5px">Inhibitor <tspan class="sub" style="font-size:11.5px">(most small-molecule drugs today)</tspan></text>
+
+        <path d="M52 118 C52 92 74 78 106 78 C146 78 168 95 168 124 L168 134 L151 134 A18 18 0 0 0 151 170 L168 170 L168 180
+                 C168 209 146 226 106 226 C74 226 52 212 52 186 Z"
+              fill="var(--panel)" stroke="var(--rule)" stroke-width="1.6"/>
+        <text class="lbl" x="106" y="146" text-anchor="middle" style="font-size:12.5px">Target protein</text>
+        <text class="sub" x="106" y="164" text-anchor="middle" style="font-size:11px">has a pocket</text>
+        <circle cx="180" cy="152" r="16" fill="var(--muted)"/>
+        <text class="sub" x="186" y="208" text-anchor="middle" font-weight="650" style="fill:var(--ink);font-size:11.5px">Drug</text>
+
+        <text class="sub" x="228" y="112" style="fill:var(--ink);font-size:12.5px" font-weight="650">Occupancy-driven pharmacology</text>
+                <text class="sub" x="228" y="140" style="font-size:11.5px">The protein loses function only while</text>
+        <text class="sub" x="228" y="160" style="font-size:11.5px">the drug <tspan fill="var(--ink)" font-weight="650">sits in the pocket</tspan>. Let go,</text>
+        <text class="sub" x="228" y="180" style="font-size:11.5px">and it <tspan fill="var(--ink)" font-weight="650">goes straight back to work</tspan>.</text>
+
+        <rect x="26" y="222" width="444" height="56" rx="3" fill="var(--warn-bg)"/>
+        <text class="sub" x="44" y="244" style="fill:var(--ink);font-size:11.5px">Hopkins &amp; Groom (2002): only about <tspan font-weight="700">15%</tspan> of human proteins</text>
+        <text class="sub" x="44" y="264" style="font-size:11.5px">were judged druggable &mdash; the rest, &ldquo;undruggable&rdquo;.</text>
+
+        <rect x="534" y="0" width="496" height="292" rx="4" fill="var(--accent-soft)"/>
+        <text class="lbl" x="560" y="30" style="fill:var(--accent);font-size:14.5px">Degrader / molecular glue <tspan class="sub" style="font-size:11.5px" fill="var(--muted)">(this project)</tspan></text>
+
+        <ellipse cx="604" cy="116" rx="44" ry="40" fill="var(--panel)" stroke="var(--rule)" stroke-width="1.6"/>
+        <text class="lbl" x="604" y="112" text-anchor="middle" style="font-size:11.5px">Target</text>
+        <text class="sub" x="604" y="128" text-anchor="middle" style="font-size:10px">no pocket</text>
+        <path d="M676 116 l-10 -16 h-18 l-10 16 l10 16 h18 z" fill="var(--s-cand)"/>
+        <text class="sub" x="658" y="158" text-anchor="middle" font-weight="650" style="fill:var(--accent);font-size:11px">glue</text>
+        <path d="M690 74 C690 52 712 40 740 40 C772 40 792 58 792 88 L792 144 C792 174 772 192 740 192 C712 192 690 180 690 158 Z"
+              fill="var(--panel)" stroke="var(--accent)" stroke-width="1.5"/>
+        <text class="lbl" x="744" y="112" text-anchor="middle" style="fill:var(--accent);font-size:12px">E3 ligase</text>
+        <text class="sub" x="744" y="128" text-anchor="middle" style="font-size:10px">CRBN is here</text>
+        <g fill="var(--panel)" stroke="var(--accent)" stroke-width="1.3">
+          <circle cx="828" cy="60" r="10"/><circle cx="852" cy="44" r="10"/><circle cx="876" cy="28" r="10"/>
+        </g>
+        <path d="M800 74 L816 66" stroke="var(--accent)" stroke-width="1.2" marker-end="url(#a3)"/>
+        <text class="sub" x="894" y="30" style="fill:var(--accent);font-size:10.5px">ubiquitin chain</text>
+        <text class="sub" x="836" y="88" style="font-size:10px">target gets tagged</text>
+
+        <path d="M744 196 L744 216" stroke="var(--accent)" stroke-width="1.4" marker-end="url(#a3)"/>
+        <rect x="690" y="220" width="108" height="52" rx="5" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.4"/>
+        <g stroke="var(--rule)" stroke-width="1.1"><line x1="690" y1="238" x2="798" y2="238"/><line x1="690" y1="256" x2="798" y2="256"/></g>
+        <text class="sub" x="812" y="242" style="font-size:10.5px">Proteasome</text>
+        <text class="sub" x="812" y="258" style="font-size:10px">target destroyed entirely</text>
+
+        <path d="M686 228 C620 232 596 200 606 172" fill="none" stroke="var(--muted)"
+              stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#a3m)"/>
+        <text class="sub" x="560" y="286" style="font-size:10.5px"><tspan fill="var(--ink)" font-weight="650">Sub-stoichiometric</tspan> — the glue is released and goes on to the next target</text>
+      </svg></div>
+      </figure>
+
       <div class="chain col">
         <div class="link">
           <span class="link-i">01</span>
@@ -542,6 +687,57 @@
         </div>
       </div>
 
+      <figure class="mechfig">
+        <h3>What this project actually computes</h3>
+        <p class="caption">Not &ldquo;how tightly does the ligand bind CRBN&rdquo;, but the shape of all three at once &mdash; CRBN, ligand and PPIL4 as a single ternary complex. The glue has to hold an interface that neither protein has on its own.</p>
+        <div class="fw"><svg class="fx" viewBox="0 0 560 372" role="img"
+             aria-label="A molecular glue in the CRBN degron pocket creates a new interface that recruits PPIL4 and gets it ubiquitinated">
+          <defs>
+            <marker id="a4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M0 0 L10 5 L0 10 z" fill="var(--muted)"/>
+            </marker>
+          </defs>
+          <!-- E3 scaffold -->
+          <path d="M40 300 L40 246 C40 232 52 222 66 222 L120 222" fill="none" stroke="var(--rule)" stroke-width="9" stroke-linecap="round"/>
+          <text class="sub" x="46" y="322">CUL4&ndash;DDB1 scaffold</text>
+          <circle cx="40" cy="188" r="21" fill="var(--sunk)" stroke="var(--rule)" stroke-width="1.4"/>
+          <text class="sub" x="40" y="192" text-anchor="middle" style="font-size:9.5px">E2</text>
+          <!-- CRBN -->
+          <path d="M118 208 C118 148 156 116 212 116 C258 116 288 142 292 186 L292 232
+                   C288 276 258 302 212 302 C156 302 118 268 118 208 Z"
+                fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.6"/>
+          <text class="lbl" x="198" y="204" text-anchor="middle" style="fill:var(--accent);font-size:16px">CRBN</text>
+          <text class="sub" x="198" y="222" text-anchor="middle">the recognition subunit</text>
+          <!-- degron pocket notch -->
+          <path d="M292 186 A22 22 0 0 0 292 232" fill="var(--paper)" stroke="var(--accent)" stroke-width="1.4"/>
+          <text class="sub" x="248" y="146" text-anchor="middle" style="font-size:9.5px">degron pocket</text>
+          <path d="M262 152 L282 178" stroke="var(--muted)" stroke-width=".9" fill="none"/>
+          <!-- glue -->
+          <path d="M316 209 l-13 -21 h-23 l-13 21 l13 21 h23 z" fill="var(--s-cand)"/>
+          <path d="M292 272 L292 308" stroke="var(--rule)" stroke-width="1.1" fill="none"/>
+          <text class="lbl" x="292" y="322" text-anchor="middle">Molecular glue</text>
+          <text class="sub" x="292" y="337" text-anchor="middle">half buried in the pocket, half exposed</text>
+          <!-- PPIL4 -->
+          <path d="M292 186 C296 142 326 116 372 116 C428 116 466 148 466 208
+                   C466 268 428 302 372 302 C326 302 296 276 292 232 Z"
+                fill="none" stroke="var(--s-ctrl)" stroke-width="1.6" stroke-dasharray="5 4"/>
+          <text class="lbl" x="388" y="204" text-anchor="middle" style="fill:var(--s-ctrl);font-size:16px">PPIL4</text>
+          <text class="sub" x="388" y="222" text-anchor="middle">the protein to be destroyed</text>
+          <!-- new interface bracket -->
+          <path d="M284 100 L284 90 L332 90 L332 100" fill="none" stroke="var(--s-cand)" stroke-width="1.4"/>
+          <text class="sub" x="308" y="80" text-anchor="middle" font-weight="650" style="fill:var(--s-cand);font-size:11px">New interface</text>
+          <text class="sub" x="308" y="64" text-anchor="middle" style="font-size:10px">did not exist before</text>
+          <!-- ubiquitin -->
+          <g fill="var(--panel)" stroke="var(--muted)" stroke-width="1.2">
+            <circle cx="424" cy="72" r="11"/><circle cx="452" cy="54" r="11"/><circle cx="480" cy="38" r="11"/>
+          </g>
+          <path d="M396 100 L412 84" stroke="var(--muted)" stroke-width="1.2" fill="none" marker-end="url(#a4)"/>
+          <text class="sub" x="498" y="40" text-anchor="start">ubiquitin</text>
+          <path d="M62 186 C110 150 130 120 176 108" fill="none" stroke="var(--muted)" stroke-width="1.1" stroke-dasharray="3 3"/>
+          <text class="sub" x="280" y="362" text-anchor="middle" style="font-size:11.5px">glue binds both sides &rarr; ternary complex &rarr; ubiquitination &rarr; degradation</text>
+        </svg></div>
+      </figure>
+
       <div class="sec-head" style="padding-top:14px">
         <h2 class="serif">Why this target</h2>
       </div>
@@ -575,7 +771,6 @@
           against RAS's transcriptional load, and that remains untested.
         </p>
       </div>
-    </section>
 
       <div class="sec-head" style="padding-top:14px">
         <h2 class="serif">The calibration set, and the structure it is all scored against</h2>
@@ -2276,6 +2471,7 @@ L 75.2 51.5
 </details>
 <!-- CONTROL-PANELS:END -->
       </div>
+    </section>
 
     <section id="dry-lab">
       <div class="sec-head">
@@ -8605,11 +8801,6 @@ Q 153.3 39.2, 154.6 39.2
       <div class="sec-head">
         <p class="eyebrow" data-n="07">References</p>
         <h2 class="serif">Sources and tools</h2>
-        <p class="caption">
-          What this project is built on: the findings that motivated the target, the structure
-          everything is measured against, the software that produced every number, and the databases
-          the compounds and training data came from.
-        </p>
       </div>
 
       <div class="ref-group">
@@ -8621,35 +8812,23 @@ Q 153.3 39.2, 154.6 39.2
             Donovan, K.A. and Fischer, E.S. (2025) &lsquo;Unveiling the hidden interactome of CRBN
             molecular glues&rsquo;, <em>Nature Communications</em>, 16, 6831.
             doi:&nbsp;<a href="https://doi.org/10.1038/s41467-025-62099-w">10.1038/s41467-025-62099-w</a>.
-            <span class="used">Reports Z6466608628, which recruits PPIL4 selectively at
-            EC<sub>50</sub>&nbsp;0.34&nbsp;&micro;M with modest degradation &mdash; the positive
-            control here and the bar in Rule&nbsp;C &mdash; and the CRBN&ndash;FPFT-2216&ndash;PPIL4
-            structure this project scores against.</span>
           </p>
           <p class="ref-item">
             Hsu, T.Y. et&nbsp;al. (2015) &lsquo;The spliceosome is a therapeutic vulnerability in
             MYC-driven cancer&rsquo;, <em>Nature</em>, 525(7569), pp.&nbsp;384&ndash;388.
             doi:&nbsp;<a href="https://doi.org/10.1038/nature14985">10.1038/nature14985</a>.
-            <span class="used">The established case of spliceosome addiction. The RAS argument on
-            this page is an analogy to it, not a result of equal standing.</span>
           </p>
           <p class="ref-item">
             Petzold, G., Gainza, P. et&nbsp;al. (2025) &lsquo;Mining the CRBN target space redefines
             rules for molecular glue&ndash;induced neosubstrate recognition&rsquo;, <em>Science</em>,
             389(6755).
             doi:&nbsp;<a href="https://doi.org/10.1126/science.adt6736">10.1126/science.adt6736</a>.
-            <span class="used">Mined the CRBN target space computationally and confirmed
-            compound-dependent recruitment of previously uncharacterised neosubstrates, PPIL4 among
-            them. This is where the target came from.</span>
           </p>
           <p class="ref-item">
             RCSB Protein Data Bank (2025) <em>Entry 9DWV: cereblon&ndash;FPFT-2216&ndash;PPIL4 ternary
             complex</em>. Available at:
             <a href="https://www.rcsb.org/structure/9DWV">https://www.rcsb.org/structure/9DWV</a>
             (Accessed: 2 September 2026).
-            <span class="used">Every model on this page is scored against it, and the PPIL4-side
-            restraints derive from its contact residues &mdash; which is why the DockQ column is not
-            independent evidence.</span>
           </p>
         </div>
       </div>
@@ -8661,8 +8840,6 @@ Q 153.3 39.2, 154.6 39.2
             Basu, S. and Wallner, B. (2016) &lsquo;DockQ: a quality measure for protein&ndash;protein
             docking models&rsquo;, <em>PLOS ONE</em>, 11(8), e0161879.
             doi:&nbsp;<a href="https://doi.org/10.1371/journal.pone.0161879">10.1371/journal.pone.0161879</a>.
-            <span class="used">Source of the 0&ndash;1 scale and the CAPRI &ldquo;acceptable&rdquo;
-            threshold of 0.23.</span>
           </p>
           <p class="ref-item">
             Dominguez, C., Boelens, R. and Bonvin, A.M.J.J. (2003) &lsquo;HADDOCK: a
@@ -8670,8 +8847,6 @@ Q 153.3 39.2, 154.6 39.2
             information&rsquo;, <em>Journal of the American Chemical Society</em>, 125(7),
             pp.&nbsp;1731&ndash;1737.
             doi:&nbsp;<a href="https://doi.org/10.1021/ja026939x">10.1021/ja026939x</a>.
-            <span class="used">The docking approach behind every ternary run; version 2026.7.0 was
-            used.</span>
           </p>
           <p class="ref-item">
             Eberhardt, J., Santos-Martins, D., Tillack, A.F. and Forli, S. (2021) &lsquo;AutoDock
@@ -8683,46 +8858,34 @@ Q 153.3 39.2, 154.6 39.2
             Jumper, J. et&nbsp;al. (2021) &lsquo;Highly accurate protein structure prediction with
             AlphaFold&rsquo;, <em>Nature</em>, 596(7873), pp.&nbsp;583&ndash;589.
             doi:&nbsp;<a href="https://doi.org/10.1038/s41586-021-03819-2">10.1038/s41586-021-03819-2</a>.
-            <span class="used">Source of the PPIL4 model used as the docking partner. Its
-            low-confidence loops are the sprawling tails visible in the 3D views; they are not
-            trimmed.</span>
           </p>
           <p class="ref-item">
             Pedregosa, F. et&nbsp;al. (2011) &lsquo;Scikit-learn: machine learning in Python&rsquo;,
             <em>Journal of Machine Learning Research</em>, 12, pp.&nbsp;2825&ndash;2830.
-            <span class="used">The random-forest classifiers used to filter chemotypes before
-            docking.</span>
           </p>
           <p class="ref-item">
             RDKit (2026) <em>RDKit: open-source cheminformatics</em>. Available at:
             <a href="https://www.rdkit.org/">https://www.rdkit.org/</a> (Accessed: 2 September 2026).
-            <span class="used">Analog enumeration, descriptors, 2D depictions and the order
-            SDF.</span>
           </p>
           <p class="ref-item">
             Schr&ouml;dinger, LLC (2026) <em>The PyMOL molecular graphics system</em>, version 3.1.6.
             Available at: <a href="https://pymol.org/">https://pymol.org/</a> (Accessed: 2 September 2026).
-            <span class="used">Every 3D render, the secondary-structure assignment, and the glTF
-            geometry shown on this page.</span>
           </p>
           <p class="ref-item">
             Sch&uuml;ttelkopf, A.W. and van Aalten, D.M.F. (2004) &lsquo;PRODRG: a tool for
             high-throughput crystallography of protein&ndash;ligand complexes&rsquo;,
             <em>Acta Crystallographica Section D</em>, 60(8), pp.&nbsp;1355&ndash;1363.
             doi:&nbsp;<a href="https://doi.org/10.1107/S0907444904011679">10.1107/S0907444904011679</a>.
-            <span class="used">Ligand topology and force-field parameters for the CNS engine.</span>
           </p>
           <p class="ref-item">
             three.js (2026) <em>three.js JavaScript 3D library</em>, r140. Available at:
             <a href="https://threejs.org/">https://threejs.org/</a> (Accessed: 2 September 2026).
-            <span class="used">Renders the interactive models in the browser.</span>
           </p>
           <p class="ref-item">
             Trott, O. and Olson, A.J. (2010) &lsquo;AutoDock Vina: improving the speed and accuracy
             of docking with a new scoring function, efficient optimization, and multithreading&rsquo;,
             <em>Journal of Computational Chemistry</em>, 31(2), pp.&nbsp;455&ndash;461.
             doi:&nbsp;<a href="https://doi.org/10.1002/jcc.21334">10.1002/jcc.21334</a>.
-            <span class="used">Produced the CRBN and PPIL4 starting poses.</span>
           </p>
           <p class="ref-item">
             van Zundert, G.C.P. et&nbsp;al. (2016) &lsquo;The HADDOCK2.2 web server: user-friendly
@@ -8739,26 +8902,20 @@ Q 153.3 39.2, 154.6 39.2
           <p class="ref-item">
             Broad Institute (2026) <em>DepMap portal</em>. Available at:
             <a href="https://depmap.org/">https://depmap.org/</a> (Accessed: 2 September 2026).
-            <span class="used">The co-dependency and common-essentiality analysis.</span>
           </p>
           <p class="ref-item">
             European Bioinformatics Institute (2026) <em>ChEMBL database</em>. Available at:
             <a href="https://www.ebi.ac.uk/chembl/">https://www.ebi.ac.uk/chembl/</a> (Accessed: 2 September 2026).
-            <span class="used">Training actives for the CRBN-binder classifiers.</span>
           </p>
           <p class="ref-item">
             MedChemExpress (2026) <em>Z6466608628 (HY-175599)</em>. Available at:
             <a href="https://www.medchemexpress.com/">https://www.medchemexpress.com/</a>
             (Accessed: 2 September 2026).
-            <span class="used">Catalogue source for the one shortlisted compound available off the
-            shelf; the other 22 are novel and can only be made to order.</span>
           </p>
           <p class="ref-item">
             National Center for Biotechnology Information (2026) <em>PubChem</em>. Available at:
             <a href="https://pubchem.ncbi.nlm.nih.gov/">https://pubchem.ncbi.nlm.nih.gov/</a>
             (Accessed: 2 September 2026).
-            <span class="used">Exact-structure registry lookup behind the CAS numbers on the order
-            sheet.</span>
           </p>
         </div>
       </div>
