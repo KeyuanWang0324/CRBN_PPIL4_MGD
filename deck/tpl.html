@@ -208,9 +208,9 @@ svg.mol{width:100%; height:auto; display:block; color:var(--ink)}
       <div class="rule-accent"></div>
       <div style="display:grid; grid-template-columns:1.15fr .85fr; gap:36px; align-items:center">
         <div>
-          <h1 class="sf">能不能造一个<br>只降解 PPIL4 的分子胶?</h1>
-          <p class="lede">不是"堵住"一个坏蛋白,而是<strong>让细胞把它当垃圾扔掉</strong>。<br>
-          从 2,499 个电脑生成的分子,筛到一份可以真正下单的 25 分子采购清单。</p>
+          <h1 class="sf">与其堵住一个坏蛋白,<br>不如让细胞把它<strong style="color:var(--accent)">扔掉</strong></h1>
+          <p class="lede">这就是<strong>分子胶降解剂</strong>:把没有药物口袋的蛋白,交给细胞自己的垃圾处理厂。<br>
+          本项目针对 <strong>PPIL4</strong>,把 2,499 个生成分子筛成一份可下单的 25 分子采购清单。</p>
         </div>
         <figure>
           <svg class="fx" viewBox="0 0 392 250" role="img"
@@ -267,9 +267,45 @@ svg.mol{width:100%; height:auto; display:block; color:var(--ink)}
     </div>
   </section>
 
+  <!-- 2 项目速览 -->
+  <section class="slide" data-act="">
+    <div class="eyebrow"><span class="num mn">02</span><span>项目速览</span></div>
+    <h2 class="sf">一页看完:问题是什么、我们做了什么、做到了哪一步</h2>
+
+    <div style="display:grid; grid-template-columns:1fr 30px 1fr 30px 1fr 30px 1fr; gap:0; margin-top:30px; align-items:stretch">
+      <div class="panel stack" style="gap:10px; padding:20px 20px">
+        <span class="tag" style="align-self:flex-start">问题</span>
+        <h3 style="font-size:18px; line-height:1.3">大多数药靠"堵住"蛋白</h3>
+        <p class="sm" style="font-size:14.5px; line-height:1.65">可约 <strong>85%</strong> 的人类蛋白根本没有可堵的口袋 —— 传统小分子对它们无能为力。</p>
+      </div>
+      <div style="display:flex; align-items:center; justify-content:center"><span style="color:var(--rule); font-size:22px; line-height:1">&rarr;</span></div>
+      <div class="panel stack" style="gap:10px; padding:20px 20px">
+        <span class="tag" style="align-self:flex-start">思路</span>
+        <h3 style="font-size:18px; line-height:1.3">不堵它,让细胞扔掉它</h3>
+        <p class="sm" style="font-size:14.5px; line-height:1.65"><strong>分子胶</strong>把目标蛋白粘到细胞的"垃圾处理厂"上,由细胞自己降解 —— <strong>不需要口袋</strong>。</p>
+      </div>
+      <div style="display:flex; align-items:center; justify-content:center"><span style="color:var(--rule); font-size:22px; line-height:1">&rarr;</span></div>
+      <div class="panel stack" style="gap:10px; padding:20px 20px">
+        <span class="tag" style="align-self:flex-start">做法</span>
+        <h3 style="font-size:18px; line-height:1.3">设计 2,499 个分子,算三体形状</h3>
+        <p class="sm" style="font-size:14.5px; line-height:1.65">在一套<strong>锁死的协议</strong>下,算 CRBN + 分子 + PPIL4 拼在一起的形状,共 <strong>27 次</strong>对接。</p>
+      </div>
+      <div style="display:flex; align-items:center; justify-content:center"><span style="color:var(--rule); font-size:22px; line-height:1">&rarr;</span></div>
+      <div class="panel stack" style="gap:10px; padding:20px 20px; border-color:var(--accent)">
+        <span class="tag" style="align-self:flex-start">结果</span>
+        <h3 style="font-size:18px; line-height:1.3">18 个进终排,4 个全过</h3>
+        <p class="sm" style="font-size:14.5px; line-height:1.65">一份 <strong>25 个分子</strong>的采购清单,含结构式与规格 —— <strong>可以直接下单</strong>。</p>
+      </div>
+    </div>
+
+    <div class="note" style="margin-top:26px">
+      <p class="sm" style="font-size:14px">本项目只到<strong>"算出来"</strong>为止 —— 没有任何一个分子被合成过或测试过。每一个分数都是形状上的代理指标,不是药效。</p>
+    </div>
+  </section>
+
   <!-- 2 细胞里的垃圾处理厂 -->
   <section class="slide" data-act="背景">
-    <div class="eyebrow"><span class="num mn">02</span><span>背景 · 先讲清楚一件事</span></div>
+    <div class="eyebrow"><span class="num mn">03</span><span>背景 · 先讲清楚一件事</span></div>
     <h2 class="sf">细胞里本来就有一套"垃圾处理厂"</h2>
     <p class="lede sm">蛋白质坏了、多了、不该在了,细胞不会放着不管 —— 它会给这个蛋白<strong>贴上标签</strong>,然后送进<strong>粉碎机</strong>。整套系统叫<em>泛素–蛋白酶体系统</em>(ubiquitin–proteasome system, UPS)。</p>
 
@@ -334,7 +370,7 @@ svg.mol{width:100%; height:auto; display:block; color:var(--ink)}
 
   <!-- 3 抑制剂 vs 降解剂 -->
   <section class="slide" data-act="背景">
-    <div class="eyebrow"><span class="num mn">03</span><span>背景 · 两种完全不同的做药思路</span></div>
+    <div class="eyebrow"><span class="num mn">04</span><span>背景 · 两种完全不同的做药思路</span></div>
     <h2 class="sf">传统药"堵住"蛋白;降解剂让细胞"扔掉"蛋白</h2>
 
     <figure style="margin-top:8px">
@@ -425,7 +461,7 @@ svg.mol{width:100%; height:auto; display:block; color:var(--ink)}
 
   <!-- 4 分子胶机制 -->
   <section class="slide" data-act="背景">
-    <div class="eyebrow"><span class="num mn">04</span><span>背景 · 分子胶怎么工作</span></div>
+    <div class="eyebrow"><span class="num mn">05</span><span>背景 · 分子胶怎么工作</span></div>
     <h2 class="sf">分子胶不堵任何东西 —— 它在 CRBN 表面<strong>拼出一块新的接触面</strong></h2>
 
     <div class="grid2" style="margin-top:12px; align-items:start; grid-template-columns:.92fr 1.08fr">
@@ -494,7 +530,7 @@ svg.mol{width:100%; height:auto; display:block; color:var(--ink)}
 
   <!-- 5 剪接 -->
   <section class="slide" data-act="背景">
-    <div class="eyebrow"><span class="num mn">05</span><span>背景 · 我们想扔掉的是谁</span></div>
+    <div class="eyebrow"><span class="num mn">06</span><span>背景 · 我们想扔掉的是谁</span></div>
     <h2 class="sf">PPIL4 <strong>扔得掉</strong> —— 而且它守着 RAS 癌细胞最吃紧的那台机器:剪接</h2>
     <p class="lede sm" style="margin-top:5px; max-width:none">选 PPIL4 有三条理由,<strong>可靠程度差很多</strong>。</p>
 
@@ -574,7 +610,7 @@ svg.mol{width:100%; height:auto; display:block; color:var(--ink)}
 
   <!-- 7 缺口 -->
   <section class="slide" data-act="背景">
-    <div class="eyebrow"><span class="num mn">06</span><span>背景 · 缺口与假设</span></div>
+    <div class="eyebrow"><span class="num mn">07</span><span>背景 · 缺口与假设</span></div>
     <h2 class="sf">已知的两个分子,恰好各缺一半</h2>
 
     <div style="display:grid; grid-template-columns:.31fr .31fr .38fr; gap:16px; margin-top:12px; align-items:start">
@@ -628,7 +664,7 @@ svg.mol{width:100%; height:auto; display:block; color:var(--ink)}
 
   <!-- 8 创新·非锌指 -->
   <section class="slide" data-act="创新">
-    <div class="eyebrow"><span class="num mn">07</span><span>创新性 · 这个项目为什么不一样</span></div>
+    <div class="eyebrow"><span class="num mn">08</span><span>创新性 · 这个项目为什么不一样</span></div>
     <h2 class="sf">分子胶几乎所有的经验,都来自<strong>锌指蛋白</strong> —— 而 PPIL4 不是锌指</h2>
 
     <figure style="margin-top:10px">
@@ -721,9 +757,47 @@ svg.mol{width:100%; height:auto; display:block; color:var(--ink)}
     </div>
   </section>
 
+  <!-- 9 方法总览 -->
+  <section class="slide" data-act="方法">
+    <div class="eyebrow"><span class="num mn">09</span><span>方法 · 总览</span></div>
+    <h2 class="sf">机器学习先粗筛,结构计算做排序</h2>
+    <p class="lede sm" style="margin-top:6px; max-width:none">三类方法,淘汰的依据各不相同 —— 越往后越贵,也越可信。</p>
+
+    <div style="display:grid; grid-template-columns:1fr 30px 1fr 30px 1fr; gap:0; margin-top:22px; align-items:stretch">
+      <div class="panel stack" style="gap:9px; padding:18px 18px">
+        <div style="display:flex; gap:9px; align-items:baseline">
+          <span class="tag">机器学习</span><span class="xs mn">随机森林</span>
+        </div>
+        <p class="sm" style="font-size:14px; line-height:1.65">在 <span class="mn">ChEMBL</span> 上训练,用分子指纹判"<strong>像不像 CRBN 分子胶</strong>",把明显不像的先去掉。按<strong>骨架切分</strong>评估,防止模型背答案。</p>
+        <p class="mn" style="font-size:14px; color:var(--accent); font-weight:600">2,499 &rarr; 625</p>
+      </div>
+      <div style="display:flex; align-items:center; justify-content:center"><span style="color:var(--rule); font-size:22px; line-height:1">&rarr;</span></div>
+      <div class="panel stack" style="gap:9px; padding:18px 18px">
+        <div style="display:flex; gap:9px; align-items:baseline">
+          <span class="tag">物理对接</span><span class="xs mn">AutoDock Vina</span>
+        </div>
+        <p class="sm" style="font-size:14px; line-height:1.65">把每个分子<strong>真的塞进 CRBN 的口袋</strong>试一遍 —— 反复挪位置、转角度,看哪种摆法最贴合。</p>
+        <p class="mn" style="font-size:14px; color:var(--accent); font-weight:600">625 &rarr; 125 &rarr; 20</p>
+      </div>
+      <div style="display:flex; align-items:center; justify-content:center"><span style="color:var(--rule); font-size:22px; line-height:1">&rarr;</span></div>
+      <div class="panel stack" style="gap:9px; padding:18px 18px; border-color:var(--accent)">
+        <div style="display:flex; gap:9px; align-items:baseline">
+          <span class="tag">结构计算</span><span class="xs mn">HADDOCK3</span>
+        </div>
+        <p class="sm" style="font-size:14px; line-height:1.65">算 <strong>CRBN + 分子 + PPIL4</strong> 三个拼在一起的形状。在一套<strong>锁死的协议</strong>下跑 —— 这是唯一被承认的排序。</p>
+        <p class="mn" style="font-size:14px; color:var(--accent); font-weight:600">&rarr; 18 进终排</p>
+      </div>
+    </div>
+
+    <div class="plain" style="margin-top:24px">
+      <span class="who">结果</span>
+      <p>2,499 个分子里,<strong>18 个</strong>进入最终排名,其中 <strong>4 个</strong>通过全部三条独立规则。再加 6 个对照和 3 个交叉检验分子,共 <strong>27 次</strong>三体对接 —— 最后交出一份 <strong>25 个分子</strong>的采购清单。</p>
+    </div>
+  </section>
+
   <!-- 9 分子怎么设计 -->
   <section class="slide" data-act="方法">
-    <div class="eyebrow"><span class="num mn">08</span><span>方法 · 分子从哪来</span></div>
+    <div class="eyebrow"><span class="num mn">10</span><span>方法 · 分子从哪来</span></div>
     <h2 class="sf">不是乱画分子 —— <strong>戊二酰亚胺弹头焊死,只改一个地方</strong></h2>
     <p class="lede sm">每个分子由三段拼成:<span style="color:var(--s-cand); font-weight:650">绿色</span>插进 CRBN,不能动;<span style="color:var(--s-cross); font-weight:650">橙色</span>伸向 PPIL4;中间苯环上的<strong>取代基</strong>是唯一被遍历改变的地方 —— 于是有了 2,499 个分子。</p>
 
@@ -757,7 +831,7 @@ svg.mol{width:100%; height:auto; display:block; color:var(--ink)}
 
   <!-- 09 漏斗一 -->
   <section class="slide" data-act="方法">
-    <div class="eyebrow"><span class="num mn">09</span><span>方法 · 筛选漏斗（一）· 每一层在问什么</span></div>
+    <div class="eyebrow"><span class="num mn">11</span><span>方法 · 筛选漏斗（一）· 每一层在问什么</span></div>
     <h2 class="sf">2,499 → 18:每一层<strong>问一个不同的问题</strong></h2>
 
     <div class="funnel big" style="margin-top:14px; display:flex; flex-direction:column">
@@ -776,7 +850,7 @@ svg.mol{width:100%; height:auto; display:block; color:var(--ink)}
 
   <!-- 10 最后一层 -->
   <section class="slide" data-act="方法">
-    <div class="eyebrow"><span class="num mn">10</span><span>方法 · 筛选漏斗（二）· 最后一层</span></div>
+    <div class="eyebrow"><span class="num mn">12</span><span>方法 · 筛选漏斗（二）· 最后一层</span></div>
     <h2 class="sf">为什么<strong>只有最后一步的排名算数</strong> —— 以及凭什么相信它</h2>
 
     <div class="grid2" style="margin-top:10px; align-items:start">
@@ -859,7 +933,7 @@ svg.mol{width:100%; height:auto; display:block; color:var(--ink)}
 
   <!-- 11 结果·一根轴 -->
   <section class="slide" data-act="结果">
-    <div class="eyebrow"><span class="num mn">11</span><span>结果 · 一根轴上的 27 个分子</span></div>
+    <div class="eyebrow"><span class="num mn">13</span><span>结果 · 一根轴上的 27 个分子</span></div>
     <h2 class="sf">候选与对照跑同一套协议,所以能放在同一条刻度上 —— 但这条刻度<strong>偏爱大分子</strong></h2>
     <div id="chartWrap" style="margin-top:4px">
       <div id="tip" role="status"></div>
@@ -878,7 +952,7 @@ svg.mol{width:100%; height:auto; display:block; color:var(--ink)}
 
   <!-- 22 展望 -->
   <section class="slide" data-act="展望">
-    <div class="eyebrow"><span class="num mn">12</span><span>展望 · 湿实验验证</span></div>
+    <div class="eyebrow"><span class="num mn">14</span><span>展望 · 湿实验验证</span></div>
     <h2 class="sf">计算部分到此为止 —— 接下来由分子自己回答</h2>
     <p class="lede sm">采购单已经就绪(25 个分子,含 SDF 与结构表)。<strong>湿实验验证是本项目的下一阶段,不在本仓库中呈现。</strong></p>
 
@@ -933,7 +1007,7 @@ svg.mol{width:100%; height:auto; display:block; color:var(--ink)}
 
   <!-- 13 结尾 -->
   <section class="slide" data-act="展望">
-    <div class="eyebrow"><span class="num mn">13</span><span>总结 · 这个项目处在什么位置</span></div>
+    <div class="eyebrow"><span class="num mn">15</span><span>总结 · 这个项目处在什么位置</span></div>
     <h2 class="sf">我们没有找到药 —— 我们做出了一批<strong>值得拿去做实验的分子</strong></h2>
 
     <figure style="margin-top:12px">
@@ -999,7 +1073,7 @@ svg.mol{width:100%; height:auto; display:block; color:var(--ink)}
   </section>
   <!-- 14 参考文献 -->
   <section class="slide" data-act="">
-    <div class="eyebrow"><span class="num mn">14</span><span>参考文献 · 来源与工具</span></div>
+    <div class="eyebrow"><span class="num mn">16</span><span>参考文献 · 来源与工具</span></div>
     <h2 class="sf">这个项目建立在什么之上</h2>
     <div class="refs">
       <div class="g">
