@@ -298,9 +298,6 @@ svg.mol{width:100%; height:auto; display:block; color:var(--ink)}
       </div>
     </div>
 
-    <div class="note" style="margin-top:26px">
-      <p class="sm" style="font-size:14px">本项目只到<strong>"算出来"</strong>为止 —— 没有任何一个分子被合成过或测试过。每一个分数都是形状上的代理指标,不是药效。</p>
-    </div>
   </section>
 
   <!-- 2 细胞里的垃圾处理厂 -->
@@ -310,7 +307,7 @@ svg.mol{width:100%; height:auto; display:block; color:var(--ink)}
     <p class="lede sm">蛋白质坏了、多了、不该在了,细胞不会放着不管 —— 它会给这个蛋白<strong>贴上标签</strong>,然后送进<strong>粉碎机</strong>。整套系统叫<em>泛素–蛋白酶体系统</em>(ubiquitin–proteasome system, UPS)。</p>
 
     <figure style="margin-top:14px">
-      <svg class="fx" viewBox="0 0 1020 344" role="img"
+      <svg class="fx" viewBox="0 0 1020 238" role="img"
            aria-label="流程图:目标蛋白被 E3 连接酶贴上泛素链,随后被蛋白酶体降解为氨基酸碎片">
         <defs>
           <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
@@ -350,22 +347,9 @@ svg.mol{width:100%; height:auto; display:block; color:var(--ink)}
         </g>
         <text class="sub" x="862" y="206" text-anchor="middle" style="fill:var(--ink);font-size:12px" font-weight="650">④ 拆成氨基酸,回收再用</text>
 
-        <rect x="0" y="248" width="1020" height="92" rx="4" fill="var(--accent-soft)"/>
-        <rect x="0" y="248" width="3" height="92" fill="var(--accent)"/>
-        <text class="lbl" x="28" y="278" style="fill:var(--accent);font-size:14px">关键全在第 ② 步</text>
-        <text class="sub" x="28" y="304" style="fill:var(--ink);font-size:12.5px">E3 认谁,谁就被扔掉。</text>
-        <text class="sub" x="28" y="326" style="font-size:12.5px">如果我们能改变"它认谁",就等于<tspan fill="var(--accent)" font-weight="650">指定了要销毁哪个蛋白</tspan>。</text>
-        <line x1="560" y1="266" x2="560" y2="322" stroke="var(--accent)" opacity=".3"/>
-        <text class="sub" x="592" y="278" style="fill:var(--ink);font-size:12.5px" font-weight="650">这正是"分子胶"干的事</text>
-        <text class="sub" x="592" y="304" style="font-size:12.5px">它不是一把刀,也不是一把锁 ——</text>
-        <text class="sub" x="592" y="326" style="font-size:12.5px">它是一张<tspan fill="var(--accent)" font-weight="650">改写"该扔谁"名单的小纸条</tspan>。</text>
       </svg>
     </figure>
 
-    <div class="plain" style="margin-top:14px">
-      <span class="who">一句话</span>
-      <p>细胞自带一台碎纸机,还有一批负责"贴该扔的标签"的机器。我们不去发明碎纸机 —— 我们只想<strong>骗过贴标签的那一步</strong>。</p>
-    </div>
   </section>
 
   <!-- 3 抑制剂 vs 降解剂 -->
@@ -439,19 +423,6 @@ svg.mol{width:100%; height:auto; display:block; color:var(--ink)}
         <text class="sub" x="566" y="260" style="font-size:10px">sub-stoichiometric</text>
       </svg>
     </figure>
-
-    <div class="grid2" style="margin-top:10px; align-items:start">
-      <div class="panel stack" style="gap:4px; padding:11px 14px">
-        <h3>抑制剂:必须<strong>有口袋</strong>,而且必须<strong>一直占着</strong></h3>
-        <p class="sm">要让大部分靶蛋白在<strong>同一时刻</strong>都被占住,体内就得持续维持足够高的药物浓度。</p>
-        <p class="sm">而"没有口袋"只是<strong>不可成药的原因之一</strong> —— 另一些蛋白是没有酶活性可抑制、靠大面积平坦界面工作、或本身就是无序结构。</p>
-      </div>
-      <div class="panel stack" style="gap:4px; padding:11px 14px; border-color:var(--accent)">
-        <h3>降解剂:<strong>不需要口袋</strong>,而且<strong>可以反复使用</strong></h3>
-        <p class="sm">只要能把靶蛋白和 E3 连接酶拉到一起、拼出稳定的三元复合物就行。一个分子可以推动很多轮降解(亚化学计量)。</p>
-        <p class="sm"><strong>但要讲清楚:胶自己不销毁任何东西。</strong>它只是把靶蛋白交给细胞<strong>本来就有</strong>的泛素–蛋白酶体系统 —— 干活的是细胞,不是药。</p>
-      </div>
-    </div>
 
     <div class="plain" style="margin-top:10px">
       <span class="who">类比</span>
