@@ -12,9 +12,29 @@ python3 mk3d.py      # optional: re-render the slide-07 backbone traces from the
 python3 build.py     # tpl.html + *.json -> deck.html
 ```
 
+```sh
+python3 export.py    # deck.html -> PPIL4_deck.pdf + PPIL4_deck.pptx
+```
+
 `build.py` substitutes `__FIG_<name>__` (inline SVG, from `figs.json`) and
 `__PNG_<name>__` (base64 data URIs, from `png.json`), and injects the strip-chart
 data from `pts.json` at `__DATA__`. It fails loudly on any unresolved placeholder.
+
+## Exporting
+
+`export.py` produces both formats and needs no third-party library.
+
+* **PDF** is printed straight from Chrome, so its text stays vector and
+  selectable. Printing needs three things the on-screen deck does not do:
+  every slide laid out as its own page-sized block, `print-color-adjust:
+  exact` so panel and note backgrounds actually reproduce, and the entrance
+  animation suppressed so a half-played frame is never captured.
+* **PPTX** is one full-bleed 2560x1440 image per slide. PowerPoint cannot
+  represent this deck's inline SVG and CSS layout natively, so anything else
+  would be a lossy re-drawing rather than the deck. The OOXML is written
+  directly - `python-pptx` is not a dependency.
+
+Both land in `deck/` and are gitignored; regenerate rather than commit them.
 
 ## Files
 
@@ -25,7 +45,8 @@ data from `pts.json` at `__DATA__`. It fails loudly on any unresolved placeholde
 | `mk3d.py` | reads `../CRBN-Thalidomide-SALL4_(Ryan).pdb` and `../PPIL4_alphafold_(Ryan).pdb`, projects the backbones onto their principal axes and writes depth-sorted SVG traces into `figs.json` |
 | `figs.json` | inline SVG fragments (2D molecule depictions, backbone traces) |
 | `png.json` | base64 JPEGs of the rendered ternary complexes |
-| `pts.json` | the 27 locked-protocol docking results that drive the slide-11 strip chart |
+| `pts.json` | the 27 locked-protocol docking results that drive the strip chart |
+| `export.py` | `deck.html` -> PDF (vector, via Chrome print) and PPTX (image per slide, hand-written OOXML) |
 
 ## Publishing
 
