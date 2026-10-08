@@ -1,5 +1,10 @@
 # Z6466608628 positive-control Western blot interpretation
 
+- Experiment date: 2026-10-06
+- Initial interpretation date: 2026-10-07
+- Date metadata added: 2026-10-08
+- Statistical and correlation follow-up: `reports/2026-10-08_Z64_Fluorescence_Western_Blot_Statistics_and_Correlation.md`
+
 ## File identity
 
 - Source blot: `2026-10-06_Z6466608628_Positive_Control_Western_Blot_Original.pptx`
