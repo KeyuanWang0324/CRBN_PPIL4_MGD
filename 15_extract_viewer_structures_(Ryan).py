@@ -29,8 +29,9 @@ The reference is the deposited 9DWV entry, with the real FPFT-2216 read from the
 deposited chemical component rather than from any docking run. Its PPIL4 chain
 is short because only the RRM domain was resolved experimentally.
 
-Run under PyMOL, from the project directory:
-    /Applications/PyMOL.app/Contents/MacOS/PyMOL -cq "15_extract_viewer_structures_(Ryan).py"
+Run under PyMOL, from the project directory (Homebrew build -- see ENVIRONMENT_LOCK.md 6b:
+the .app bundle here is x86_64 and cannot run):
+    /opt/homebrew/bin/pymol -cq "15_extract_viewer_structures_(Ryan).py"
 """
 import csv
 import hashlib

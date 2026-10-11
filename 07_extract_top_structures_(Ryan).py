@@ -53,6 +53,7 @@ OUTPUT_DIR = os.path.join(SCRIPT_DIR, "ternary_structures")
 TOP_N = None
 
 # Same PyMOL search locations the old (06-based) version of this script used.
+# A candidate is only accepted if it actually runs -- see find_pymol_bin().
 PYMOL_CANDIDATES = ["/Applications/PyMOL.app/Contents/bin/pymol", "pymol"]
 
 _COLOR_CHAINS_SCRIPT = """
@@ -75,12 +76,27 @@ cmd.save(out_path, "struct")
 
 
 def find_pymol_bin():
+    """Return the first PyMOL candidate that actually runs.
+
+    Existence is not enough. PyMOL.app/Contents/bin/pymol satisfies os.path.exists()
+    and then dies with "Bad CPU type in executable" on an arm64 host when the app is
+    an x86_64 build and Rosetta is absent; a pip pymol-open-source can likewise be
+    shadowed by a wheel whose rpath points at the builder's machine. Probe each
+    candidate and return only a PyMOL that answers.
+    """
     for candidate in PYMOL_CANDIDATES:
-        if os.path.isabs(candidate):
-            if os.path.exists(candidate):
-                return candidate
-        elif shutil.which(candidate):
-            return candidate
+        path = candidate if os.path.isabs(candidate) else shutil.which(candidate)
+        if not path:
+            continue
+        try:
+            probe = subprocess.run(
+                [path, "-cq", "-d", "print('pymol-ok')"],
+                capture_output=True, text=True, timeout=180,
+            )
+        except (OSError, subprocess.SubprocessError):
+            continue
+        if probe.returncode == 0 and "pymol-ok" in probe.stdout:
+            return path
     return None
 
 

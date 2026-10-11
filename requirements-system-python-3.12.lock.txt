@@ -1,13 +1,14 @@
 # Environment lock — system Python (stages 00-04, 11, 12, 14)
-# Captured: 2026-10-11 (Asia/Shanghai) on macOS 27.0.1 / arm64
+# Captured: 2026-10-11 (Asia/Shanghai, re-captured 12:15 after the PyMOL fix) on macOS 27.0.1 / arm64
 # Interpreter: /Library/Frameworks/Python.framework/Versions/3.12/bin/python3
 #   CPython 3.12.0 (Clang 13.0.0 (clang-1300.0.29.30))
 #   pip 23.2.1
 # Regenerate: /Library/Frameworks/Python.framework/Versions/3.12/bin/python3 -m pip freeze > requirements-system-python-3.12.lock.txt
 # Recreate:   /Library/Frameworks/Python.framework/Versions/3.12/bin/python3 -m pip install -r requirements-system-python-3.12.lock.txt
-# NOTE: pymol-open-source in this list is installed but NOT importable on this
-#       machine (rpath points at a build-machine mamba env: libpng16.16.dylib).
-#       PyMOL stages run through PyMOL.app instead -- see ENVIRONMENT_LOCK.md.
+# NOTE: pymol-open-source is deliberately absent. Its wheel shipped an rpath into
+#       the builder's mamba env (libpng16.16.dylib), so it could not import -- and
+#       it shadowed the working PyMOL on PATH. PyMOL now comes from Homebrew:
+#       /opt/homebrew/bin/pymol (3.1.0, arm64). See ENVIRONMENT_LOCK.md SS6b/SS6c.
 #
 appnope==0.1.4
 asttokens==3.0.2
@@ -66,7 +67,6 @@ ptyprocess==0.7.0
 pure_eval==0.2.3
 pygame==2.6.1
 Pygments==2.20.0
-pymol-open-source==3.2.0a0
 pyparsing==3.1.1
 pytest==9.1.1
 python-dateutil==2.9.0.post0

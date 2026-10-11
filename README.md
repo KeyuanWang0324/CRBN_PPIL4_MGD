@@ -139,18 +139,23 @@ the FPFT-2216 golden reference reproduced byte-identically in the same session.
 source .venv-haddock3/bin/activate
 python3 "08_haddock3_ternary_with_ligand_(Ryan).py"
 
-# 3. PyMOL's own bundled Python — used by 07, 13, 15, 16
-/Applications/PyMOL.app/Contents/MacOS/PyMOL -cq "16_export_pymol_gltf_(Ryan).py"
+# 3. PyMOL — used by 07, 13, 15, 16
+#    (Homebrew build; the /Applications/PyMOL.app here is x86_64 and cannot run)
+/opt/homebrew/bin/pymol -cq "16_export_pymol_gltf_(Ryan).py"
 ```
 
 Most scripts detect the wrong interpreter and re-exec into the correct one automatically.
 
 > **PyMOL is not importable from the system Python here, and `pip install
 > pymol-open-source` does not fix it** — the macOS wheel ships rpaths pointing at
-> the build machine's environment, so it fails on a missing `libpng16`. The
-> installed **PyMOL.app** works headlessly and is what 07/13/15/16 use. Note also
-> that PyMOL's `run` rebinds `__file__` to its own package directory, which is why
-> those scripts resolve the project directory from `cwd`/`$ISEF_DIR` instead.
+> the build machine's environment, so it fails on a missing `libpng16`; being earlier
+> on `PATH`, it also shadows a working PyMOL, which is why it has been uninstalled.
+> PyMOL comes from Homebrew instead: `brew install pymol` (**3.1.0, arm64**). The
+> `/Applications/PyMOL.app` bundle on this machine is an **x86_64** build and cannot
+> run at all (no Rosetta), so **do not invoke its path** — `07` probes its candidates
+> and skips it. Note also that PyMOL's `run` rebinds `__file__` to its own package
+> directory, which is why those scripts resolve the project directory from
+> `cwd`/`$ISEF_DIR` instead. Full detail: [`ENVIRONMENT_LOCK.md`](ENVIRONMENT_LOCK.md) §6b.
 
 ## What the ranking says
 

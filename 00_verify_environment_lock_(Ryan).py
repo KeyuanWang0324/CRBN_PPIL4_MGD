@@ -151,10 +151,6 @@ check("host OS", "PASS", f"macOS {platform.mac_ver()[0]} ({platform.release()})"
 check("host architecture", "PASS" if HOST_ARCH == "arm64" else "WARN",
       f"{HOST_ARCH}" + ("" if HOST_ARCH == "arm64" else " -- lock captured on arm64"))
 
-rc, _, _ = run(["/usr/bin/arch", "-x86_64", "/usr/bin/true"])
-check("Rosetta 2 (needed only for x86_64 PyMOL)", "PASS" if rc == 0 else "WARN",
-      "available" if rc == 0 else "not installed -- x86_64 binaries cannot run")
-
 # --------------------------------------------------------------------------- 2. interpreters
 
 for label, exe in (("system Python", SYSTEM_PYTHON), ("venv Python", VENV_PYTHON)):
@@ -222,25 +218,67 @@ else:
     check("bundled PRODRG", "WARN", "haddock3 not installed in the venv")
 
 # --------------------------------------------------------------------------- 7. PyMOL
+#
+# Same rule as 07's find_pymol_bin(): existence is not enough. PyMOL.app's launcher
+# satisfies os.path.exists() and then dies with "Bad CPU type in executable" when the
+# app is x86_64 and Rosetta is absent, so probe every candidate and accept only one
+# that answers.
 
-if not PYMOL_BIN.exists():
-    check("PyMOL.app", "FAIL", f"missing: {PYMOL_BIN}")
+PYMOL_CANDIDATES = [
+    PYMOL_APP / "Contents" / "bin" / "pymol",       # app-bundle launcher, if it works
+    "/opt/homebrew/bin/pymol",                      # Homebrew (arm64 bottle)
+    "pymol",                                        # whatever is on PATH
+]
+
+
+def pymol_probe(path) -> tuple[bool, str]:
+    rc, out, err = run([str(path), "-cq", "-d", "print('pymol-ok')"], timeout=180)
+    if rc == 0 and "pymol-ok" in out:
+        rc2, ver, _ = run([str(path), "--version"])
+        return True, ver.splitlines()[-1] if ver else "version unknown"
+    return False, (err or out).splitlines()[-1] if (err or out) else f"exit {rc}"
+
+
+chosen_pymol: str | None = None
+attempts: list[str] = []
+seen: set[str] = set()
+for cand in PYMOL_CANDIDATES:
+    path = cand if isinstance(cand, Path) else None
+    if path is None:
+        import shutil as _shutil
+        found = _shutil.which(str(cand))
+        path = Path(found) if found else None
+    if path is None or str(path) in seen or not path.exists():
+        continue
+    seen.add(str(path))
+    ok, detail = pymol_probe(path)
+    if ok:
+        chosen_pymol, version = str(path), detail
+        break
+    attempts.append(f"{path.name}: {detail}")
+
+if chosen_pymol:
+    check("PyMOL runnable", "PASS", f"{chosen_pymol} -- {version}")
 else:
-    try:
-        info = plistlib.load((PYMOL_APP / "Contents" / "Info.plist").open("rb"))
-        version = info.get("CFBundleShortVersionString", "?")
-    except Exception as exc:                                    # noqa: BLE001
-        version = f"? ({exc})"
+    check("PyMOL runnable", "FAIL",
+          ("no working PyMOL; tried -> " + " | ".join(attempts) if attempts
+           else "no PyMOL candidate found")
+          + " | stages 07/13/15/16 cannot run: install with `brew install pymol`")
+
+# The app bundle is still worth reporting, because its arch is the trap.
+if PYMOL_BIN.exists():
     rc, archs, _ = run(["lipo", "-archs", str(PYMOL_BIN)])
     archs = archs or "?"
-    rc2, out2, err2 = run([str(PYMOL_BIN), "-cq", "print('pymol-ok')"], timeout=120)
-    if rc2 == 0:
-        check("PyMOL.app launchable", "PASS", f"version {version}, arch {archs}")
-    else:
-        check("PyMOL.app launchable", "FAIL",
-              f"version {version}, arch {archs} on {HOST_ARCH} host -- "
-              f"{(err2 or out2).splitlines()[-1] if (err2 or out2) else f'exit {rc2}'}"
-              " | stages 07/13/15/16 cannot run; needs an arm64 PyMOL.app")
+    check("PyMOL.app architecture", "PASS" if HOST_ARCH in archs else "WARN",
+          f"{archs} on {HOST_ARCH} host"
+          + ("" if HOST_ARCH in archs else " -- unusable; the Homebrew build is used instead"))
+
+rc, _, _ = run(["/usr/bin/arch", "-x86_64", "/usr/bin/true"])
+if chosen_pymol:
+    check("Rosetta 2", "PASS", "not needed -- a native PyMOL is available")
+else:
+    check("Rosetta 2", "WARN",
+          "available" if rc == 0 else "not installed -- x86_64 binaries cannot run")
 
 # --------------------------------------------------------------------------- 8. protocol inputs
 

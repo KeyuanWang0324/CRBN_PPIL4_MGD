@@ -21,8 +21,9 @@ A note on what these images honestly show: PPIL4 here is an AlphaFold model and
 its low-confidence loops sprawl. They are NOT trimmed for prettiness -- what is
 rendered is the whole chain that was actually docked.
 
-Run under PyMOL (the pip wheel ships broken rpaths on macOS; the app works):
-    /Applications/PyMOL.app/Contents/MacOS/PyMOL -cq "13_render_ternary_views_(Ryan).py"
+Run under PyMOL (pip's wheel ships broken rpaths on macOS, and this machine's
+/Applications/PyMOL.app is an x86_64 build with no Rosetta -- see ENVIRONMENT_LOCK.md 6b):
+    /opt/homebrew/bin/pymol -cq "13_render_ternary_views_(Ryan).py"
 """
 import csv
 import glob
