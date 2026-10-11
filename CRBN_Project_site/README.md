@@ -4,18 +4,26 @@
 
 | | |
 |---|---|
-| served from | <https://github.com/KeyuanWang0324/CRBN_Project> (branch `main`, path `/`) |
-| live at | <https://keyuanwang0324.github.io/CRBN_Project/> |
+| served from | <https://github.com/KeyuanWang0324/CRBN_Project_Website> (branch `main`, path `/`) |
+| live at | <https://keyuanwang0324.github.io/CRBN_Project_Website/> |
 
 The contents of this directory are the root of that repository. Committing
 here does **not** publish anything — this repo is the research project, that
-one is the website. They drift: at the time of writing, the live site was
-three commits behind this directory.
+one is the website.
+
+> The repository was renamed `CRBN_Project` → `CRBN_Project_Website` (the
+> research repo meanwhile became `CRBN_MGD` → `CRBN_PPIL4_MGD`). Git remotes
+> under the old names still work via GitHub's redirect, but the **Pages URL
+> moved**: `…github.io/CRBN_Project/` now returns 404 and only
+> `…github.io/CRBN_Project_Website/` is live. Verified 2026-10-11; at that
+> point the site repo's contents matched this directory exactly (only the
+> site repo's own `README.md` differs), so the earlier "three commits behind"
+> drift is resolved.
 
 ## Publishing
 
 ```sh
-git clone https://github.com/KeyuanWang0324/CRBN_Project.git /tmp/site
+git clone https://github.com/KeyuanWang0324/CRBN_Project_Website.git /tmp/site
 cp index.html glossary.js viewer.js structures.json /tmp/site/
 cp -R img glb lib /tmp/site/
 cd /tmp/site && git add -A && git commit && git push origin main

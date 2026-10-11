@@ -1,5 +1,8 @@
 .DS_Store
 .claude/hooks/*.log
+.codex/hooks/*.log
+# Codex CLI's own trace, not project data -- it records the ChatGPT account id
+error.log
 .venv-haddock3/
 docking_tmp/
 __pycache__/
